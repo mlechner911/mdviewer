@@ -138,33 +138,73 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
 <head>
     <meta charset="UTF-8">
     <title>MD Viewer Export</title>
+    <!-- Optional: Uncomment the following line to use KaTeX fonts from CDN if you have internet access -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"> -->
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #24292e;
+            --link-color: #0969da;
+            --border-color: #dfe2e5;
+            --code-bg: #f6f8fa;
+            --alert-bg: rgba(0, 0, 0, 0.03);
+        }
+
         /* KaTeX Embedded */
         %s
         
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; line-height: 1.6; color: #24292e; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+            padding: 2rem; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            line-height: 1.6; 
+            background-color: var(--bg-color);
+            color: var(--text-color); 
+        }
+        
         .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; }
         
-        /* Syntax Highlighting */
+        /* Syntax Highlighting and Theme Overrides */
         %s
         
-        .markdown-alert { padding: 0.75rem 1rem; margin-bottom: 1rem; border-left: 0.25rem solid; border-radius: 0 0.375rem 0.375rem 0; background: #f6f8fa; }
+        a { color: var(--link-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .markdown-alert { 
+            padding: 0.75rem 1rem; 
+            margin-bottom: 1rem; 
+            border-left: 0.25rem solid; 
+            border-radius: 0 0.375rem 0.375rem 0; 
+            background: var(--alert-bg); 
+        }
         .markdown-alert-note { border-color: #0969da; }
         .markdown-alert-tip { border-color: #1a7f37; }
         .markdown-alert-important { border-color: #8250df; }
         .markdown-alert-warning { border-color: #9a6700; }
         .markdown-alert-caution { border-color: #cf222e; }
         
-        pre { background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto; }
+        pre { background: var(--code-bg); padding: 1rem; border-radius: 6px; overflow: auto; }
         code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%%; }
         
         table { border-collapse: collapse; width: 100%%; margin: 1rem 0; display: block; overflow: auto; }
-        th { font-weight: 600; background-color: #f6f8fa; }
-        th, td { border: 1px solid #dfe2e5; padding: 6px 13px; }
-        tr:nth-child(2n) { background-color: #f6f8fa; }
+        th { font-weight: 600; background-color: var(--code-bg); }
+        th, td { border: 1px solid var(--border-color); padding: 6px 13px; }
+        tr:nth-child(2n) { background-color: var(--code-bg); }
         
         img { max-width: 100%%; box-sizing: content-box; background-color: #fff; }
-        blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; margin: 0 0 1rem 0; }
+        blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid var(--border-color); margin: 0 0 1rem 0; }
+
+        /* Mermaid Placeholder Styling */
+        .mermaid {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            font-family: sans-serif;
+            border: 1px dashed var(--border-color);
+        }
     </style>
 </head>
 <body>

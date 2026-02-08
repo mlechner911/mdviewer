@@ -108,7 +108,31 @@
   async function handleExport() {
     if (!isReady || !checkWailsReady()) return;
     try {
-      await backend.exportHTML(htmlContent, highlightingCSS);
+      // Extract current theme colors from the DOM for the export
+      const previewEl = document.querySelector('.prose');
+      const containerEl = previewEl?.parentElement;
+      
+      let themeVars = "";
+      if (previewEl && containerEl) {
+        const pStyle = window.getComputedStyle(previewEl);
+        const cStyle = window.getComputedStyle(containerEl);
+        const aStyle = window.getComputedStyle(previewEl.querySelector('a') || previewEl);
+        const codeStyle = window.getComputedStyle(previewEl.querySelector('code') || previewEl);
+        const isDark = effectiveAppTheme === 'dark' || currentPreviewTheme.id === 'dark';
+
+        themeVars = `
+        :root {
+            --bg-color: ${cStyle.backgroundColor};
+            --text-color: ${pStyle.color};
+            --link-color: ${aStyle.color !== pStyle.color ? aStyle.color : (isDark ? '#58a6ff' : '#0969da')};
+            --border-color: ${isDark ? '#30363d' : '#dfe2e5'}; 
+            --code-bg: ${codeStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' ? codeStyle.backgroundColor : (isDark ? '#161b22' : '#f6f8fa')};
+            --alert-bg: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};
+        }
+        `;
+      }
+
+      await backend.exportHTML(htmlContent, themeVars + highlightingCSS);
     } catch (err) {
       console.error("Failed to export HTML:", err);
     }
