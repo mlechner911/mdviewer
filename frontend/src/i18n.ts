@@ -6,6 +6,7 @@ export const translations: Record<string, any> = {
   en: {
     open: 'Open',
     save: 'Save',
+    export: 'Export to HTML',
     app: 'App',
     previewTheme: 'Preview Theme',
     zoom: 'Zoom',
@@ -19,6 +20,7 @@ export const translations: Record<string, any> = {
   de: {
     open: 'Öffnen',
     save: 'Speichern',
+    export: 'Als HTML exportieren',
     app: 'App',
     previewTheme: 'Vorschau-Design',
     zoom: 'Zoom',
@@ -32,6 +34,7 @@ export const translations: Record<string, any> = {
   es: {
     open: 'Abrir',
     save: 'Guardar',
+    export: 'Exportar a HTML',
     app: 'App',
     previewTheme: 'Tema de Vista Previa',
     zoom: 'Zoom',
@@ -45,6 +48,7 @@ export const translations: Record<string, any> = {
   fr: {
     open: 'Ouvrir',
     save: 'Enregistrer',
+    export: 'Exporter en HTML',
     app: 'App',
     previewTheme: 'Thème d\'aperçu',
     zoom: 'Zoom',

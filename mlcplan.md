@@ -18,3 +18,10 @@ Phase 4: Polishing & Deployment
 Performance-Check: Optimierung des Rendering-Prozesses bei sehr großen Markdown-Dateien.
 Asset-Handling: Sicherstellung, dass Bilder und lokale Verknüpfungen im Viewer korrekt aufgelöst werden.
 Finaler Build: Kompilierung des Projekts in eine einzige, plattformspezifische ausführbare Datei (.exe oder .app).
+
+## Wishlist / Future Features
+- **Local Image Support**: Allow loading images using relative paths from the opened Markdown file.
+- **Scroll Sync**: Synchronize scrolling between the editor and the preview pane.
+- **Monaco/CodeMirror Editor**: Replace basic textarea with a professional editor for code highlighting in the editor itself.
+- **Table of Contents (TOC)**: Automatically generated navigation for large documents.
+- **Copy-to-Clipboard**: Dedicated copy buttons for syntax-highlighted code blocks.

@@ -1,9 +1,8 @@
-// Package main is the entry point for the MD Viewer application.
-// It initializes the Wails application and sets up the asset server and bindings.
 package main
 
 import (
 	"embed"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -13,17 +12,20 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-// main is the application's entry point.
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 
+	// Check for command line arguments (first argument after program name)
+	if len(os.Args) > 1 {
+		app.SetInitialFile(os.Args[1])
+	}
+
 	// Create application with options
-	// The configuration here handles window size, asset serving, and Go-to-JS bindings.
 	err := wails.Run(&options.App{
-		Title:  "md-viewer",
-		Width:  1024,
-		Height: 768,
+		Title:  "MD Viewer",
+		Width:  1200,
+		Height: 800,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -31,6 +33,10 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
+		},
+		// Enable Drag and Drop support
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop: true,
 		},
 	})
 

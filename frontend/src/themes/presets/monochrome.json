@@ -1,0 +1,17 @@
+{
+  "id": "monochrome",
+  "name": "Monochrome",
+  "chromaStyle": "bw",
+  "containerClass": "bg-white text-black monochrome",
+  "proseClass": "prose-slate prose-headings:text-black",
+  "mermaidTheme": "default",
+  "mermaidVars": {
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#000000",
+    "primaryBorderColor": "#000000",
+    "lineColor": "#000000",
+    "secondaryColor": "#eeeeee",
+    "tertiaryColor": "#ffffff",
+    "nodeBorder": "#000000"
+  }
+}

@@ -32,6 +32,7 @@
       const href = link.getAttribute('href');
       if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
         link.classList.add('external-link');
+        link.target = "_blank";
         link.onclick = (e) => {
           e.preventDefault();
           BrowserOpenURL(href);
@@ -56,7 +57,7 @@
       startOnLoad: false,
       theme: theme.mermaidTheme,
       themeVariables: theme.mermaidVars || {},
-      parseError: () => {}
+  //    parseError: () => {}
     });
 
     try {
@@ -93,11 +94,11 @@
 <!-- Inject dynamic Chroma Syntax Highlighting CSS -->
 {@html '<' + 'style' + '>' + css + '</' + 'style' + '>'}
 
-<div 
+<div
   bind:this={previewContainer}
   class="flex-1 overflow-y-auto p-8 transition-colors duration-300 {theme.containerClass}"
 >
-  <article 
+  <article
     class="prose lg:prose-xl max-w-none {theme.proseClass}"
     style="font-size: {fontSize}%;"
   >
@@ -106,7 +107,7 @@
 </div>
 
 <style>
-  /* Base Markdown Styling */
+  /* Base Markdown Styling from JSON Config */
   :global(.prose pre) {
     border-radius: 0.5rem;
     padding: 1rem;
@@ -129,7 +130,7 @@
     border-radius: 0 0.375rem 0.375rem 0;
     background: rgba(0, 0, 0, 0.03);
   }
-  
+
   :global(.prose-invert .markdown-alert) {
     background: rgba(255, 255, 255, 0.05);
   }
@@ -157,7 +158,7 @@
   :global(.markdown-alert-caution) { border-color: #cf222e; }
   :global(.markdown-alert-caution::before) { content: "☢️ Caution"; color: #cf222e; }
 
-  /* Mermaid / Diagrams */
+  /* Mermaid / Diagrams - Base Styling */
   :global(.mermaid) {
     background: transparent;
     padding: 1rem;
@@ -168,30 +169,14 @@
   }
   :global(.mermaid .marker) { fill: currentColor !important; }
   :global(.mermaid .edgePath .path) { stroke: currentColor !important; }
-  
-  /* Improve Mermaid Edge Label (text over arrows) readability */
+
+  /* Improve Mermaid Edge Label readability */
   :global(.mermaid .edgeLabel), :global(.mermaid .edgeLabel span) {
     background-color: transparent !important;
     color: currentColor !important;
   }
-  
-  :global(.bg-slate-900 .mermaid .edgeLabel rect) {
-    fill: #1e293b !important;
-    opacity: 0.8;
-  }
-  
-  :global(.bg-white .mermaid .edgeLabel rect) {
-    fill: #f9fafb !important;
-    opacity: 0.8;
-  }
 
-  :global(.bg-\[\#f4ecd8\] .mermaid .edgeLabel rect) {
-    fill: #f4ecd8 !important;
-    opacity: 0.8;
-  }
-
-  :global(.monochrome .mermaid .edgeLabel rect) {
-    fill: #ffffff !important;
+  :global(.mermaid .edgeLabel rect) {
     opacity: 0.8;
   }
 
@@ -201,6 +186,8 @@
     padding: 1rem;
     background: rgba(239, 68, 68, 0.1) !important;
   }
+
+  /* Dynamic Theme Overrides for Mermaid */
   :global(.bg-white .mermaid) { background: #f9fafb; }
   :global(.bg-slate-900 .mermaid) { background: #1e293b; }
   :global(.bg-\[\#f4ecd8\] .mermaid) { background: #e4dcc7; }
@@ -208,4 +195,9 @@
     background: #ffffff;
     border: 1px solid #000;
   }
+
+  :global(.bg-slate-900 .mermaid .edgeLabel rect) { fill: #1e293b !important; }
+  :global(.bg-white .mermaid .edgeLabel rect) { fill: #f9fafb !important; }
+  :global(.bg-\[\#f4ecd8\] .mermaid .edgeLabel rect) { fill: #f4ecd8 !important; }
+  :global(.monochrome .mermaid .edgeLabel rect) { fill: #ffffff !important; }
 </style>

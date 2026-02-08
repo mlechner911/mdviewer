@@ -11,32 +11,48 @@ import (
 )
 
 // App struct defines the main application state and dependencies.
-// It acts as the bridge between the Svelte frontend and the Go backend.
 type App struct {
-	ctx      context.Context
-	renderer *markdown.Renderer
+	ctx         context.Context
+	renderer    *markdown.Renderer
+	initialFile string
 }
 
-// NewApp creates a new App application struct and initializes the markdown renderer.
+// NewApp creates a new App application struct.
 func NewApp() *App {
 	return &App{
 		renderer: markdown.NewRenderer(),
 	}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods (like logging and dialogs).
+// SetInitialFile stores the file path provided via CLI.
+func (a *App) SetInitialFile(path string) {
+	a.initialFile = path
+}
+
+// startup is called when the app starts.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// Greet returns a greeting for the given name (Legacy/Example function).
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+// ReadFile reads the content of a file given its path.
+// This is used for Drag and Drop files received by the frontend.
+func (a *App) ReadFile(path string) (string, error) {
+	runtime.LogInfof(a.ctx, "ReadFile: Reading file %s", path)
+	return filesystem.ReadFile(path)
 }
 
-// RenderMarkdown converts markdown string to sanitized HTML using the internal renderer.
-// It also takes a chromaStyle parameter to apply specific syntax highlighting colors.
+// GetInitialContent is called by the frontend on mount to check for CLI files.
+func (a *App) GetInitialContent() string {
+	if a.initialFile != "" {
+		content, err := filesystem.ReadFile(a.initialFile)
+		if err == nil {
+			return content
+		}
+	}
+	return ""
+}
+
+// RenderMarkdown converts markdown string to sanitized HTML.
 func (a *App) RenderMarkdown(input string, theme string) string {
 	runtime.LogDebugf(a.ctx, "Request: RenderMarkdown (Theme: %s)", theme)
 	html, err := a.renderer.Render(input, theme)
@@ -47,8 +63,7 @@ func (a *App) RenderMarkdown(input string, theme string) string {
 	return html
 }
 
-// GetStyleCSS returns the raw CSS for a specific syntax highlighting style from Chroma.
-// This allows the frontend to inject highlighting styles dynamically.
+// GetStyleCSS returns the raw CSS for a specific syntax highlighting style.
 func (a *App) GetStyleCSS(style string) string {
 	css, err := a.renderer.GetStyleCSS(style)
 	if err != nil {
@@ -58,9 +73,8 @@ func (a *App) GetStyleCSS(style string) string {
 	return css
 }
 
-// OpenFile opens a native file dialog, reads the selected file, and returns its content.
+// OpenFile opens a native file dialog.
 func (a *App) OpenFile() (string, error) {
-	runtime.LogInfo(a.ctx, "Request: OpenFile")
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Open Markdown File",
 		Filters: []runtime.FileFilter{
@@ -73,17 +87,13 @@ func (a *App) OpenFile() (string, error) {
 		return "", err
 	}
 	if path == "" {
-		runtime.LogInfo(a.ctx, "OpenFile: User cancelled dialog")
 		return "", nil
 	}
-
-	runtime.LogInfof(a.ctx, "OpenFile: Reading file %s", path)
 	return filesystem.ReadFile(path)
 }
 
 // SaveFile opens a native save dialog and saves the provided content to the selected path.
 func (a *App) SaveFile(content string) (string, error) {
-	runtime.LogInfo(a.ctx, "Request: SaveFile")
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title: "Save Markdown File",
 		DefaultFilename: "document.md",
@@ -96,15 +106,65 @@ func (a *App) SaveFile(content string) (string, error) {
 		return "", err
 	}
 	if path == "" {
-		runtime.LogInfo(a.ctx, "SaveFile: User cancelled dialog")
 		return "", nil
 	}
 
-	runtime.LogInfof(a.ctx, "SaveFile: Writing to file %s", path)
 	err = filesystem.WriteFile(path, content)
 	if err != nil {
 		return "", err
 	}
 
+	return path, nil
+}
+
+// ExportHTML saves the rendered markdown as a standalone HTML file.
+func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) {
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Export to HTML",
+		DefaultFilename: "exported.html",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "HTML Files (*.html)", Pattern: "*.html"},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+
+	// Create a standalone HTML document
+	fullHTML := fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MD Viewer Export</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+    <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; line-height: 1.6; }
+        %s
+        .markdown-alert { padding: 0.75rem 1rem; margin-bottom: 1rem; border-left: 0.25rem solid; background: #f8f9fa; }
+        .markdown-alert-note { border-color: #0969da; }
+        .markdown-alert-tip { border-color: #1a7f37; }
+        .markdown-alert-important { border-color: #8250df; }
+        .markdown-alert-warning { border-color: #9a6700; }
+        .markdown-alert-caution { border-color: #cf222e; }
+        pre { background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto; }
+        table { border-collapse: collapse; width: 100%%; margin: 1rem 0; }
+        th, td { border: 1px solid #dfe2e5; padding: 6px 13px; }
+        tr:nth-child(2n) { background-color: #f6f8fa; }
+    </style>
+</head>
+<body>
+    <article class="markdown-body">
+        %s
+    </article>
+</body>
+</html>`, cssContent, htmlContent)
+
+	err = filesystem.WriteFile(path, fullHTML)
+	if err != nil {
+		return "", err
+	}
 	return path, nil
 }

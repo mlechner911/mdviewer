@@ -1,0 +1,12 @@
+{
+  "id": "light",
+  "name": "Light Mode",
+  "chromaStyle": "github",
+  "containerClass": "bg-white text-slate-900",
+  "proseClass": "prose-slate prose-headings:text-slate-900",
+  "mermaidTheme": "default",
+  "mermaidVars": {
+    "lineColor": "#334155",
+    "textColor": "#0f172a"
+  }
+}

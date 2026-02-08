@@ -1,0 +1,17 @@
+{
+  "name": "Base Theme",
+  "chromaStyle": "github",
+  "containerClass": "bg-white text-slate-900",
+  "proseClass": "prose-slate",
+  "mermaidTheme": "default",
+  "mermaidVars": {
+    "lineColor": "#334155",
+    "textColor": "#0f172a"
+  },
+  "customCSS": {
+    "pre": "border-radius: 0.5rem; padding: 1rem; overflow-x: auto;",
+    "mermaid_marker": "fill: currentColor !important;",
+    "mermaid_path": "stroke: currentColor !important;",
+    "mermaid_error": "border: 3px solid #ef4444 !important; border-radius: 0.5rem; padding: 1rem; background: rgba(239, 68, 68, 0.1) !important;"
+  }
+}

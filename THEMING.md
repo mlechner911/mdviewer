@@ -1,39 +1,44 @@
-# Theming Architecture
+# Theming Architecture (v0.2.0)
 
-MD Viewer features a dual-theming system that separates the application's user interface from the rendered content.
+MD Viewer uses a modular JSON-based theming system.
 
-## 1. App Theme (The Frame)
+## 1. JSON Configuration
 
-The **App Theme** controls the "Application Frame," which includes the Toolbar, Editor, and Resizer.
+The themes are now defined in external JSON files located in `frontend/src/themes/`.
 
-- **Options**: `Dark`, `Light`, `Auto` (System Preference).
-- **Implementation**: Managed in `App.svelte` via Tailwind classes and a system media query listener.
-- **Toggle**: A top-right SVG button cycles through these modes.
+- **`base.json`**: Contains the default settings shared by all themes (default Mermaid variables, base CSS, etc.).
+- **`presets/*.json`**: Individual theme definitions (Dark, Light, Sepia, Monochrome) that override the base settings.
 
-## 2. Preview Theme (The Content)
+### Merging Logic
+Themes are automatically merged in `themes.ts`:
+1. Start with `base.json`.
+2. Apply properties from the selected `preset.json`.
+3. Deep-merge complex objects like `mermaidVars` and `customCSS`.
 
-The **Preview Theme** controls the visual style of the rendered Markdown document.
+## 2. Structure of a Theme JSON
 
-- **Options**: Defined in `frontend/src/themes.ts`.
-- **Source of Truth**: The `themes` array in `themes.ts` defines everything from background colors to the syntax highlighting style.
-- **Properties**:
-  - `chromaStyle`: The name of the highlighting style passed to the Go backend.
-  - `containerClass`: Background and text colors for the preview pane.
-  - `proseClass`: Tailwind Typography (`prose`) variants.
-  - `mermaidTheme`: The base Mermaid diagram theme.
-  - `mermaidVars`: Custom CSS variables for fine-tuning diagrams.
+```json
+{
+  "id": "theme-id",
+  "name": "Display Name",
+  "chromaStyle": "syntax-style-name",
+  "containerClass": "tailwind-background-classes",
+  "proseClass": "tailwind-typography-classes",
+  "mermaidTheme": "mermaid-id",
+  "mermaidVars": {
+    "lineColor": "#hex",
+    "textColor": "#hex"
+  }
+}
+```
 
-## Synchronized Rendering
+## 3. Adding a New Theme
 
-When a Preview Theme is changed:
-1.  The frontend notifies the Go backend of the new `chromaStyle`.
-2.  The backend generates class-based HTML and returns the specific CSS for that style.
-3.  The frontend injects the CSS and updates the `Preview` component classes.
-4.  Mermaid diagrams are re-initialized with the theme-specific variables.
+To add a new theme:
+1. Create a new JSON file in `frontend/src/themes/presets/`.
+2. Open `frontend/src/themes.ts`.
+3. Import your new JSON file.
+4. Add it to the `themes` array using the `createTheme()` helper.
 
-## Adding New Preview Themes
-
-1.  Open `frontend/src/themes.ts`.
-2.  Add a new entry to the `themes` array.
-3.  Choose a matching Chroma style (e.g., `monokai`, `solarized-dark`).
-4.  Define matching Tailwind and Mermaid variables.
+## 4. Future Roadmap
+The move to JSON allows for a future **Theme Editor** where users can modify these values directly in the app and save them to their local configuration.

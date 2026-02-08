@@ -2,6 +2,13 @@
 
 A modern, high-performance Markdown Viewer and Editor built with **Wails**, **Go**, and **Svelte**.
 
+Note: there are other really good markdown viewers available with some enhanced features like pdf outrput etc. This is not the idea behind this viewer. I want a quick tool - where i can
+preview an md file or drop it on an icon  to see the preview.
+
+If you neeed pdf - you can export to html and print to pdf.
+
+
+
 ## 🚀 Features
 
 - **Real-time Rendering**: Instant preview as you type with debounced updates for smooth performance.

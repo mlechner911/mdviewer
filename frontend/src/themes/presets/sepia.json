@@ -1,0 +1,18 @@
+{
+  "id": "sepia",
+  "name": "Sepia Paper",
+  "chromaStyle": "monokai-light",
+  "containerClass": "bg-[#f4ecd8] text-[#5b4636]",
+  "proseClass": "prose-stone prose-headings:text-[#5b4636] prose-a:text-[#0969da]",
+  "mermaidTheme": "neutral",
+  "mermaidVars": {
+    "primaryColor": "#d4c5a9",
+    "primaryTextColor": "#5b4636",
+    "primaryBorderColor": "#a89d85",
+    "lineColor": "#5b4636",
+    "secondaryColor": "#e4dcc7",
+    "tertiaryColor": "#f4ecd8",
+    "edgeLabelBackground": "#f4ecd8",
+    "nodeBorder": "#a89d85"
+  }
+}
