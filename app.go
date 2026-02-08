@@ -35,9 +35,9 @@ func (a *App) Greet(name string) string {
 }
 
 // RenderMarkdown converts markdown to HTML using the internal renderer
-func (a *App) RenderMarkdown(input string) string {
-	runtime.LogDebug(a.ctx, "Request: RenderMarkdown")
-	html, err := a.renderer.Render(input)
+func (a *App) RenderMarkdown(input string, theme string) string {
+	runtime.LogDebugf(a.ctx, "Request: RenderMarkdown (Theme: %s)", theme)
+	html, err := a.renderer.Render(input, theme)
 	if err != nil {
 		runtime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
 		return fmt.Sprintf("<p>Error rendering markdown: %v</p>", err)

@@ -12,12 +12,30 @@ import (
 
 // Renderer handles markdown to HTML conversion
 type Renderer struct {
-	md goldmark.Markdown
-	p  *bluemonday.Policy
+	p *bluemonday.Policy
 }
 
-// NewRenderer creates a new markdown renderer with GFM and highlighting
+// NewRenderer creates a new markdown renderer
 func NewRenderer() *Renderer {
+	p := bluemonday.UGCPolicy()
+	p.AllowAttrs("class").OnElements("span", "code", "pre", "div")
+	p.AllowAttrs("style").OnElements("span", "code", "pre")
+	p.AllowAttrs("id").OnElements("div")
+
+	return &Renderer{
+		p: p,
+	}
+}
+
+// Render converts markdown string to sanitized HTML using a specific Chroma style
+func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
+	var buf bytes.Buffer
+	
+	// Default to github-dark if empty
+	if chromaStyle == "" {
+		chromaStyle = "github-dark"
+	}
+	
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
@@ -25,27 +43,12 @@ func NewRenderer() *Renderer {
 			extension.Typographer,
 			mathjax.Mathjax,
 			highlighting.NewHighlighting(
-				highlighting.WithStyle("github-dark"),
+				highlighting.WithStyle(chromaStyle),
 			),
 		),
 	)
 
-	// Security-Policy: Erlaube Klassen und Styles für Chroma-Highlighting und Mermaid
-	p := bluemonday.UGCPolicy()
-	p.AllowAttrs("class").OnElements("span", "code", "pre", "div")
-	p.AllowAttrs("style").OnElements("span", "code", "pre")
-	p.AllowAttrs("id").OnElements("div")
-
-	return &Renderer{
-		md: md,
-		p:  p,
-	}
-}
-
-// Render converts markdown string to sanitized HTML
-func (r *Renderer) Render(input string) (string, error) {
-	var buf bytes.Buffer
-	if err := r.md.Convert([]byte(input), &buf); err != nil {
+	if err := md.Convert([]byte(input), &buf); err != nil {
 		return "", err
 	}
 
