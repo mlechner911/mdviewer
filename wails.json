@@ -10,5 +10,19 @@
   "author": {
     "name": "Michael Lechner",
     "email": "xsltwonder@gmail.com"
+  },
+  "info": {
+    "companyName": "Michael Lechner",
+    "productName": "MD Viewer",
+    "productVersion": "0.2.0",
+    "copyright": "Copyright 2026 Michael Lechner",
+    "comments": "A modern Markdown viewer."
+  },
+  "windows": {
+    "nsis": {
+      "customMessages": "",
+      "compression": "lzma",
+      "include": ""
+    }
   }
 }

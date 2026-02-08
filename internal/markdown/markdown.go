@@ -4,6 +4,7 @@ package markdown
 
 import (
 	"bytes"
+	_ "embed"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/formatters/html"
@@ -19,6 +20,9 @@ import (
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
+
+//go:embed katex.min.css.txt
+var katexCSS string
 
 // Renderer handles the lifecycle of markdown-to-html conversion.
 type Renderer struct {
@@ -38,8 +42,12 @@ func NewRenderer() *Renderer {
 	}
 }
 
+// GetKatexCSS returns the embedded KaTeX CSS.
+func (r *Renderer) GetKatexCSS() string {
+	return katexCSS
+}
+
 // GitHubAlertTransformer handles GitHub-flavored Alerts: > [!NOTE]
-// It looks for specifically formatted markers at the beginning of blockquotes.
 type GitHubAlertTransformer struct{}
 
 func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
@@ -55,8 +63,6 @@ func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reade
 
 		p := bq.FirstChild().(*ast.Paragraph)
 		
-		// GitHub alerts marker [!TYPE] can be split into multiple text nodes by Goldmark.
-		// We collect the first few text nodes to identify the marker.
 		var fullContent strings.Builder
 		for c := p.FirstChild(); c != nil; c = c.NextSibling() {
 			if t, ok := c.(*ast.Text); ok {
@@ -64,7 +70,7 @@ func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reade
 			} else {
 				break
 			}
-			if fullContent.Len() > 20 { // Markers are relatively short
+			if fullContent.Len() > 20 {
 				break
 			}
 		}
@@ -78,9 +84,7 @@ func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reade
 				typeStr := strings.ToLower(strings.Trim(alert, "[!]"))
 				bq.SetAttributeString("class", []byte("markdown-alert markdown-alert-"+typeStr))
 				
-				// Remove the marker text from the AST nodes
 				remaining := len(alert) + strings.Index(content, alert)
-				// Skip potential trailing space or newline
 				if remaining < len(content) && (content[remaining] == '\n' || content[remaining] == ' ') {
 					remaining++
 				}

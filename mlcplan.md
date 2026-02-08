@@ -20,6 +20,7 @@ Asset-Handling: Sicherstellung, dass Bilder und lokale Verknüpfungen im Viewer 
 Finaler Build: Kompilierung des Projekts in eine einzige, plattformspezifische ausführbare Datei (.exe oder .app).
 
 ## Wishlist / Future Features
+
 - **Local Image Support**: Allow loading images using relative paths from the opened Markdown file.
 - **Scroll Sync**: Synchronize scrolling between the editor and the preview pane.
 - **Monaco/CodeMirror Editor**: Replace basic textarea with a professional editor for code highlighting in the editor itself.

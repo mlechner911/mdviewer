@@ -3,7 +3,7 @@
   "name": "Monochrome",
   "chromaStyle": "bw",
   "containerClass": "bg-white text-black monochrome",
-  "proseClass": "prose-slate prose-headings:text-black",
+  "proseClass": "prose-slate prose-headings:text-black prose-p:text-black prose-a:text-black prose-a:underline",
   "mermaidTheme": "default",
   "mermaidVars": {
     "primaryColor": "#ffffff",

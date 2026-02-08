@@ -1,10 +1,12 @@
+
+
 export const APP_THEME = {
   DARK: 'dark',
   LIGHT: 'light',
   AUTO: 'auto'
 } as const;
 
-export type AppTheme = typeof APP_THEME[keyof typeof APP_THEME];
+export type AppTheme_t = typeof APP_THEME[keyof typeof APP_THEME];
 
 export const STYLE = {
   toolbar: {

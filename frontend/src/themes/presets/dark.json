@@ -3,7 +3,7 @@
   "name": "Dark Mode",
   "chromaStyle": "github-dark",
   "containerClass": "bg-slate-900 text-slate-100",
-  "proseClass": "prose-invert",
+  "proseClass": "prose-invert prose-headings:text-slate-100 prose-p:text-slate-300 prose-a:text-blue-400",
   "mermaidTheme": "dark",
   "mermaidVars": {
     "lineColor": "#94a3b8",

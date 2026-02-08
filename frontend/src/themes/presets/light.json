@@ -3,7 +3,7 @@
   "name": "Light Mode",
   "chromaStyle": "github",
   "containerClass": "bg-white text-slate-900",
-  "proseClass": "prose-slate prose-headings:text-slate-900",
+  "proseClass": "prose-slate prose-headings:text-slate-900 prose-p:text-slate-700 prose-a:text-blue-600",
   "mermaidTheme": "default",
   "mermaidVars": {
     "lineColor": "#334155",

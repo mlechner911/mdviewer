@@ -11,9 +11,14 @@ tasks:
       - xvfb-run -a wails dev -devserver localhost:34117
 
   build:
-    desc: Build the application
+    desc: Build the application for the current platform
     cmds:
       - wails build
+
+  build:windows:
+    desc: Build the Windows installer (AMD64)
+    cmds:
+      - wails build -platform windows/amd64 -nsis
 
   install:
     desc: Install backend and frontend dependencies

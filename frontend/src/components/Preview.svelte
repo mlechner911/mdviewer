@@ -63,7 +63,9 @@
     try {
       const nodes = previewContainer.querySelectorAll('.mermaid');
       if (nodes.length > 0) {
-        await mermaid.run({ nodes });
+
+          await mermaid.run({ querySelector: '.mermaid' });
+
       }
     } catch (err) {
       console.error("Mermaid render failed:", err);

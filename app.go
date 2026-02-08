@@ -35,7 +35,6 @@ func (a *App) startup(ctx context.Context) {
 }
 
 // ReadFile reads the content of a file given its path.
-// This is used for Drag and Drop files received by the frontend.
 func (a *App) ReadFile(path string) (string, error) {
 	runtime.LogInfof(a.ctx, "ReadFile: Reading file %s", path)
 	return filesystem.ReadFile(path)
@@ -92,7 +91,7 @@ func (a *App) OpenFile() (string, error) {
 	return filesystem.ReadFile(path)
 }
 
-// SaveFile opens a native save dialog and saves the provided content to the selected path.
+// SaveFile opens a native save dialog and saves content.
 func (a *App) SaveFile(content string) (string, error) {
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title: "Save Markdown File",
@@ -108,12 +107,10 @@ func (a *App) SaveFile(content string) (string, error) {
 	if path == "" {
 		return "", nil
 	}
-
 	err = filesystem.WriteFile(path, content)
 	if err != nil {
 		return "", err
 	}
-
 	return path, nil
 }
 
@@ -133,26 +130,41 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
 		return "", nil
 	}
 
+	katexCSS := a.renderer.GetKatexCSS()
+
 	// Create a standalone HTML document
 	fullHTML := fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>MD Viewer Export</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
     <style>
-        body { font-family: sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; line-height: 1.6; }
+        /* KaTeX Embedded */
         %s
-        .markdown-alert { padding: 0.75rem 1rem; margin-bottom: 1rem; border-left: 0.25rem solid; background: #f8f9fa; }
+        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; padding: 2rem; max-width: 900px; margin: 0 auto; line-height: 1.6; color: #24292e; }
+        .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; }
+        
+        /* Syntax Highlighting */
+        %s
+        
+        .markdown-alert { padding: 0.75rem 1rem; margin-bottom: 1rem; border-left: 0.25rem solid; border-radius: 0 0.375rem 0.375rem 0; background: #f6f8fa; }
         .markdown-alert-note { border-color: #0969da; }
         .markdown-alert-tip { border-color: #1a7f37; }
         .markdown-alert-important { border-color: #8250df; }
         .markdown-alert-warning { border-color: #9a6700; }
         .markdown-alert-caution { border-color: #cf222e; }
+        
         pre { background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow: auto; }
-        table { border-collapse: collapse; width: 100%%; margin: 1rem 0; }
+        code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%%; }
+        
+        table { border-collapse: collapse; width: 100%%; margin: 1rem 0; display: block; overflow: auto; }
+        th { font-weight: 600; background-color: #f6f8fa; }
         th, td { border: 1px solid #dfe2e5; padding: 6px 13px; }
         tr:nth-child(2n) { background-color: #f6f8fa; }
+        
+        img { max-width: 100%%; box-sizing: content-box; background-color: #fff; }
+        blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; margin: 0 0 1rem 0; }
     </style>
 </head>
 <body>
@@ -160,7 +172,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         %s
     </article>
 </body>
-</html>`, cssContent, htmlContent)
+</html>`, katexCSS, cssContent, htmlContent)
 
 	err = filesystem.WriteFile(path, fullHTML)
 	if err != nil {

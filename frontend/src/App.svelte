@@ -9,31 +9,16 @@
   import Preview from './components/Preview.svelte';
   import { themes } from './themes';
   import { t, locale } from './i18n';
-  import { APP_THEME, STYLE, DEFAULTS, AppTheme } from './lib/constants';
+  import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
+  import type { AppTheme_t } from './lib/constants';
+  import { c_initialmd } from './lib/devdefmd.js';
 
   // State: Markdown Content
   let markdown: string = "";
 
   // Set initial default markdown
-  const defaultMarkdown = () => `${$t('welcomeTitle')}
+  const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
 
-## Mermaid Diagrams
-\`\`\`mermaid
-graph TD
-    A[Start] --> B{Is it working?}
-    B -- Yes --> C[Great!]
-    B -- No --> D[Check Logs]
-\`\`\`
-
-## Feature Verification Table
-
-| Feature | Support | Engine | Notes |
-| :--- | :---: | :--- | :--- |
-| **GFM** | ✅ | Goldmark | Tables, Tasklists |
-| **Theming** | ✅ | Svelte | Dark, Light, Sepia |
-| **Mermaid** | ✅ | Mermaid.js | Dynamic Rendering |
-| **Highlight** | ✅ | Chroma | Inline CSS |
-`;
 
   // State: Rendering results
   let htmlContent: string = "";
@@ -44,8 +29,8 @@ graph TD
   let fontSize: number = DEFAULTS.fontSize; // Active zoom level
 
   // App Frame Theming (Toolbar/Editor frame)
-  let appTheme: AppTheme = APP_THEME.DARK;
-  let effectiveAppTheme: 'dark' | 'light' = APP_THEME.DARK;
+  let appTheme: AppTheme_t = APP_THEME.DARK;
+  let effectiveAppTheme: 'dark' | 'light' = APP_THEME.DARK as 'dark';
 
   // Initialization flag
   let isReady = false;
