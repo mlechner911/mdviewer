@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --wails-bg-color: rgba(27, 38, 54, 1);
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--wails-bg-color);
+}
+
+#app {
+    height: 100%;
+}

@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: dev
+
+  dev:
+    desc: Run wails dev with xvfb
+    cmds:
+      - xvfb-run -a wails dev
+
+  build:
+    desc: Build the application
+    cmds:
+      - wails build
+
+  install:
+    desc: Install backend and frontend dependencies
+    cmds:
+      - go mod tidy
+      - cd frontend && npm install
+
+  tidy:
+    desc: Tidy go modules
+    cmds:
+      - go mod tidy
