@@ -36,6 +36,7 @@ func (a *App) Greet(name string) string {
 
 // RenderMarkdown converts markdown to HTML using the internal renderer
 func (a *App) RenderMarkdown(input string) string {
+	runtime.LogDebug(a.ctx, "Request: RenderMarkdown")
 	html, err := a.renderer.Render(input)
 	if err != nil {
 		runtime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
@@ -46,6 +47,7 @@ func (a *App) RenderMarkdown(input string) string {
 
 // OpenFile opens a file dialog and returns the content using internal filesystem package
 func (a *App) OpenFile() (string, error) {
+	runtime.LogInfo(a.ctx, "Request: OpenFile")
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Open Markdown File",
 		Filters: []runtime.FileFilter{
@@ -58,14 +60,17 @@ func (a *App) OpenFile() (string, error) {
 		return "", err
 	}
 	if path == "" {
+		runtime.LogInfo(a.ctx, "OpenFile: User cancelled dialog")
 		return "", nil
 	}
 
+	runtime.LogInfof(a.ctx, "OpenFile: Reading file %s", path)
 	return filesystem.ReadFile(path)
 }
 
 // SaveFile opens a save dialog and saves the content using internal filesystem package
 func (a *App) SaveFile(content string) (string, error) {
+	runtime.LogInfo(a.ctx, "Request: SaveFile")
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title: "Save Markdown File",
 		DefaultFilename: "document.md",
@@ -78,9 +83,11 @@ func (a *App) SaveFile(content string) (string, error) {
 		return "", err
 	}
 	if path == "" {
+		runtime.LogInfo(a.ctx, "SaveFile: User cancelled dialog")
 		return "", nil
 	}
 
+	runtime.LogInfof(a.ctx, "SaveFile: Writing to file %s", path)
 	err = filesystem.WriteFile(path, content)
 	if err != nil {
 		return "", err

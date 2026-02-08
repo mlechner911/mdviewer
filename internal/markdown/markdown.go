@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/microcosm-cc/bluemonday"
+	mathjax "github.com/litao91/goldmark-mathjax"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
@@ -20,15 +21,20 @@ func NewRenderer() *Renderer {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
+			extension.Footnote,
+			extension.Typographer,
+			mathjax.Mathjax,
 			highlighting.NewHighlighting(
 				highlighting.WithStyle("github-dark"),
 			),
 		),
 	)
 
-	// Security-Policy: Erlaube Klassen für Chroma-Highlighting
+	// Security-Policy: Erlaube Klassen und Styles für Chroma-Highlighting und Mermaid
 	p := bluemonday.UGCPolicy()
-	p.AllowAttrs("class").OnElements("span", "code", "pre")
+	p.AllowAttrs("class").OnElements("span", "code", "pre", "div")
+	p.AllowAttrs("style").OnElements("span", "code", "pre")
+	p.AllowAttrs("id").OnElements("div")
 
 	return &Renderer{
 		md: md,

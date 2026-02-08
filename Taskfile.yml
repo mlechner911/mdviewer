@@ -8,7 +8,7 @@ tasks:
   dev:
     desc: Run wails dev with xvfb
     cmds:
-      - xvfb-run -a wails dev
+      - xvfb-run -a wails dev -devserver localhost:34117
 
   build:
     desc: Build the application
