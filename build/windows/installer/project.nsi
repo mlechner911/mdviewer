@@ -77,6 +77,19 @@ ShowInstDetails show # This will always show the installation details.
 
 Function .onInit
    !insertmacro wails.checkArchitecture
+
+   # Check for existing installation
+   ReadRegStr $0 HKLM "${UNINST_KEY_NAME}" "UninstallString"
+   StrCmp $0 "" done
+
+   MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
+   "${INFO_PRODUCTNAME} is already installed. $\n$\nClick `OK` to remove the previous version or `Cancel` to abort this installation." \
+   IDOK +1 IDCANCEL done
+
+   # If OK, we could run the uninstaller here or just continue and let the installer overwrite files.
+   # For now, we just warn and continue.
+   
+   done:
 FunctionEnd
 
 Section
