@@ -4,7 +4,6 @@ package markdown
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/formatters/html"
@@ -40,6 +39,7 @@ func NewRenderer() *Renderer {
 }
 
 // GitHubAlertTransformer handles GitHub-flavored Alerts: > [!NOTE]
+// It looks for specifically formatted markers at the beginning of blockquotes.
 type GitHubAlertTransformer struct{}
 
 func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
@@ -54,12 +54,22 @@ func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reade
 		}
 
 		p := bq.FirstChild().(*ast.Paragraph)
-		if p.ChildCount() == 0 || p.FirstChild().Kind() != ast.KindText {
-			return ast.WalkContinue, nil
+		
+		// GitHub alerts marker [!TYPE] can be split into multiple text nodes by Goldmark.
+		// We collect the first few text nodes to identify the marker.
+		var fullContent strings.Builder
+		for c := p.FirstChild(); c != nil; c = c.NextSibling() {
+			if t, ok := c.(*ast.Text); ok {
+				fullContent.Write(t.Segment.Value(reader.Source()))
+			} else {
+				break
+			}
+			if fullContent.Len() > 20 { // Markers are relatively short
+				break
+			}
 		}
 
-		t := p.FirstChild().(*ast.Text)
-		content := string(t.Segment.Value(reader.Source()))
+		content := fullContent.String()
 		trimmed := strings.TrimSpace(content)
 
 		alerts := []string{"[!NOTE]", "[!TIP]", "[!IMPORTANT]", "[!WARNING]", "[!CAUTION]"}
@@ -68,23 +78,30 @@ func (g *GitHubAlertTransformer) Transform(node *ast.Document, reader text.Reade
 				typeStr := strings.ToLower(strings.Trim(alert, "[!]"))
 				bq.SetAttributeString("class", []byte("markdown-alert markdown-alert-"+typeStr))
 				
-				// Calculate removal
-				idx := strings.Index(content, alert)
-				if idx != -1 {
-					offset := idx + len(alert)
-					// Skip potential newline or space after the marker
-					if offset < len(content) && (content[offset] == '\n' || content[offset] == ' ') {
-						offset++
-					}
-					
-					if offset < len(content) {
-						t.Segment = text.NewSegment(t.Segment.Start+offset, t.Segment.Stop)
+				// Remove the marker text from the AST nodes
+				remaining := len(alert) + strings.Index(content, alert)
+				// Skip potential trailing space or newline
+				if remaining < len(content) && (content[remaining] == '\n' || content[remaining] == ' ') {
+					remaining++
+				}
+
+				for c := p.FirstChild(); c != nil && remaining > 0; {
+					next := c.NextSibling()
+					if t, ok := c.(*ast.Text); ok {
+						valLen := len(t.Segment.Value(reader.Source()))
+						if valLen <= remaining {
+							remaining -= valLen
+							p.RemoveChild(p, c)
+						} else {
+							t.Segment = text.NewSegment(t.Segment.Start+remaining, t.Segment.Stop)
+							remaining = 0
+						}
 					} else {
-						t.Segment = text.NewSegment(t.Segment.Stop, t.Segment.Stop)
+						break
 					}
+					c = next
 				}
 				
-				fmt.Printf("[DEBUG] Detected Alert: %s on blockquote\n", typeStr)
 				return ast.WalkContinue, nil
 			}
 		}

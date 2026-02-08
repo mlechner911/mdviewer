@@ -44,12 +44,6 @@ func (a *App) RenderMarkdown(input string, theme string) string {
 		runtime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
 		return fmt.Sprintf("<p>Error rendering markdown: %v</p>", err)
 	}
-	// Log a snippet of the HTML to verify attributes/classes
-	if len(html) > 200 {
-		runtime.LogDebugf(a.ctx, "HTML Snippet: %s...", html[:200])
-	} else {
-		runtime.LogDebugf(a.ctx, "HTML: %s", html)
-	}
 	return html
 }
 
