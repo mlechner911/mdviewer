@@ -49,5 +49,17 @@ $$
 
 ---
 
+## Handy Reference
+Here's a quick reference table of useful editor commands and file features to try.
+
+| Action | How to use | Notes |
+| :--- | :--- | :--- |
+| Open file | File → Open or drag a \`.md\` onto the window | Supports local files via the native dialog or drag & drop |
+| Save file | File → Save | Uses native save dialog; exports to \`.md\` |
+| Export HTML | Click Export | Produces a standalone HTML with KaTeX and highlighting embedded |
+| Mermaid | Add a fenced block with \`\`\`mermaid\`\`\` | Live diagram rendering in the preview |
+| Math | Inline \`$...$\` or block \`$$ ... $$\` | Rendered by KaTeX in preview |
+
+
 Made with ❤️ — open an issue or contribute on GitHub.
 `;

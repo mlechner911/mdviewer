@@ -88,7 +88,7 @@ Function .onInit
 
    # If OK, we could run the uninstaller here or just continue and let the installer overwrite files.
    # For now, we just warn and continue.
-   
+
    done:
 FunctionEnd
 
@@ -107,6 +107,24 @@ Section
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
 
+    ; --- Associate .md files with this application (simple ProgID) ---
+    ; Create a ProgID like ${INFO_PROJECTNAME}.mdfile and point .md to it
+    WriteRegStr HKCR ".md" "" "${INFO_PROJECTNAME}.mdfile"
+    WriteRegStr HKCR "${INFO_PROJECTNAME}.mdfile" "" "${INFO_PRODUCTNAME} Markdown File"
+    WriteRegStr HKCR "${INFO_PROJECTNAME}.mdfile\\DefaultIcon" "" "$INSTDIR\\${PRODUCT_EXECUTABLE},0"
+    WriteRegStr HKCR "${INFO_PROJECTNAME}.mdfile\\shell\\open\\command" "" '"$INSTDIR\\${PRODUCT_EXECUTABLE}" "%1"'
+    ; Also associate common .markdown/.mdown extensions (optional)
+    WriteRegStr HKCR ".markdown" "" "${INFO_PROJECTNAME}.mdfile"
+    WriteRegStr HKCR ".mdown" "" "${INFO_PROJECTNAME}.mdfile"
+
+    ; Register application under Applications registry so it appears in "Open with" lists
+    WriteRegStr HKCR "Applications\\${PRODUCT_EXECUTABLE}\\shell\\open\\command" "" '"$INSTDIR\\${PRODUCT_EXECUTABLE}" "%1"'
+
+    ; Add per-user OpenWithProgids so the user can choose this app without system-wide keys
+    WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.md\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile" "" ""
+    WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.markdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile" "" ""
+    WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.mdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile" "" ""
+
     !insertmacro wails.writeUninstaller
 SectionEnd
 
@@ -122,6 +140,19 @@ Section "uninstall"
 
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
+
+    ; Remove our ProgID and extension associations created above. Note: this is simplistic
+    ; and will remove the keys even if another app set them after installation.
+    DeleteRegKey HKCR "${INFO_PROJECTNAME}.mdfile"
+    DeleteRegKey HKCR ".md"
+    DeleteRegKey HKCR ".markdown"
+    DeleteRegKey HKCR ".mdown"
+    ; Remove Applications entry
+    DeleteRegKey HKCR "Applications\\${PRODUCT_EXECUTABLE}"
+    ; Remove per-user OpenWithProgids entries
+    DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.md\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile"
+    DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.markdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile"
+    DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.mdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile"
 
     !insertmacro wails.deleteUninstaller
 SectionEnd

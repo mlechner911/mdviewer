@@ -4,7 +4,7 @@
    * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
    */
   import { onMount } from 'svelte';
-  import { EventsOn } from '../wailsjs/runtime/runtime.js';
+  import { EventsOn, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
   import Preview from './components/Preview.svelte';
   import { themes } from './themes';
@@ -27,6 +27,8 @@
   // State: Visual Preferences
   let currentPreviewTheme = themes[0]; // Active Markdown theme
   let fontSize: number = DEFAULTS.fontSize; // Active zoom level
+  // UI: transient drop/toast message
+  let dropMessage: string | null = null;
 
   // App Frame Theming (Toolbar/Editor frame)
   let appTheme: AppTheme_t = APP_THEME.DARK;
@@ -111,7 +113,7 @@
       // Extract current theme colors from the DOM for the export
       const previewEl = document.querySelector('.prose');
       const containerEl = previewEl?.parentElement;
-      
+
       let themeVars = "";
       if (previewEl && containerEl) {
         const pStyle = window.getComputedStyle(previewEl);
@@ -125,7 +127,7 @@
             --bg-color: ${cStyle.backgroundColor};
             --text-color: ${pStyle.color};
             --link-color: ${aStyle.color !== pStyle.color ? aStyle.color : (isDark ? '#58a6ff' : '#0969da')};
-            --border-color: ${isDark ? '#30363d' : '#dfe2e5'}; 
+            --border-color: ${isDark ? '#30363d' : '#dfe2e5'};
             --code-bg: ${codeStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' ? codeStyle.backgroundColor : (isDark ? '#161b22' : '#f6f8fa')};
             --alert-bg: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};
         }
@@ -149,16 +151,33 @@
         isReady = true;
 
         // Listen for Wails native Drag and Drop files
-        EventsOn("wails:file-drop", async (paths: string[]) => {
-          if (paths && paths.length > 0) {
-            try {
-              const content = await ReadFile(paths[0]);
-              markdown = content;
-            } catch (err) {
-              console.error("Failed to read dropped file:", err);
-            }
+        // Use the runtime OnFileDrop API which provides (x, y, paths)
+        OnFileDrop(async (x: number, y: number, paths: string[]) => {
+          if (!paths || paths.length === 0) return;
+          const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
+          const mdPath = paths.find(p => allowedExt.test(p));
+          if (!mdPath) {
+            console.warn('Ignored non-markdown file drop:', paths[0]);
+            dropMessage = 'Only .md files are accepted — drop ignored';
+            setTimeout(() => dropMessage = null, 3000);
+            return;
           }
-        });
+
+          try {
+            const content = await backend.readFile(mdPath);
+            if (content !== undefined && content !== null) {
+              markdown = content;
+              dropMessage = `Loaded ${mdPath.split(/[\\\\/]/).pop()}`;
+              setTimeout(() => dropMessage = null, 3000);
+            } else {
+              console.warn('No content returned for dropped file:', mdPath);
+            }
+          } catch (err) {
+            console.error("Failed to read dropped file:", err);
+            dropMessage = 'Failed to load dropped file';
+            setTimeout(() => dropMessage = null, 3000);
+          }
+        }, true);
 
         // Check for file passed via command line
         const initialContent = await backend.getInitialContent();
@@ -180,7 +199,7 @@
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => { if (appTheme === 'auto') updateEffectiveTheme(); };
     mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+    return () => { mediaQuery.removeEventListener('change', handler); OnFileDropOff(); };
   });
 
   $: if (appTheme) updateEffectiveTheme();
@@ -217,6 +236,10 @@
             <option value="en" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>EN</option>
             <option value="de" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>DE</option>
             <option value="es" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>ES</option>
+
+    {#if dropMessage}
+      <div class="drop-toast">{dropMessage}</div>
+    {/if}
             <option value="fr" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>FR</option>
           </select>
         </div>
