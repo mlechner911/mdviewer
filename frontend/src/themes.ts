@@ -1,13 +1,20 @@
+/**
+ * Theme defines the structural and visual properties for a preview style.
+ * It coordinates styles between the Go backend (Chroma) and the Frontend (Tailwind/Mermaid).
+ */
 export interface Theme {
-  id: string;
-  name: string;
-  chromaStyle: string; // The Go Chroma highlighter style
-  containerClass: string; // Background and text colors
-  proseClass: string; // Tailwind Typography classes
-  mermaidTheme: 'dark' | 'default' | 'neutral' | 'forest';
-  mermaidVars?: Record<string, string>;
+  id: string; // Internal identifier
+  name: string; // Display name in the UI
+  chromaStyle: string; // The specific style name used by the Go Chroma highlighter
+  containerClass: string; // Tailwind background and text color classes for the preview pane
+  proseClass: string; // Tailwind Typography classes (e.g., prose-invert)
+  mermaidTheme: 'dark' | 'default' | 'neutral' | 'forest'; // Built-in Mermaid.js theme identifier
+  mermaidVars?: Record<string, string>; // Custom CSS variables for fine-tuning Mermaid diagrams
 }
 
+/**
+ * themes is the centralized list of available presets for the Markdown preview.
+ */
 export const themes: Theme[] = [
   {
     id: 'dark',
@@ -15,7 +22,11 @@ export const themes: Theme[] = [
     chromaStyle: 'github-dark',
     containerClass: 'bg-slate-900 text-slate-100',
     proseClass: 'prose-invert',
-    mermaidTheme: 'dark'
+    mermaidTheme: 'dark',
+    mermaidVars: {
+      lineColor: '#94a3b8',
+      textColor: '#f1f5f9'
+    }
   },
   {
     id: 'light',
@@ -23,7 +34,11 @@ export const themes: Theme[] = [
     chromaStyle: 'github',
     containerClass: 'bg-white text-slate-900',
     proseClass: 'prose-slate',
-    mermaidTheme: 'default'
+    mermaidTheme: 'default',
+    mermaidVars: {
+      lineColor: '#334155',
+      textColor: '#0f172a'
+    }
   },
   {
     id: 'sepia',
@@ -38,7 +53,9 @@ export const themes: Theme[] = [
       primaryBorderColor: '#a89d85',
       lineColor: '#5b4636',
       secondaryColor: '#e4dcc7',
-      tertiaryColor: '#f4ecd8'
+      tertiaryColor: '#f4ecd8',
+      edgeLabelBackground: '#f4ecd8',
+      nodeBorder: '#a89d85'
     }
   },
   {
@@ -54,7 +71,8 @@ export const themes: Theme[] = [
       primaryBorderColor: '#000000',
       lineColor: '#000000',
       secondaryColor: '#eeeeee',
-      tertiaryColor: '#ffffff'
+      tertiaryColor: '#ffffff',
+      nodeBorder: '#000000'
     }
   }
 ];

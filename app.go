@@ -10,13 +10,14 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// App struct
+// App struct defines the main application state and dependencies.
+// It acts as the bridge between the Svelte frontend and the Go backend.
 type App struct {
 	ctx      context.Context
 	renderer *markdown.Renderer
 }
 
-// NewApp creates a new App application struct
+// NewApp creates a new App application struct and initializes the markdown renderer.
 func NewApp() *App {
 	return &App{
 		renderer: markdown.NewRenderer(),
@@ -24,17 +25,18 @@ func NewApp() *App {
 }
 
 // startup is called when the app starts. The context is saved
-// so we can call the runtime methods
+// so we can call the runtime methods (like logging and dialogs).
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// Greet returns a greeting for the given name
+// Greet returns a greeting for the given name (Legacy/Example function).
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-// RenderMarkdown converts markdown to HTML using the internal renderer
+// RenderMarkdown converts markdown string to sanitized HTML using the internal renderer.
+// It also takes a chromaStyle parameter to apply specific syntax highlighting colors.
 func (a *App) RenderMarkdown(input string, theme string) string {
 	runtime.LogDebugf(a.ctx, "Request: RenderMarkdown (Theme: %s)", theme)
 	html, err := a.renderer.Render(input, theme)
@@ -42,10 +44,17 @@ func (a *App) RenderMarkdown(input string, theme string) string {
 		runtime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
 		return fmt.Sprintf("<p>Error rendering markdown: %v</p>", err)
 	}
+	// Log a snippet of the HTML to verify attributes/classes
+	if len(html) > 200 {
+		runtime.LogDebugf(a.ctx, "HTML Snippet: %s...", html[:200])
+	} else {
+		runtime.LogDebugf(a.ctx, "HTML: %s", html)
+	}
 	return html
 }
 
-// GetStyleCSS returns the CSS for a specific syntax highlighting style
+// GetStyleCSS returns the raw CSS for a specific syntax highlighting style from Chroma.
+// This allows the frontend to inject highlighting styles dynamically.
 func (a *App) GetStyleCSS(style string) string {
 	css, err := a.renderer.GetStyleCSS(style)
 	if err != nil {
@@ -55,7 +64,7 @@ func (a *App) GetStyleCSS(style string) string {
 	return css
 }
 
-// OpenFile opens a file dialog and returns the content using internal filesystem package
+// OpenFile opens a native file dialog, reads the selected file, and returns its content.
 func (a *App) OpenFile() (string, error) {
 	runtime.LogInfo(a.ctx, "Request: OpenFile")
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
@@ -78,7 +87,7 @@ func (a *App) OpenFile() (string, error) {
 	return filesystem.ReadFile(path)
 }
 
-// SaveFile opens a save dialog and saves the content using internal filesystem package
+// SaveFile opens a native save dialog and saves the provided content to the selected path.
 func (a *App) SaveFile(content string) (string, error) {
 	runtime.LogInfo(a.ctx, "Request: SaveFile")
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{

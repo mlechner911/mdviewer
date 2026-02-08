@@ -2,9 +2,19 @@
 
 ## 1. Text Formatting
 **Bold Text**, *Italic Text*, ***Bold & Italic***, ~~Strikethrough~~.
-`Inline Code Block` and [Link to Google](https://google.com).
+`Inline Code Block` and [Link to Google](https://google.com). 🚀 :sparkles:
 
-> Blockquote: Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away.
+> [!NOTE]
+> This is a standard note for general information.
+
+> [!TIP]
+> Use emojis like :rocket: to make your markdown more expressive!
+
+> [!WARNING]
+> External links will now open in your system browser.
+
+> [!CAUTION]
+> Be careful with syntax errors in Mermaid diagrams.
 
 ## 2. Lists
 ### Unordered
