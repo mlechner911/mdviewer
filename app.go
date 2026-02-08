@@ -45,6 +45,16 @@ func (a *App) RenderMarkdown(input string, theme string) string {
 	return html
 }
 
+// GetStyleCSS returns the CSS for a specific syntax highlighting style
+func (a *App) GetStyleCSS(style string) string {
+	css, err := a.renderer.GetStyleCSS(style)
+	if err != nil {
+		runtime.LogErrorf(a.ctx, "Failed to get CSS for style %s: %v", style, err)
+		return ""
+	}
+	return css
+}
+
 // OpenFile opens a file dialog and returns the content using internal filesystem package
 func (a *App) OpenFile() (string, error) {
 	runtime.LogInfo(a.ctx, "Request: OpenFile")

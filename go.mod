@@ -3,6 +3,7 @@ module md-viewer
 go 1.23
 
 require (
+	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/wailsapp/wails/v2 v2.11.0
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect

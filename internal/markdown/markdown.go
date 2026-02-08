@@ -3,6 +3,8 @@ package markdown
 import (
 	"bytes"
 
+	"github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/microcosm-cc/bluemonday"
 	mathjax "github.com/litao91/goldmark-mathjax"
 	"github.com/yuin/goldmark"
@@ -27,11 +29,26 @@ func NewRenderer() *Renderer {
 	}
 }
 
+// GetStyleCSS returns the CSS for a given Chroma style
+func (r *Renderer) GetStyleCSS(styleName string) (string, error) {
+	s := styles.Get(styleName)
+	if s == nil {
+		s = styles.Fallback
+	}
+	
+	formatter := html.New(html.WithClasses(true))
+	var buf bytes.Buffer
+	err := formatter.WriteCSS(&buf, s)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 // Render converts markdown string to sanitized HTML using a specific Chroma style
 func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
 	var buf bytes.Buffer
 	
-	// Default to github-dark if empty
 	if chromaStyle == "" {
 		chromaStyle = "github-dark"
 	}
@@ -41,9 +58,12 @@ func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
 			extension.GFM,
 			extension.Footnote,
 			extension.Typographer,
-			mathjax.Mathjax,
+			mathjax.MathJax,
 			highlighting.NewHighlighting(
 				highlighting.WithStyle(chromaStyle),
+				highlighting.WithFormatOptions(
+					html.WithClasses(true),
+				),
 			),
 		),
 	)

@@ -7,6 +7,7 @@
   import type { Theme } from '../themes';
 
   export let html: string;
+  export let css: string = "";
   export let theme: Theme;
   export let fontSize: number = 100;
 
@@ -32,7 +33,8 @@
     mermaid.initialize({
       startOnLoad: false,
       theme: theme.mermaidTheme,
-      themeVariables: theme.mermaidVars || {}
+      themeVariables: theme.mermaidVars || {},
+      parseError: () => {} // Suppress console spam
     });
 
     try {
@@ -66,11 +68,13 @@
   });
 </script>
 
-<div 
+{@html '<sty' + 'le>' + css + '</sty' + 'le>'}
+
+<div
   bind:this={previewContainer}
   class="flex-1 overflow-y-auto p-8 transition-colors duration-300 {theme.containerClass}"
 >
-  <article 
+  <article
     class="prose lg:prose-xl max-w-none {theme.proseClass}"
     style="font-size: {fontSize}%;"
   >
@@ -80,11 +84,11 @@
 
 <style>
   :global(.prose pre) {
-    background-color: #1e1e1e !important;
     border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto;
   }
-  
-  /* Reset code blocks for monochrome theme specifically if needed */
+
   :global(.monochrome .prose pre) {
     background-color: #f3f4f6 !important;
     border: 1px solid #000;
@@ -101,11 +105,19 @@
     display: flex;
     justify-content: center;
   }
-  
+
+  /* Style Mermaid Error SVGs specifically */
+  :global(.mermaid svg[id^="mermaid-error"]) {
+    border: 3px solid #ef4444 !important;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
   :global(.bg-white .mermaid) {
     background: #f9fafb;
   }
-  
+
   :global(.bg-slate-900 .mermaid) {
     background: #1e293b;
   }
@@ -117,5 +129,20 @@
   :global(.monochrome .mermaid) {
     background: #ffffff;
     border: 1px solid #000;
+  }
+
+  /* Ensure highlighted code is visible in light preview themes */
+  :global(.bg-white pre),
+  :global(.bg-white code),
+  :global(.prose-slate pre),
+  :global(.prose-slate code),
+  :global(.bg-\[\#f4ecd8\] pre),
+  :global(.bg-\[\#f4ecd8\] code) {
+    color: #0f172a !important;
+  }
+
+  /* Make inline code inherit readable color */
+  :global(.prose code) {
+    color: inherit;
   }
 </style>
