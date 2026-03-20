@@ -17,12 +17,15 @@ jobs:
           - platform: 'linux/amd64'
             os: 'ubuntu-22.04'
             build-cmd: 'wails build -platform linux/amd64'
+            artifact-name: 'linux-amd64'
           - platform: 'windows/amd64'
             os: 'windows-latest'
             build-cmd: 'wails build -platform windows/amd64 -nsis'
+            artifact-name: 'windows-amd64'
           - platform: 'darwin/arm64'
             os: 'macos-latest'
             build-cmd: 'wails build -platform darwin/arm64'
+            artifact-name: 'macos-arm64'
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -60,7 +63,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: md-viewer-${{ matrix.platform }}
+          name: md-viewer-${{ matrix.artifact-name }}
           path: |
             build/bin/*.exe
             build/bin/md-viewer
