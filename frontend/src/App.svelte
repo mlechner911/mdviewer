@@ -368,7 +368,7 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.5.7</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.5.8</span>
     </div>
   </div>
 
