@@ -39,6 +39,26 @@ This document provides technical information for developers who wish to build, m
 - `/frontend/src/themes.ts`: Centralized theme definitions.
 - `/frontend/src/i18n.ts`: Translation dictionary and logic.
 
+## ⚙️ Configuration & Security
+
+MD Viewer persists user settings and security whitelists in a `config.json` file. This file is stored in the system's standard application configuration directory:
+
+- **Linux**: `~/.config/md-viewer/config.json`
+- **macOS**: `~/Library/Application Support/md-viewer/config.json`
+- **Windows**: `%AppData%\md-viewer\config.json`
+
+### Structure
+```json
+{
+  "whitelisted_paths": [
+    "/absolute/path/to/directory"
+  ],
+  "whitelisted_urls": [
+    "example.com"
+  ]
+}
+```
+
 ## 🤖 CI/CD
 
 The project uses GitHub Actions for multi-platform builds. The workflow is defined in `.github/workflows/release.yml`. It automatically generates:
