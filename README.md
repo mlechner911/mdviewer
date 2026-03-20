@@ -1,11 +1,12 @@
 # MD Viewer
 
-A modern, high-performance Markdown Viewer and Editor built with **Wails**, **Go**, and **Svelte**.
+A modern, high-performance Markdown Viewer and Editor for windows, linux and macOS.
+Designed for speed, security, and a polished user experience.
 
 Note: there are other really good markdown viewers available with some enhanced features like pdf outrput etc. This is not the idea behind this viewer. I want a quick tool - where i can
 preview an md file or drop it on an icon  to see the preview.
 
-If you neeed pdf - you can export to html and print to pdf.
+If you neeed pdf - you can export to html and print to pdf. (there is now also a print button in the app, which opens the system print dialog - where you can select "print to pdf" as well)
 
 
 

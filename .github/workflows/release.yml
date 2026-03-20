@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     strategy:
@@ -37,7 +40,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -66,10 +69,11 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: md-viewer-${{ matrix.platform }}
+          name: md-viewer-${{ matrix.os }}
           path: |
             ${{ matrix.artifact-path }}
             build/bin/*.zip
+          if-no-files-found: error
 
   release:
     needs: build
@@ -79,13 +83,15 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            **/*.exe
-            **/*.zip
-            **/md-viewer
+            artifacts/**/*.exe
+            artifacts/**/*.zip
+            artifacts/**/md-viewer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
