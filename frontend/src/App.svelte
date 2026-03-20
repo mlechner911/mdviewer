@@ -177,7 +177,7 @@
             dropMessage = 'Failed to load dropped file';
             setTimeout(() => dropMessage = null, 3000);
           }
-        }, true);
+        }, false);
 
         // Check for file passed via command line
         const initialContent = await backend.getInitialContent();
@@ -309,7 +309,7 @@
 </main>
 
 <style>
-  :global(body) { user-select: none; margin: 0; }
+  :global(body) { margin: 0; }
   select option { background-color: white; color: black; }
   :global(.bg-slate-900) select option, :global(.bg-slate-800) select option { background-color: #1e293b; color: white; }
 </style>

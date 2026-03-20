@@ -86,7 +86,7 @@ func (a *App) OpenFile() (string, error) {
 		return "", err
 	}
 	if path == "" {
-		return "", nil
+		return "", fmt.Errorf("user cancelled selection")
 	}
 	return filesystem.ReadFile(path)
 }
