@@ -30,7 +30,7 @@
   // Set initial default markdown
   const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
 
-  function createNewTab(title = "Untitled", content = "", path: string | null = null): Tab {
+  function createNewTab(title = $t('untitled'), content = "", path: string | null = null): Tab {
     return {
       id: Math.random().toString(36).substring(2, 11),
       title,
@@ -77,16 +77,12 @@
 
   // Mark tab as dirty when content changes via binding
   $: if (tabs[activeTabIndex] && tabs[activeTabIndex].content) {
-      // This reactive block triggers on any content change in the active tab
-      // We don't want to mark it dirty on the very first load, 
-      // but Svelte handles the initial assignment as a change.
-      // For simplicity, we just track it.
+      // Handled in onContentInput
   }
 
   function onContentInput() {
     if (tabs[activeTabIndex]) {
         tabs[activeTabIndex].isDirty = true;
-        // Trigger debounced update via reactive markdown dependency
     }
   }
 
@@ -241,7 +237,7 @@
     
     // Wait for Svelte to update DOM with monochrome theme
     await tick();
-    // Small delay to ensure Mermaid/Katex re-renders if needed (though they react to theme changes)
+    // Small delay to ensure Mermaid/Katex re-renders if needed
     setTimeout(() => {
         window.print();
         isPrinting = false;
@@ -282,7 +278,7 @@
             }
           }
           if (loadedCount > 0) {
-            dropMessage = `Loaded ${loadedCount} files`;
+            dropMessage = $t('filesLoaded', loadedCount);
             setTimeout(() => dropMessage = null, 3000);
           }
         }, false);
@@ -341,7 +337,7 @@
       <button on:click={handleSave} title={$t('save')} class="p-2 rounded transition-colors {buttonClass}">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
       </button>
-      <button on:click={addNewTab} title="New Tab" class="p-2 rounded transition-colors {buttonClass}">
+      <button on:click={addNewTab} title={$t('newTab')} class="p-2 rounded transition-colors {buttonClass}">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
     </div>
@@ -372,7 +368,7 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.5.5</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.5.6</span>
     </div>
   </div>
 
@@ -427,14 +423,14 @@
             <button 
                 on:click={() => isEditorHidden = !isEditorHidden} 
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isEditorHidden ? focusButtonClass : ''}"
-                title={isEditorHidden ? "Show Editor" : "Hide Editor"}
+                title={isEditorHidden ? $t('showEditor') : $t('hideEditor')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
             </button>
             <button 
                 on:click={() => isFocusMode = !isFocusMode} 
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isFocusMode ? focusButtonClass : ''}"
-                title={isFocusMode ? "Exit Focus Mode" : "Focus Mode"}
+                title={isFocusMode ? $t('exitFocusMode') : $t('focusMode')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
             </button>
@@ -443,7 +439,7 @@
         <div class="text-xs font-bold uppercase tracking-wider opacity-50">{$t('preview')}</div>
         <div class="flex-1"></div>
 
-        <button on:click={handlePrint} title="Print / PDF" class="p-1 rounded transition-colors {buttonClass}">
+        <button on:click={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
 
@@ -454,7 +450,7 @@
         <div class="h-4 w-px {dividerClass}"></div>
 
         <div class="flex gap-2 items-center">
-          <span class="text-[10px] uppercase opacity-60 font-bold">Theme:</span>
+          <span class="text-[10px] uppercase opacity-60 font-bold">{$t('themeLabel')}</span>
           <select bind:value={currentPreviewTheme} class="text-xs rounded border-none py-0.5 cursor-pointer bg-transparent focus:ring-1 focus:ring-blue-500">
             {#each themes as theme}
               <option value={theme}>{theme.name}</option>
@@ -477,13 +473,13 @@
   {#if !isPrinting}
   <div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} print:hidden">
     <div class="flex gap-4">
-        <span>{wordCount} words</span>
-        <span>{charCount} characters</span>
+        <span>{wordCount} {$t('words')}</span>
+        <span>{charCount} {$t('characters')}</span>
     </div>
     <div class="flex-1"></div>
-    <div>Approx. {readingTime} min read</div>
+    <div>{$t('readingTime', readingTime)}</div>
     <div class="h-3 w-px {dividerClass}"></div>
-    <div class="uppercase tracking-tighter opacity-80">{activeTab?.path || 'Untitled'}</div>
+    <div class="uppercase tracking-tighter opacity-80">{activeTab?.path || $t('untitled')}</div>
   </div>
   {/if}
 

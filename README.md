@@ -1,63 +1,47 @@
 # MD Viewer
 
-A modern, high-performance Markdown Viewer and Editor for windows, linux and macOS.
-Designed for speed, security, and a polished user experience.
+A modern, high-performance Markdown Viewer and Editor for **Windows**, **macOS**, and **Linux**.
+Designed for speed, simplicity, and a polished user experience.
 
-Note: there are other really good markdown viewers available with some enhanced features like pdf outrput etc. This is not the idea behind this viewer. I want a quick tool - where i can
-preview an md file or drop it on an icon  to see the preview.
+MD Viewer is a quick, native tool for previewing and editing Markdown files. Whether you are a developer, a technical writer, or someone who just needs to read a README, MD Viewer provides a clean, distraction-free environment.
 
-If you neeed pdf - you can export to html and print to pdf. (there is now also a print button in the app, which opens the system print dialog - where you can select "print to pdf" as well)
+## 🚀 Key Features
 
+- **Cross-Platform**: Consistent experience across Windows, macOS, and Linux.
+- **Multi-File Support**: Work with multiple documents simultaneously using a clean tabbed interface.
+- **Real-time Rendering**: See your changes instantly as you type.
+- **Comprehensive Markdown Support**:
+  - **GFM**: Tables and interactive tasklists.
+  - **GitHub-style Alerts**: High-visibility notes, tips, and warnings.
+  - **Math**: Support for KaTeX mathematical expressions.
+  - **Diagrams**: Integrated Mermaid.js support for flowcharts and diagrams.
+- **Dual-Theming**:
+  - **App Frame**: Choose between Dark, Light, or Auto modes for the editor.
+  - **Preview**: High-quality preview styles including Dark, Light, Sepia, and Monochrome.
+- **Focus Mode**: Hide everything except the content for a true distraction-free experience.
+- **Print & Export**: One-click "Print to PDF" or export to standalone HTML.
+- **Multilingual (i18n)**: Native support for English, German, Spanish, and French.
 
+## 📥 Installation
 
-## 🚀 Features
+The easiest way to get MD Viewer is to download the latest version from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page.
 
-- **Real-time Rendering**: Instant preview as you type with debounced updates for smooth performance.
-- **Advanced Markdown**:
-  - GFM Support (Tables, Tasklists).
-  - GitHub-style Alerts (`> [!NOTE]`, `[!TIP]`, etc.).
-  - Mathematical Expressions (KaTeX integration).
-  - Diagrams (Mermaid.js support with theme-aware styling).
-  - Emojis (Shortcode support like `:rocket:`).
-- **Dual-Theming System**:
-  - **App Frame**: Independent Light/Dark/Auto modes for the editor and toolbar.
-  - **Preview**: Customizable styles including Dark, Light, Sepia, and Monochrome.
-- **Professional UI**:
-  - Resizable split-pane layout.
-  - Icon-based toolbar with internationalized tooltips.
-  - Integrated Zoom/Font-size control for the preview pane.
-- **Internationalization (i18n)**: Support for English, German, Spanish, and French.
-- **Native Integration**: System-native file dialogs and external link handling.
+### Windows
+1. Download `md-viewer-installer.exe`.
+2. Run the installer to set up MD Viewer on your system.
 
-## 🛠 Tech Stack
+### macOS
+1. Download `md-viewer-mac.zip`.
+2. Extract the ZIP and move `MD Viewer.app` to your `Applications` folder.
 
-- **Backend**: Go 1.23+
-  - [Wails v2](https://wails.io/)
-  - [Goldmark](https://github.com/yuin/goldmark) (with Emoji, Math, and custom Alert extensions)
-  - [Chroma](https://github.com/alecthomas/chroma) (Class-based syntax highlighting)
-- **Frontend**: Svelte 3 + TypeScript
-  - [Tailwind CSS v3](https://tailwindcss.com/)
-  - [KaTeX](https://katex.org/)
-  - [Mermaid.js](https://mermaid.js.org/)
-
-## 👨‍💻 Development
-
-### Task Runner
-
-| Command | Description |
-|---------|-------------|
-| `task install` | Installs Go and NPM dependencies. |
-| `task dev` | Runs the app in development mode (remote-ready with `xvfb-run`). |
-| `task build` | Compiles a production-ready binary for the current platform. |
-
-## 🏗 Project Structure
-
-- `/internal/markdown`: Core rendering logic and Goldmark configuration.
-- `/internal/filesystem`: Native file I/O utilities.
-- `/frontend/src/components/Preview.svelte`: Complex rendering logic (KaTeX/Mermaid).
-- `/frontend/src/themes.ts`: Centralized theme definitions.
-- `/frontend/src/i18n.ts`: Translation dictionary and logic.
+### Linux
+1. Download the `md-viewer` binary.
+2. Grant execution permissions: `chmod +x md-viewer`.
+3. Run it directly or add it to your path.
 
 ## 📄 License
 
 MIT License - Copyright (c) 2026 Michael Lechner
+
+---
+*For technical details, build instructions, and contribution guidelines, see **[DEVELOPER.md](./DEVELOPER.md)**.*
