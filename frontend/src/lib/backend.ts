@@ -1,5 +1,20 @@
 // Helper wrappers for Wails runtime calls and graceful fallbacks for dev (Vite) mode
-import { GetStyleCSS, RenderMarkdown, OpenFile, SaveFile, GetInitialContent, ReadFile, ExportHTML, GetFileTitle } from '../../wailsjs/go/main/App.js'
+import { 
+  GetStyleCSS, 
+  RenderMarkdown, 
+  OpenFile, 
+  SaveFile, 
+  GetInitialContent, 
+  ReadFile, 
+  ExportHTML, 
+  GetFileTitle,
+  IsPathAllowed,
+  IsURLAllowed,
+  AddPathToWhitelist,
+  AddURLToWhitelist,
+  GetParentDir,
+  ResolveRelativePath
+} from '../../wailsjs/go/main/App.js'
 
 export interface FileResult {
   path: string;
@@ -67,4 +82,35 @@ export async function getInitialContent(): Promise<FileResult | undefined> {
 export async function readFile(path: string): Promise<string | undefined> {
   if (!isWailsReady()) return undefined;
   try { return await ReadFile(path); } catch (err) { console.error('readFile failed:', err); return undefined; }
+}
+
+// Security Whitelist Bindings
+export async function isPathAllowed(path: string): Promise<boolean> {
+  if (!isWailsReady()) return true;
+  return await IsPathAllowed(path);
+}
+
+export async function isURLAllowed(url: string): Promise<boolean> {
+  if (!isWailsReady()) return true;
+  return await IsURLAllowed(url);
+}
+
+export async function addPathToWhitelist(path: string): Promise<void> {
+  if (!isWailsReady()) return;
+  await AddPathToWhitelist(path);
+}
+
+export async function addURLToWhitelist(url: string): Promise<void> {
+  if (!isWailsReady()) return;
+  await AddURLToWhitelist(url);
+}
+
+export async function getParentDir(path: string): Promise<string> {
+  if (!isWailsReady()) return "";
+  return await GetParentDir(path);
+}
+
+export async function resolveRelativePath(baseDir: string, relPath: string): Promise<string> {
+  if (!isWailsReady()) return relPath;
+  return await ResolveRelativePath(baseDir, relPath);
 }

@@ -60,11 +60,17 @@ jobs:
       - name: Build App
         run: ${{ matrix.build-cmd }}
 
+      - name: Prepare Linux Artifact
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          mv build/bin/md-viewer build/bin/md-viewer-linux-amd64
+          chmod +x build/bin/md-viewer-linux-amd64
+
       - name: Package macOS
         if: matrix.os == 'macos-latest'
         run: |
           cd build/bin
-          zip -r md-viewer-mac-arm64.zip md-viewer.app
+          zip -r md-viewer-macos-arm64.zip md-viewer.app
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -72,7 +78,7 @@ jobs:
           name: md-viewer-${{ matrix.artifact-name }}
           path: |
             build/bin/*.exe
-            build/bin/md-viewer
+            build/bin/md-viewer-linux-amd64
             build/bin/*.zip
           if-no-files-found: error
 
@@ -93,6 +99,6 @@ jobs:
           files: |
             artifacts/**/*.exe
             artifacts/**/*.zip
-            artifacts/**/md-viewer
+            artifacts/**/md-viewer-linux-amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

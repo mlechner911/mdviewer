@@ -40,7 +40,13 @@ export const translations: Record<string, any> = {
     characters: 'characters',
     readingTime: 'Approx. %s min read',
     themeLabel: 'Theme:',
-    filesLoaded: 'Loaded %s files'
+    filesLoaded: 'Loaded %s files',
+    securityWarningPath: 'Security Permission Required',
+    securityDescPath: 'This document is trying to access a file in a directory that is not whitelisted. Do you want to allow access to this directory?',
+    securityWarningURL: 'External Content Request',
+    securityDescURL: 'This document is trying to load content from an external website. Do you want to allow requests to this domain?',
+    allow: 'Allow',
+    deny: 'Deny'
   },
   de: {
     open: 'Öffnen',
@@ -66,7 +72,13 @@ export const translations: Record<string, any> = {
     characters: 'Zeichen',
     readingTime: 'Ca. %s Min. Lesezeit',
     themeLabel: 'Design:',
-    filesLoaded: '%s Dateien geladen'
+    filesLoaded: '%s Dateien geladen',
+    securityWarningPath: 'Sicherheitsfreigabe erforderlich',
+    securityDescPath: 'Dieses Dokument versucht, auf eine Datei in einem Verzeichnis zuzugreifen, das nicht auf der Whitelist steht. Möchten Sie den Zugriff auf dieses Verzeichnis erlauben?',
+    securityWarningURL: 'Externe Inhaltsanfrage',
+    securityDescURL: 'Dieses Dokument versucht, Inhalte von einer externen Website zu laden. Möchten Sie Anfragen an diese Domain erlauben?',
+    allow: 'Erlauben',
+    deny: 'Ablehnen'
   },
   es: {
     open: 'Abrir',
@@ -92,7 +104,13 @@ export const translations: Record<string, any> = {
     characters: 'caracteres',
     readingTime: 'Aprox. %s min de lectura',
     themeLabel: 'Tema:',
-    filesLoaded: '%s archivos cargados'
+    filesLoaded: '%s archivos cargados',
+    securityWarningPath: 'Permiso de seguridad requerido',
+    securityDescPath: 'Este documento intenta acceder a un archivo en un directorio que no está en la lista blanca. ¿Desea permitir el acceso a este directorio?',
+    securityWarningURL: 'Solicitud de contenido externo',
+    securityDescURL: 'Este documento intenta cargar contenido de un sitio web externo. ¿Desea permitir solicitudes a este dominio?',
+    allow: 'Permitir',
+    deny: 'Denegar'
   },
   fr: {
     open: 'Ouvrir',
@@ -118,7 +136,13 @@ export const translations: Record<string, any> = {
     characters: 'caractères',
     readingTime: 'Environ %s min de lecture',
     themeLabel: 'Thème :',
-    filesLoaded: '%s fichiers chargés'
+    filesLoaded: '%s fichiers chargés',
+    securityWarningPath: 'Autorisation de sécurité requise',
+    securityDescPath: 'Ce document tente d\'accéder à un fichier dans un répertoire qui n\'est pas sur liste blanche. Voulez-vous autoriser l\'accès à ce répertoire ?',
+    securityWarningURL: 'Demande de contenu externe',
+    securityDescURL: 'Ce document tente de charger du contenu à partir d\'un site Web externe. Voulez-vous autoriser les requêtes vers ce domaine ?',
+    allow: 'Autoriser',
+    deny: 'Refuser'
   }
 };
 

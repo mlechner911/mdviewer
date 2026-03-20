@@ -2,13 +2,13 @@
   /**
    * Main Application component for MD Viewer.
    * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
-   * Now supports multiple open files via a Tab interface.
-   * Features: Word count, Focus Mode, Print to PDF.
+   * Now supports multiple open files, automatic language detection, and security whitelisting.
    */
   import { onMount, tick } from 'svelte';
   import { EventsOn, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
   import Preview from './components/Preview.svelte';
+  import WhitelistModal from './components/WhitelistModal.svelte';
   import { themes } from './themes';
   import { t, locale } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
@@ -49,7 +49,6 @@
   function handleCloseTab(index: number, event?: MouseEvent) {
     if (event) event.stopPropagation();
     
-    // If it's the last tab, we might want to keep one empty one or just close
     if (tabs.length === 1) {
         tabs = [createNewTab($t('untitled'), defaultMarkdown())];
         activeTabIndex = 0;
@@ -67,7 +66,6 @@
   }
 
   // Explicit reactive markdown for the editor and preview
-  // We use this to ensure changes in tabs[activeTabIndex].content trigger updates
   $: markdown = tabs[activeTabIndex]?.content || "";
   $: activeTab = tabs[activeTabIndex] || null;
 
@@ -79,7 +77,6 @@
   function onContentInput() {
     if (tabs[activeTabIndex]) {
         tabs[activeTabIndex].isDirty = true;
-        // Svelte binding bind:value={tabs[activeTabIndex].content} handles the data update
     }
   }
 
@@ -88,9 +85,8 @@
   let highlightingCSS: string = "";
 
   // State: Visual Preferences
-  let currentPreviewTheme = themes[0]; // Active Markdown theme
-  let fontSize: number = DEFAULTS.fontSize; // Active zoom level
-  // UI: transient drop/toast message
+  let currentPreviewTheme = themes[0];
+  let fontSize: number = DEFAULTS.fontSize;
   let dropMessage: string | null = null;
 
   // Feature 7: Focus Mode & Editor Toggle
@@ -100,16 +96,49 @@
   // Feature 5: Print State
   let isPrinting = false;
 
-  // App Frame Theming (Toolbar/Editor frame)
+  // Security: Whitelist Modal State
+  let showSecurityModal = false;
+  let securityType: 'path' | 'url' = 'path';
+  let securityResource = "";
+  let pendingSecurityResolve: (() => void) | null = null;
+
+  async function handleSecurityRequest(event: CustomEvent) {
+    securityType = event.detail.type;
+    securityResource = event.detail.resource;
+    showSecurityModal = true;
+  }
+
+  async function confirmSecurityRequest() {
+    if (securityType === 'path') {
+      await backend.addPathToWhitelist(securityResource);
+    } else {
+      await backend.addURLToWhitelist(securityResource);
+    }
+    showSecurityModal = false;
+    // Trigger re-render to load now-authorized resources
+    debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
+  }
+
+  async function handleOpenExternalMD(event: CustomEvent) {
+    const path = event.detail.path;
+    try {
+      const content = await backend.readFile(path);
+      if (content !== undefined) {
+        const title = await backend.getFileTitle(path);
+        const newTab = createNewTab(title, content, path);
+        tabs = [...tabs, newTab];
+        activeTabIndex = tabs.length - 1;
+      }
+    } catch (err) {
+      console.error("Failed to open linked markdown:", err);
+    }
+  }
+
+  // App Frame Theming
   let appTheme: AppTheme_t = APP_THEME.DARK;
   let effectiveAppTheme: 'dark' | 'light' = APP_THEME.DARK as 'dark';
 
-  // Initialization flag
   let isReady = false;
-
-  /**
-   * checkWailsReady verifies if the Wails 'go' object is available on window.
-   */
   const checkWailsReady = backend.isWailsReady;
 
   function updateEffectiveTheme() {
@@ -126,7 +155,6 @@
     else appTheme = APP_THEME.DARK;
   }
 
-  // Layout: Resizable Split Panes
   let splitWidth: number = 50;
   let isResizing = false;
 
@@ -139,7 +167,6 @@
     if (splitWidth > 90) splitWidth = 90;
   }
 
-  // Engine: Debounced Rendering
   let timeout: ReturnType<typeof setTimeout>;
 
   function debouncedUpdate(value: string, themeStyle: string) {
@@ -163,7 +190,6 @@
     }
   }
 
-  // Native Bindings: File Operations
   async function handleOpen() {
     if (!isReady || !checkWailsReady()) return;
     try {
@@ -173,6 +199,9 @@
         const newTab = createNewTab(title, result.content, result.path);
         tabs = [...tabs, newTab];
         activeTabIndex = tabs.length - 1;
+        // Auto-whitelist the directory of the opened file
+        const parentDir = await backend.getParentDir(result.path);
+        await backend.addPathToWhitelist(parentDir);
       }
     } catch (err) { console.error("Failed to open file:", err); }
   }
@@ -186,7 +215,9 @@
         tabs[activeTabIndex].path = path;
         tabs[activeTabIndex].title = title;
         tabs[activeTabIndex].isDirty = false;
-        tabs = [...tabs]; // trigger reactivity
+        tabs = [...tabs];
+        const parentDir = await backend.getParentDir(path);
+        await backend.addPathToWhitelist(parentDir);
       }
     } catch (err) { console.error("Failed to save file:", err); }
   }
@@ -194,10 +225,8 @@
   async function handleExport() {
     if (!isReady || !checkWailsReady()) return;
     try {
-      // Extract current theme colors from the DOM for the export
       const previewEl = document.querySelector('.prose');
       const containerEl = previewEl?.parentElement;
-
       let themeVars = "";
       if (previewEl && containerEl) {
         const pStyle = window.getComputedStyle(previewEl);
@@ -205,7 +234,6 @@
         const aStyle = window.getComputedStyle(previewEl.querySelector('a') || previewEl);
         const codeStyle = window.getComputedStyle(previewEl.querySelector('code') || previewEl);
         const isDark = effectiveAppTheme === 'dark' || currentPreviewTheme.id === 'dark';
-
         themeVars = `
         :root {
             --bg-color: ${cStyle.backgroundColor};
@@ -217,24 +245,18 @@
         }
         `;
       }
-
       await backend.exportHTML(htmlContent, themeVars + highlightingCSS);
     } catch (err) {
       console.error("Failed to export HTML:", err);
     }
   }
 
-  // Feature 5: Print to PDF
   async function handlePrint() {
     const originalTheme = currentPreviewTheme;
     const monochromeTheme = themes.find(t => t.id === 'monochrome') || originalTheme;
-    
     isPrinting = true;
     currentPreviewTheme = monochromeTheme;
-    
-    // Wait for Svelte to update DOM with monochrome theme
     await tick();
-    // Small delay to ensure Mermaid/Katex re-renders if needed
     setTimeout(() => {
         window.print();
         isPrinting = false;
@@ -246,17 +268,13 @@
     fontSize = Math.min(Math.max(fontSize + delta, 50), 200);
   }
 
-  // Lifecycle & Reactivity
   onMount(() => {
     const init = async () => {
       if (checkWailsReady()) {
         isReady = true;
-
-        // Listen for Wails native Drag and Drop files
         OnFileDrop(async (x: number, y: number, paths: string[]) => {
           if (!paths || paths.length === 0) return;
           const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
-          
           let loadedCount = 0;
           for (const path of paths) {
             if (allowedExt.test(path)) {
@@ -268,6 +286,8 @@
                   tabs = [...tabs, newTab];
                   activeTabIndex = tabs.length - 1;
                   loadedCount++;
+                  const parentDir = await backend.getParentDir(path);
+                  await backend.addPathToWhitelist(parentDir);
                 }
               } catch (err) {
                 console.error("Failed to read dropped file:", err);
@@ -280,23 +300,22 @@
           }
         }, false);
 
-        // Check for file passed via command line
         const result = await backend.getInitialContent();
         if (result) {
           const title = await backend.getFileTitle(result.path);
           tabs = [createNewTab(title, result.content, result.path)];
+          const parentDir = await backend.getParentDir(result.path);
+          await backend.addPathToWhitelist(parentDir);
         } else {
           tabs = [createNewTab($t('untitled'), defaultMarkdown())];
         }
         activeTabIndex = 0;
-
         updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
       } else {
         setTimeout(init, 50);
       }
     };
-
     init();
     updateEffectiveTheme();
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -323,8 +342,16 @@
 
 <svelte:window on:mousemove={onMouseMove} on:mouseup={stopResizing} />
 
+<WhitelistModal 
+  show={showSecurityModal} 
+  type={securityType} 
+  resource={securityResource} 
+  theme={effectiveAppTheme}
+  onConfirm={confirmSecurityRequest}
+  onCancel={() => showSecurityModal = false}
+/>
+
 <main class="flex h-screen w-full overflow-hidden flex-col select-none {isPrinting ? 'is-printing' : ''} {effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
-  <!-- Top Navigation / Toolbar -->
   {#if !isFocusMode && !isPrinting}
   <div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass} print:hidden">
     <div class="flex gap-2">
@@ -338,21 +365,17 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
     </div>
-
     <div class="flex-1"></div>
-
     <div class="flex items-center gap-4">
         <div class="flex items-center">
           <select bind:value={$locale} class="text-[10px] font-bold uppercase rounded border-none py-1 px-2 cursor-pointer bg-transparent focus:ring-1 focus:ring-blue-500 {effectiveAppTheme === 'dark' ? 'text-slate-100' : 'text-slate-900'}">
-            <option value="en" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>EN</option>
-            <option value="de" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>DE</option>
-            <option value="es" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>ES</option>
-            <option value="fr" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>FR</option>
+            <option value="en">EN</option>
+            <option value="de">DE</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
           </select>
         </div>
-
         <div class="h-6 w-px {dividerClass}"></div>
-
         <button on:click={toggleAppTheme} title={$t('toggleTheme')} class="p-1.5 rounded-full transition-colors {buttonClass}">
             {#if appTheme === 'dark'}
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
@@ -365,11 +388,9 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.6.2</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.7.0</span>
     </div>
   </div>
-
-  <!-- Tabs Bar -->
   <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass} print:hidden">
     {#each tabs as tab, i}
       <button 
@@ -412,8 +433,6 @@
 
     <div class="flex-1 flex flex-col relative print:block">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
-      
-      <!-- Preview Toolbar -->
       {#if !isPrinting}
       <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
         <div class="flex items-center gap-2">
@@ -432,20 +451,15 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
             </button>
         </div>
-
         <div class="text-xs font-bold uppercase tracking-wider opacity-50">{$t('preview')}</div>
         <div class="flex-1"></div>
-
         <button on:click={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
-
         <button on:click={handleExport} title={$t('export')} class="p-1 rounded transition-colors {buttonClass}">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
-
         <div class="h-4 w-px {dividerClass}"></div>
-
         <div class="flex gap-2 items-center">
           <span class="text-[10px] uppercase opacity-60 font-bold">{$t('themeLabel')}</span>
           <select bind:value={currentPreviewTheme} class="text-xs rounded border-none py-0.5 cursor-pointer bg-transparent focus:ring-1 focus:ring-blue-500">
@@ -462,11 +476,18 @@
         </div>
       </div>
       {/if}
-      <Preview html={htmlContent} css={highlightingCSS} theme={currentPreviewTheme} fontSize={fontSize} />
+      <Preview 
+        html={htmlContent} 
+        css={highlightingCSS} 
+        theme={currentPreviewTheme} 
+        fontSize={fontSize} 
+        currentFilePath={tabs[activeTabIndex]?.path}
+        on:security-request={handleSecurityRequest}
+        on:open-file={handleOpenExternalMD}
+      />
     </div>
   </div>
 
-  <!-- Feature 6: Status Bar -->
   {#if !isPrinting}
   <div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} print:hidden">
     <div class="flex gap-4">
@@ -489,15 +510,8 @@
   :global(body) { margin: 0; }
   select option { background-color: white; color: black; }
   :global(.bg-slate-900) select option, :global(.bg-slate-800) select option { background-color: #1e293b; color: white; }
-  
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .drop-toast {
     position: absolute;
     bottom: 3.5rem;
@@ -513,12 +527,7 @@
     z-index: 50;
     animation: slideUp 0.3s ease-out;
   }
-
-  @keyframes slideUp {
-    from { transform: translate(-50%, 100%); opacity: 0; }
-    to { transform: translate(-50%, 0); opacity: 1; }
-  }
-
+  @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
   @media print {
     :global(body), main.is-printing {
         background: white !important;

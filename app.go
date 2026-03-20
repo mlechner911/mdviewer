@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"md-viewer/internal/config"
 	"md-viewer/internal/filesystem"
 	"md-viewer/internal/markdown"
 
@@ -21,24 +22,68 @@ type FileResult struct {
 type App struct {
 	ctx         context.Context
 	renderer    *markdown.Renderer
+	config      *config.ConfigManager
 	initialFile string
 }
 
 // NewApp creates a new App application struct.
 func NewApp() *App {
+	cfg, _ := config.NewConfigManager()
 	return &App{
 		renderer: markdown.NewRenderer(),
+		config:   cfg,
 	}
 }
 
 // SetInitialFile stores the file path provided via CLI.
 func (a *App) SetInitialFile(path string) {
-	a.initialFile = path
+	if abs, err := filepath.Abs(path); err == nil {
+		a.initialFile = abs
+	} else {
+		a.initialFile = path
+	}
 }
 
 // startup is called when the app starts.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// IsPathAllowed checks if a local file path is within a whitelisted directory.
+func (a *App) IsPathAllowed(path string) bool {
+	return a.config.IsPathAllowed(path)
+}
+
+// IsURLAllowed checks if a URL's domain is whitelisted.
+func (a *App) IsURLAllowed(url string) bool {
+	return a.config.IsURLAllowed(url)
+}
+
+// AddPathToWhitelist adds a directory to the whitelist.
+func (a *App) AddPathToWhitelist(path string) error {
+	return a.config.AddPath(path)
+}
+
+// AddURLToWhitelist adds a URL domain to the whitelist.
+func (a *App) AddURLToWhitelist(url string) error {
+	return a.config.AddURL(url)
+}
+
+// GetParentDir returns the absolute parent directory of a path.
+func (a *App) GetParentDir(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return filepath.Dir(path)
+	}
+	return filepath.Dir(abs)
+}
+
+// ResolveRelativePath resolves a relative path against a base directory.
+func (a *App) ResolveRelativePath(baseDir string, relPath string) string {
+	if filepath.IsAbs(relPath) {
+		return relPath
+	}
+	return filepath.Join(baseDir, relPath)
 }
 
 // ReadFile reads the content of a file given its path.
@@ -98,12 +143,13 @@ func (a *App) OpenFile() (*FileResult, error) {
 	if path == "" {
 		return nil, fmt.Errorf("user cancelled selection")
 	}
-	content, err := filesystem.ReadFile(path)
+	absPath, _ := filepath.Abs(path)
+	content, err := filesystem.ReadFile(absPath)
 	if err != nil {
 		return nil, err
 	}
 	return &FileResult{
-		Path:    path,
+		Path:    absPath,
 		Content: content,
 	}, nil
 }
@@ -129,11 +175,12 @@ func (a *App) SaveFile(content string) (string, error) {
 	if path == "" {
 		return "", nil
 	}
-	err = filesystem.WriteFile(path, content)
+	absPath, _ := filepath.Abs(path)
+	err = filesystem.WriteFile(absPath, content)
 	if err != nil {
 		return "", err
 	}
-	return path, nil
+	return absPath, nil
 }
 
 // ExportHTML saves the rendered markdown as a standalone HTML file.
@@ -173,7 +220,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         }
 
         /* KaTeX Embedded */
-        %s
+        %%s
         
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
@@ -188,7 +235,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; }
         
         /* Syntax Highlighting and Theme Overrides */
-        %s
+        %%s
         
         a { color: var(--link-color); text-decoration: none; }
         a:hover { text-decoration: underline; }
@@ -207,14 +254,14 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         .markdown-alert-caution { border-color: #cf222e; }
         
         pre { background: var(--code-bg); padding: 1rem; border-radius: 6px; overflow: auto; }
-        code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%%; }
+        code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%%%%; }
         
-        table { border-collapse: collapse; width: 100%%; margin: 1rem 0; display: block; overflow: auto; }
+        table { border-collapse: collapse; width: 100%%%%; margin: 1rem 0; display: block; overflow: auto; }
         th { font-weight: 600; background-color: var(--code-bg); }
         th, td { border: 1px solid var(--border-color); padding: 6px 13px; }
         tr:nth-child(2n) { background-color: var(--code-bg); }
         
-        img { max-width: 100%%; box-sizing: content-box; background-color: #fff; }
+        img { max-width: 100%%%%; box-sizing: content-box; background-color: #fff; }
         blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid var(--border-color); margin: 0 0 1rem 0; }
 
         /* Mermaid Placeholder Styling */
@@ -231,7 +278,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
 </head>
 <body>
     <article class="markdown-body">
-        %s
+        %%s
     </article>
 </body>
 </html>`, katexCSS, cssContent, htmlContent)

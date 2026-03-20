@@ -2,22 +2,49 @@
   /**
    * Preview component handles the complex rendering of Markdown-derived HTML.
    * It integrates Mermaid.js for diagrams and KaTeX for mathematical expressions.
+   * Now with security whitelist enforcement for local and external resources.
    */
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, createEventDispatcher } from 'svelte';
   import mermaid from 'mermaid';
   import katex from 'katex';
   import 'katex/dist/katex.min.css';
   import renderMathInElement from 'katex/dist/contrib/auto-render';
   import { BrowserOpenURL } from '../../wailsjs/runtime/runtime.js';
+  import * as backend from '../lib/backend';
   import type { Theme } from '../themes';
+
+  const dispatch = createEventDispatcher();
 
   // Component Props
   export let html: string;
   export let css: string = "";
   export let theme: Theme;
   export let fontSize: number = 100;
+  export let currentFilePath: string | null = null;
 
   let previewContainer: HTMLElement;
+
+  /**
+   * checkAndHandleResource validates if a path or URL is whitelisted.
+   * Returns true if allowed, otherwise triggers a security request and returns false.
+   */
+  async function checkAndHandleResource(target: string, type: 'path' | 'url'): Promise<boolean> {
+    if (type === 'url') {
+      const isAllowed = await backend.isURLAllowed(target);
+      if (!isAllowed) {
+        dispatch('security-request', { type: 'url', resource: target });
+        return false;
+      }
+    } else {
+      const isAllowed = await backend.isPathAllowed(target);
+      if (!isAllowed) {
+        const parentDir = await backend.getParentDir(target);
+        dispatch('security-request', { type: 'path', resource: parentDir });
+        return false;
+      }
+    }
+    return true;
+  }
 
   /**
    * renderContent performs sequential rendering of advanced Markdown features.
@@ -26,21 +53,71 @@
     await tick();
     if (!previewContainer) return;
 
-    // 1. Handle External Links
+    // 1. Handle External Links & Markdown Internal Links
     const links = previewContainer.querySelectorAll('a');
-    links.forEach(link => {
+    for (const link of Array.from(links)) {
       const href = link.getAttribute('href');
-      if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+      if (!href) continue;
+
+      const isExternal = href.startsWith('http://') || href.startsWith('https://');
+      const isMarkdown = href.endsWith('.md') || href.endsWith('.markdown');
+
+      if (isExternal) {
         link.classList.add('external-link');
         link.target = "_blank";
-        link.onclick = (e) => {
+        link.onclick = async (e) => {
           e.preventDefault();
-          BrowserOpenURL(href);
+          const domain = new URL(href).hostname;
+          if (await checkAndHandleResource(domain, 'url')) {
+            BrowserOpenURL(href);
+          }
+        };
+      } else if (isMarkdown && !href.startsWith('#')) {
+        link.onclick = async (e) => {
+          e.preventDefault();
+          const baseDir = currentFilePath ? await backend.getParentDir(currentFilePath) : "";
+          const absPath = await backend.resolveRelativePath(baseDir, href);
+          if (await checkAndHandleResource(absPath, 'path')) {
+            dispatch('open-file', { path: absPath });
+          }
         };
       }
-    });
+    }
 
-    // 2. Render Mermaid Diagrams
+    // 2. Handle Images Security
+    const images = previewContainer.querySelectorAll('img');
+    for (const img of Array.from(images)) {
+      const src = img.getAttribute('src');
+      if (!src) continue;
+
+      const isExternal = src.startsWith('http://') || src.startsWith('https://');
+      
+      if (isExternal) {
+        const domain = new URL(src).hostname;
+        const isAllowed = await backend.isURLAllowed(domain);
+        if (!isAllowed) {
+          img.style.display = 'none'; // Hide until allowed
+          dispatch('security-request', { type: 'url', resource: domain });
+        }
+      } else if (!src.startsWith('data:')) {
+        // Resolve local path
+        const baseDir = currentFilePath ? await backend.getParentDir(currentFilePath) : "";
+        const absPath = await backend.resolveRelativePath(baseDir, src);
+        const isAllowed = await backend.isPathAllowed(absPath);
+        if (!isAllowed) {
+          img.style.display = 'none';
+          const parentDir = await backend.getParentDir(absPath);
+          dispatch('security-request', { type: 'path', resource: parentDir });
+        } else {
+          // Convert to Wails local asset path if it's a raw local path
+          // Note: In Wails, you might need a specific prefix or let the assetserver handle it.
+          // For now, assume Wails can load the absolute path if allowed.
+          img.src = "wails:///" + absPath.replace(/\\/g, '/');
+        }
+      }
+    }
+
+    // 3. Render Mermaid Diagrams
     const mermaidDivs = previewContainer.querySelectorAll('pre code.language-mermaid');
     mermaidDivs.forEach((el) => {
       const parent = el.parentElement;
@@ -53,20 +130,16 @@
       }
     });
 
-    // Initialize Mermaid with current theme settings
-    // Using a more isolated initialization to avoid global style leakage
     mermaid.initialize({
       startOnLoad: false,
       theme: theme.mermaidTheme,
       themeVariables: theme.mermaidVars || {},
-      // Suppression of potential global style side-effects
       fontFamily: 'inherit',
     });
 
     try {
       const nodes = previewContainer.querySelectorAll('.mermaid');
       if (nodes.length > 0) {
-          // Re-render Mermaid diagrams explicitly
           await mermaid.run({ 
             querySelector: '.mermaid',
             suppressErrors: true
@@ -76,7 +149,7 @@
       console.error("Mermaid render failed:", err);
     }
 
-    // 3. Render Mathematical Expressions (KaTeX)
+    // 4. Render Mathematical Expressions (KaTeX)
     renderMathInElement(previewContainer, {
       delimiters: [
         {left: '$$', right: '$$', display: true},
