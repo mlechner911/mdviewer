@@ -15,7 +15,8 @@ export const translations: Record<string, any> = {
     placeholder: 'Type markdown here...',
     welcomeTitle: '# Welcome to MD Viewer',
     ready: 'Ready',
-    toggleTheme: 'Toggle App Theme'
+    toggleTheme: 'Toggle App Theme',
+    untitled: 'Untitled'
   },
   de: {
     open: 'Öffnen',
@@ -29,7 +30,8 @@ export const translations: Record<string, any> = {
     placeholder: 'Markdown hier eingeben...',
     welcomeTitle: '# Willkommen beim MD Viewer',
     ready: 'Bereit',
-    toggleTheme: 'App-Design umschalten'
+    toggleTheme: 'App-Design umschalten',
+    untitled: 'Unbenannt'
   },
   es: {
     open: 'Abrir',
@@ -43,7 +45,8 @@ export const translations: Record<string, any> = {
     placeholder: 'Escriba markdown aquí...',
     welcomeTitle: '# Bienvenido a MD Viewer',
     ready: 'Listo',
-    toggleTheme: 'Cambiar tema de la aplicación'
+    toggleTheme: 'Cambiar tema de la aplicación',
+    untitled: 'Sin título'
   },
   fr: {
     open: 'Ouvrir',
@@ -57,7 +60,8 @@ export const translations: Record<string, any> = {
     placeholder: 'Tapez du markdown ici...',
     welcomeTitle: '# Bienvenue sur MD Viewer',
     ready: 'Prêt',
-    toggleTheme: 'Changer le thème de l\'application'
+    toggleTheme: 'Changer le thème de l\'application',
+    untitled: 'Sans titre'
   }
 };
 

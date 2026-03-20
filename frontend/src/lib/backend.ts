@@ -1,5 +1,10 @@
 // Helper wrappers for Wails runtime calls and graceful fallbacks for dev (Vite) mode
-import { GetStyleCSS, RenderMarkdown, OpenFile, SaveFile, GetInitialContent, ReadFile, ExportHTML } from '../../wailsjs/go/main/App.js'
+import { GetStyleCSS, RenderMarkdown, OpenFile, SaveFile, GetInitialContent, ReadFile, ExportHTML, GetFileTitle } from '../../wailsjs/go/main/App.js'
+
+export interface FileResult {
+  path: string;
+  content: string;
+}
 
 export function isWailsReady(): boolean {
   return typeof window !== 'undefined' && (window as any).go && (window as any).go.main && (window as any).go.main.App;
@@ -34,14 +39,19 @@ export async function renderMarkdown(value: string, themeStyle: string): Promise
   }
 }
 
-export async function openFile(): Promise<string | undefined> {
+export async function openFile(): Promise<FileResult | undefined> {
   if (!isWailsReady()) return undefined;
   try { return await OpenFile(); } catch (err) { console.error('openFile failed:', err); return undefined; }
 }
 
-export async function saveFile(content: string): Promise<void> {
-  if (!isWailsReady()) return;
-  try { await SaveFile(content); } catch (err) { console.error('saveFile failed:', err); }
+export async function getFileTitle(path: string): Promise<string> {
+  if (!isWailsReady()) return path.split(/[\\\\/]/).pop() || "Untitled";
+  try { return await GetFileTitle(path); } catch (err) { console.error('getFileTitle failed:', err); return path; }
+}
+
+export async function saveFile(content: string): Promise<string | undefined> {
+  if (!isWailsReady()) return undefined;
+  try { return await SaveFile(content); } catch (err) { console.error('saveFile failed:', err); return undefined; }
 }
 
 export async function exportHTML(html: string, css: string): Promise<void> {
@@ -49,7 +59,7 @@ export async function exportHTML(html: string, css: string): Promise<void> {
   try { await ExportHTML(html, css); } catch (err) { console.error('exportHTML failed:', err); }
 }
 
-export async function getInitialContent(): Promise<string | undefined> {
+export async function getInitialContent(): Promise<FileResult | undefined> {
   if (!isWailsReady()) return undefined;
   try { return await GetInitialContent(); } catch (err) { console.error('getInitialContent failed:', err); return undefined; }
 }

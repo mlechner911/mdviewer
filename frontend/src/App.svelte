@@ -2,6 +2,7 @@
   /**
    * Main Application component for MD Viewer.
    * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
+   * Now supports multiple open files via a Tab interface.
    */
   import { onMount } from 'svelte';
   import { EventsOn, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
@@ -13,12 +14,68 @@
   import type { AppTheme_t } from './lib/constants';
   import { c_initialmd } from './lib/devdefmd.js';
 
-  // State: Markdown Content
-  let markdown: string = "";
+  interface Tab {
+    id: string;
+    title: string;
+    path: string | null;
+    content: string;
+    isDirty: boolean;
+  }
+
+  // State: Tabs
+  let tabs: Tab[] = [];
+  let activeTabIndex: number = 0;
 
   // Set initial default markdown
   const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
 
+  function createNewTab(title = "Untitled", content = "", path: string | null = null): Tab {
+    return {
+      id: Math.random().toString(36).substring(2, 11),
+      title,
+      path,
+      content,
+      isDirty: false
+    };
+  }
+
+  function addNewTab() {
+    const newTab = createNewTab($t('untitled'), defaultMarkdown());
+    tabs = [...tabs, newTab];
+    activeTabIndex = tabs.length - 1;
+  }
+
+  function handleCloseTab(index: number, event?: MouseEvent) {
+    if (event) event.stopPropagation();
+    
+    // If it's the last tab, we might want to keep one empty one or just close
+    if (tabs.length === 1) {
+        tabs = [createNewTab($t('untitled'), defaultMarkdown())];
+        activeTabIndex = 0;
+        return;
+    }
+
+    const wasActive = index === activeTabIndex;
+    tabs = tabs.filter((_, i) => i !== index);
+    
+    if (wasActive) {
+      activeTabIndex = Math.max(0, index - 1);
+    } else if (index < activeTabIndex) {
+      activeTabIndex--;
+    }
+  }
+
+  // Reactive derived values for active tab
+  $: activeTab = tabs[activeTabIndex] || (tabs.length > 0 ? tabs[0] : null);
+  $: markdown = activeTab ? activeTab.content : "";
+
+  // Update content back to tab object when markdown changes
+  function onContentChange(newContent: string) {
+    if (activeTab && activeTab.content !== newContent) {
+      tabs[activeTabIndex].content = newContent;
+      tabs[activeTabIndex].isDirty = true;
+    }
+  }
 
   // State: Rendering results
   let htmlContent: string = "";
@@ -97,14 +154,28 @@
   async function handleOpen() {
     if (!isReady || !checkWailsReady()) return;
     try {
-      const content = await backend.openFile();
-      if (content !== undefined && content !== null) { markdown = content; }
+      const result = await backend.openFile();
+      if (result) {
+        const title = await backend.getFileTitle(result.path);
+        const newTab = createNewTab(title, result.content, result.path);
+        tabs = [...tabs, newTab];
+        activeTabIndex = tabs.length - 1;
+      }
     } catch (err) { console.error("Failed to open file:", err); }
   }
 
   async function handleSave() {
     if (!isReady || !checkWailsReady()) return;
-    try { await backend.saveFile(markdown); } catch (err) { console.error("Failed to save file:", err); }
+    try { 
+      const path = await backend.saveFile(markdown); 
+      if (path && activeTab) {
+        const title = await backend.getFileTitle(path);
+        tabs[activeTabIndex].path = path;
+        tabs[activeTabIndex].title = title;
+        tabs[activeTabIndex].isDirty = false;
+        tabs = [...tabs]; // trigger reactivity
+      }
+    } catch (err) { console.error("Failed to save file:", err); }
   }
 
   async function handleExport() {
@@ -151,41 +222,42 @@
         isReady = true;
 
         // Listen for Wails native Drag and Drop files
-        // Use the runtime OnFileDrop API which provides (x, y, paths)
         OnFileDrop(async (x: number, y: number, paths: string[]) => {
           if (!paths || paths.length === 0) return;
           const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
-          const mdPath = paths.find(p => allowedExt.test(p));
-          if (!mdPath) {
-            console.warn('Ignored non-markdown file drop:', paths[0]);
-            dropMessage = 'Only .md files are accepted — drop ignored';
-            setTimeout(() => dropMessage = null, 3000);
-            return;
-          }
-
-          try {
-            const content = await backend.readFile(mdPath);
-            if (content !== undefined && content !== null) {
-              markdown = content;
-              dropMessage = `Loaded ${mdPath.split(/[\\\\/]/).pop()}`;
-              setTimeout(() => dropMessage = null, 3000);
-            } else {
-              console.warn('No content returned for dropped file:', mdPath);
+          
+          let loadedCount = 0;
+          for (const path of paths) {
+            if (allowedExt.test(path)) {
+              try {
+                const content = await backend.readFile(path);
+                if (content !== undefined && content !== null) {
+                  const title = await backend.getFileTitle(path);
+                  const newTab = createNewTab(title, content, path);
+                  tabs = [...tabs, newTab];
+                  activeTabIndex = tabs.length - 1;
+                  loadedCount++;
+                }
+              } catch (err) {
+                console.error("Failed to read dropped file:", err);
+              }
             }
-          } catch (err) {
-            console.error("Failed to read dropped file:", err);
-            dropMessage = 'Failed to load dropped file';
+          }
+          if (loadedCount > 0) {
+            dropMessage = `Loaded ${loadedCount} files`;
             setTimeout(() => dropMessage = null, 3000);
           }
         }, false);
 
         // Check for file passed via command line
-        const initialContent = await backend.getInitialContent();
-        if (initialContent) {
-          markdown = initialContent;
-        } else if (!markdown) {
-          markdown = defaultMarkdown();
+        const result = await backend.getInitialContent();
+        if (result) {
+          const title = await backend.getFileTitle(result.path);
+          tabs = [createNewTab(title, result.content, result.path)];
+        } else {
+          tabs = [createNewTab($t('welcomeTitle'), defaultMarkdown())];
         }
+        activeTabIndex = 0;
 
         updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
@@ -212,6 +284,8 @@
   $: editorClass = STYLE.editor[effectiveAppTheme];
   $: buttonClass = STYLE.button[effectiveAppTheme];
   $: dividerClass = STYLE.divider[effectiveAppTheme];
+  $: activeTabClass = STYLE.tab.active[effectiveAppTheme];
+  $: inactiveTabClass = STYLE.tab.inactive[effectiveAppTheme];
 </script>
 
 <svelte:window on:mousemove={onMouseMove} on:mouseup={stopResizing} />
@@ -226,6 +300,9 @@
       <button on:click={handleSave} title={$t('save')} class="p-2 rounded transition-colors {buttonClass}">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
       </button>
+      <button on:click={addNewTab} title="New Tab" class="p-2 rounded transition-colors {buttonClass}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
     </div>
 
     <div class="flex-1"></div>
@@ -236,10 +313,6 @@
             <option value="en" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>EN</option>
             <option value="de" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>DE</option>
             <option value="es" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>ES</option>
-
-    {#if dropMessage}
-      <div class="drop-toast">{dropMessage}</div>
-    {/if}
             <option value="fr" class={effectiveAppTheme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-black'}>FR</option>
           </select>
         </div>
@@ -258,8 +331,26 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.3.0</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.4.0</span>
     </div>
+  </div>
+
+  <!-- Tabs Bar -->
+  <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass}">
+    {#each tabs as tab, i}
+      <div 
+        class="flex items-center px-4 h-9 cursor-pointer transition-colors border-r text-xs font-medium min-w-[120px] max-w-[200px] {i === activeTabIndex ? activeTabClass : inactiveTabClass} {dividerClass}"
+        on:click={() => activeTabIndex = i}
+      >
+        <span class="truncate flex-1">{tab.title}{tab.isDirty ? ' *' : ''}</span>
+        <button 
+          on:click={(e) => handleCloseTab(i, e)}
+          class="ml-2 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    {/each}
   </div>
 
   <div class="flex flex-1 overflow-hidden relative">
@@ -268,7 +359,8 @@
         {$t('editor')}
       </div>
       <textarea
-        bind:value={markdown}
+        value={markdown}
+        on:input={(e) => onContentChange(e.currentTarget.value)}
         spellcheck="false" autocorrect="off" autocapitalize="off"
         class="flex-1 p-4 focus:outline-none resize-none font-mono text-sm select-text bg-transparent"
         placeholder={$t('placeholder')}
@@ -306,10 +398,43 @@
       <Preview html={htmlContent} css={highlightingCSS} theme={currentPreviewTheme} fontSize={fontSize} />
     </div>
   </div>
+
+  {#if dropMessage}
+    <div class="drop-toast">{dropMessage}</div>
+  {/if}
 </main>
 
 <style>
   :global(body) { margin: 0; }
   select option { background-color: white; color: black; }
   :global(.bg-slate-900) select option, :global(.bg-slate-800) select option { background-color: #1e293b; color: white; }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .drop-toast {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { transform: translate(-50%, 100%); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
 </style>

@@ -3,12 +3,19 @@ package main
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"md-viewer/internal/filesystem"
 	"md-viewer/internal/markdown"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+// FileResult holds the outcome of a file open operation.
+type FileResult struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
 
 // App struct defines the main application state and dependencies.
 type App struct {
@@ -41,14 +48,17 @@ func (a *App) ReadFile(path string) (string, error) {
 }
 
 // GetInitialContent is called by the frontend on mount to check for CLI files.
-func (a *App) GetInitialContent() string {
+func (a *App) GetInitialContent() *FileResult {
 	if a.initialFile != "" {
 		content, err := filesystem.ReadFile(a.initialFile)
 		if err == nil {
-			return content
+			return &FileResult{
+				Path:    a.initialFile,
+				Content: content,
+			}
 		}
 	}
-	return ""
+	return nil
 }
 
 // RenderMarkdown converts markdown string to sanitized HTML.
@@ -72,8 +82,8 @@ func (a *App) GetStyleCSS(style string) string {
 	return css
 }
 
-// OpenFile opens a native file dialog.
-func (a *App) OpenFile() (string, error) {
+// OpenFile opens a native file dialog and returns the path and content.
+func (a *App) OpenFile() (*FileResult, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Open Markdown File",
 		Filters: []runtime.FileFilter{
@@ -83,12 +93,24 @@ func (a *App) OpenFile() (string, error) {
 		},
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if path == "" {
-		return "", fmt.Errorf("user cancelled selection")
+		return nil, fmt.Errorf("user cancelled selection")
 	}
-	return filesystem.ReadFile(path)
+	content, err := filesystem.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return &FileResult{
+		Path:    path,
+		Content: content,
+	}, nil
+}
+
+// GetFileTitle extracts the base name from a file path.
+func (a *App) GetFileTitle(path string) string {
+	return filepath.Base(path)
 }
 
 // SaveFile opens a native save dialog and saves content.
