@@ -53,19 +53,24 @@
       }
     });
 
+    // Initialize Mermaid with current theme settings
+    // Using a more isolated initialization to avoid global style leakage
     mermaid.initialize({
       startOnLoad: false,
       theme: theme.mermaidTheme,
       themeVariables: theme.mermaidVars || {},
-  //    parseError: () => {}
+      // Suppression of potential global style side-effects
+      fontFamily: 'inherit',
     });
 
     try {
       const nodes = previewContainer.querySelectorAll('.mermaid');
       if (nodes.length > 0) {
-
-          await mermaid.run({ querySelector: '.mermaid' });
-
+          // Re-render Mermaid diagrams explicitly
+          await mermaid.run({ 
+            querySelector: '.mermaid',
+            suppressErrors: true
+          });
       }
     } catch (err) {
       console.error("Mermaid render failed:", err);
@@ -168,6 +173,7 @@
     margin: 1.5rem 0;
     display: flex;
     justify-content: center;
+    font-family: sans-serif;
   }
   :global(.mermaid .marker) { fill: currentColor !important; }
   :global(.mermaid .edgePath .path) { stroke: currentColor !important; }

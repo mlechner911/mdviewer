@@ -66,23 +66,20 @@
     }
   }
 
-  // Reactive derived values for active tab
-  $: activeTab = tabs[activeTabIndex] || (tabs.length > 0 ? tabs[0] : null);
-  $: markdown = activeTab ? activeTab.content : "";
+  // Explicit reactive markdown for the editor and preview
+  // We use this to ensure changes in tabs[activeTabIndex].content trigger updates
+  $: markdown = tabs[activeTabIndex]?.content || "";
+  $: activeTab = tabs[activeTabIndex] || null;
 
   // Feature 6: Word & Character Count
   $: wordCount = markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0;
   $: charCount = markdown ? markdown.length : 0;
   $: readingTime = Math.ceil(wordCount / 225); // Average 225 wpm
 
-  // Mark tab as dirty when content changes via binding
-  $: if (tabs[activeTabIndex] && tabs[activeTabIndex].content) {
-      // Handled in onContentInput
-  }
-
   function onContentInput() {
     if (tabs[activeTabIndex]) {
         tabs[activeTabIndex].isDirty = true;
+        // Svelte binding bind:value={tabs[activeTabIndex].content} handles the data update
     }
   }
 
@@ -289,7 +286,7 @@
           const title = await backend.getFileTitle(result.path);
           tabs = [createNewTab(title, result.content, result.path)];
         } else {
-          tabs = [createNewTab($t('welcomeTitle'), defaultMarkdown())];
+          tabs = [createNewTab($t('untitled'), defaultMarkdown())];
         }
         activeTabIndex = 0;
 
@@ -368,7 +365,7 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.6.0</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.6.1</span>
     </div>
   </div>
 
