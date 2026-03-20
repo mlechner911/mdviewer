@@ -202,4 +202,23 @@
   :global(.bg-white .mermaid .edgeLabel rect) { fill: #f9fafb !important; }
   :global(.bg-\[\#f4ecd8\] .mermaid .edgeLabel rect) { fill: #f4ecd8 !important; }
   :global(.monochrome .mermaid .edgeLabel rect) { fill: #ffffff !important; }
+
+  /* Ensure absolute monochrome for the entire preview when the theme is active */
+  :global(.monochrome) {
+    filter: grayscale(100%) contrast(110%);
+  }
+
+  @media print {
+    div {
+      overflow: visible !important;
+      height: auto !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+    }
+    article {
+      font-size: 12pt !important;
+      max-width: 100% !important;
+    }
+  }
 </style>

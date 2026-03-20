@@ -34,6 +34,14 @@ export const STYLE = {
       dark: 'bg-slate-800 text-slate-400 hover:bg-slate-700 border-t-2 border-t-transparent',
       light: 'bg-slate-200 text-slate-500 hover:bg-slate-100 border-t-2 border-t-transparent'
     }
+  },
+  status: {
+    dark: 'bg-slate-800 border-slate-700 text-slate-400',
+    light: 'bg-slate-100 border-slate-200 text-slate-500'
+  },
+  focusButton: {
+    dark: 'text-blue-400 hover:text-blue-300',
+    light: 'text-blue-600 hover:text-blue-500'
   }
 } as const;
 

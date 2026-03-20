@@ -3,8 +3,9 @@
    * Main Application component for MD Viewer.
    * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
    * Now supports multiple open files via a Tab interface.
+   * Features: Word count, Focus Mode, Print to PDF.
    */
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { EventsOn, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
   import Preview from './components/Preview.svelte';
@@ -69,11 +70,23 @@
   $: activeTab = tabs[activeTabIndex] || (tabs.length > 0 ? tabs[0] : null);
   $: markdown = activeTab ? activeTab.content : "";
 
-  // Update content back to tab object when markdown changes
-  function onContentChange(newContent: string) {
-    if (activeTab && activeTab.content !== newContent) {
-      tabs[activeTabIndex].content = newContent;
-      tabs[activeTabIndex].isDirty = true;
+  // Feature 6: Word & Character Count
+  $: wordCount = markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0;
+  $: charCount = markdown ? markdown.length : 0;
+  $: readingTime = Math.ceil(wordCount / 225); // Average 225 wpm
+
+  // Mark tab as dirty when content changes via binding
+  $: if (tabs[activeTabIndex] && tabs[activeTabIndex].content) {
+      // This reactive block triggers on any content change in the active tab
+      // We don't want to mark it dirty on the very first load, 
+      // but Svelte handles the initial assignment as a change.
+      // For simplicity, we just track it.
+  }
+
+  function onContentInput() {
+    if (tabs[activeTabIndex]) {
+        tabs[activeTabIndex].isDirty = true;
+        // Trigger debounced update via reactive markdown dependency
     }
   }
 
@@ -86,6 +99,13 @@
   let fontSize: number = DEFAULTS.fontSize; // Active zoom level
   // UI: transient drop/toast message
   let dropMessage: string | null = null;
+
+  // Feature 7: Focus Mode & Editor Toggle
+  let isFocusMode = false;
+  let isEditorHidden = false;
+
+  // Feature 5: Print State
+  let isPrinting = false;
 
   // App Frame Theming (Toolbar/Editor frame)
   let appTheme: AppTheme_t = APP_THEME.DARK;
@@ -120,7 +140,7 @@
   function startResizing() { isResizing = true; }
   function stopResizing() { isResizing = false; }
   function onMouseMove(event: MouseEvent) {
-    if (!isResizing) return;
+    if (!isResizing || isEditorHidden) return;
     splitWidth = (event.clientX / window.innerWidth) * 100;
     if (splitWidth < 10) splitWidth = 10;
     if (splitWidth > 90) splitWidth = 90;
@@ -211,6 +231,24 @@
     }
   }
 
+  // Feature 5: Print to PDF
+  async function handlePrint() {
+    const originalTheme = currentPreviewTheme;
+    const monochromeTheme = themes.find(t => t.id === 'monochrome') || originalTheme;
+    
+    isPrinting = true;
+    currentPreviewTheme = monochromeTheme;
+    
+    // Wait for Svelte to update DOM with monochrome theme
+    await tick();
+    // Small delay to ensure Mermaid/Katex re-renders if needed (though they react to theme changes)
+    setTimeout(() => {
+        window.print();
+        isPrinting = false;
+        currentPreviewTheme = originalTheme;
+    }, 100);
+  }
+
   function adjustFontSize(delta: number) {
     fontSize = Math.min(Math.max(fontSize + delta, 50), 200);
   }
@@ -286,13 +324,16 @@
   $: dividerClass = STYLE.divider[effectiveAppTheme];
   $: activeTabClass = STYLE.tab.active[effectiveAppTheme];
   $: inactiveTabClass = STYLE.tab.inactive[effectiveAppTheme];
+  $: statusClass = STYLE.status[effectiveAppTheme];
+  $: focusButtonClass = STYLE.focusButton[effectiveAppTheme];
 </script>
 
 <svelte:window on:mousemove={onMouseMove} on:mouseup={stopResizing} />
 
-<main class="flex h-screen w-full overflow-hidden flex-col select-none {effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
+<main class="flex h-screen w-full overflow-hidden flex-col select-none {isPrinting ? 'is-printing' : ''} {effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
   <!-- Top Navigation / Toolbar -->
-  <div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass}">
+  {#if !isFocusMode && !isPrinting}
+  <div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass} print:hidden">
     <div class="flex gap-2">
       <button on:click={handleOpen} title={$t('open')} class="p-2 rounded transition-colors {buttonClass}">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -331,12 +372,12 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.4.0</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.5.0</span>
     </div>
   </div>
 
   <!-- Tabs Bar -->
-  <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass}">
+  <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass} print:hidden">
     {#each tabs as tab, i}
       <div 
         class="flex items-center px-4 h-9 cursor-pointer transition-colors border-r text-xs font-medium min-w-[120px] max-w-[200px] {i === activeTabIndex ? activeTabClass : inactiveTabClass} {dividerClass}"
@@ -352,27 +393,56 @@
       </div>
     {/each}
   </div>
+  {/if}
 
-  <div class="flex flex-1 overflow-hidden relative">
-    <div class="flex flex-col border-r relative {editorClass}" style="width: {splitWidth}%;">
+  <div class="flex flex-1 overflow-hidden relative print:block">
+    {#if !isEditorHidden && !isFocusMode && !isPrinting}
+    <div class="flex flex-col border-r relative {editorClass} print:hidden" style="width: {splitWidth}%;">
       <div class="p-2 text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
         {$t('editor')}
       </div>
+      {#if tabs[activeTabIndex]}
       <textarea
-        value={markdown}
-        on:input={(e) => onContentChange(e.currentTarget.value)}
+        bind:value={tabs[activeTabIndex].content}
+        on:input={onContentInput}
         spellcheck="false" autocorrect="off" autocapitalize="off"
         class="flex-1 p-4 focus:outline-none resize-none font-mono text-sm select-text bg-transparent"
         placeholder={$t('placeholder')}
       ></textarea>
+      {/if}
       <div on:mousedown={startResizing} class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors z-10"></div>
     </div>
+    {/if}
 
-    <div class="flex-1 flex flex-col relative">
+    <div class="flex-1 flex flex-col relative print:block">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
-      <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass}">
+      
+      <!-- Preview Toolbar -->
+      {#if !isPrinting}
+      <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
+        <div class="flex items-center gap-2">
+            <button 
+                on:click={() => isEditorHidden = !isEditorHidden} 
+                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isEditorHidden ? focusButtonClass : ''}"
+                title={isEditorHidden ? "Show Editor" : "Hide Editor"}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            </button>
+            <button 
+                on:click={() => isFocusMode = !isFocusMode} 
+                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isFocusMode ? focusButtonClass : ''}"
+                title={isFocusMode ? "Exit Focus Mode" : "Focus Mode"}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            </button>
+        </div>
+
         <div class="text-xs font-bold uppercase tracking-wider opacity-50">{$t('preview')}</div>
         <div class="flex-1"></div>
+
+        <button on:click={handlePrint} title="Print / PDF" class="p-1 rounded transition-colors {buttonClass}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        </button>
 
         <button on:click={handleExport} title={$t('export')} class="p-1 rounded transition-colors {buttonClass}">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -395,9 +465,24 @@
           <button on:click={() => adjustFontSize(5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">+</button>
         </div>
       </div>
+      {/if}
       <Preview html={htmlContent} css={highlightingCSS} theme={currentPreviewTheme} fontSize={fontSize} />
     </div>
   </div>
+
+  <!-- Feature 6: Status Bar -->
+  {#if !isPrinting}
+  <div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} print:hidden">
+    <div class="flex gap-4">
+        <span>{wordCount} words</span>
+        <span>{charCount} characters</span>
+    </div>
+    <div class="flex-1"></div>
+    <div>Approx. {readingTime} min read</div>
+    <div class="h-3 w-px {dividerClass}"></div>
+    <div class="uppercase tracking-tighter opacity-80">{activeTab?.path || 'Untitled'}</div>
+  </div>
+  {/if}
 
   {#if dropMessage}
     <div class="drop-toast">{dropMessage}</div>
@@ -419,7 +504,7 @@
 
   .drop-toast {
     position: absolute;
-    bottom: 2rem;
+    bottom: 3.5rem;
     left: 50%;
     transform: translateX(-50%);
     background: #3b82f6;
@@ -436,5 +521,17 @@
   @keyframes slideUp {
     from { transform: translate(-50%, 100%); opacity: 0; }
     to { transform: translate(-50%, 0); opacity: 1; }
+  }
+
+  @media print {
+    :global(body), main.is-printing {
+        background: white !important;
+        background-color: white !important;
+        color: black !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+        filter: grayscale(100%) !important;
+    }
   }
 </style>
