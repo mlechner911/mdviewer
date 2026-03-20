@@ -1,6 +1,19 @@
 import { writable, derived } from 'svelte/store';
 
-export const locale = writable('en');
+/**
+ * Detect the best matching locale from the browser settings.
+ * Falls back to 'en' if no supported match is found.
+ */
+function getInitialLocale(): string {
+  if (typeof navigator === 'undefined') return 'en';
+  
+  const supported = ['en', 'de', 'es', 'fr'];
+  const browserLang = navigator.language.split('-')[0].toLowerCase();
+  
+  return supported.includes(browserLang) ? browserLang : 'en';
+}
+
+export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
@@ -112,7 +125,7 @@ export const translations: Record<string, any> = {
 export const t = derived(locale, ($locale) => (key: string, ...args: any[]) => {
   let text = translations[$locale][key] || key;
   args.forEach(arg => {
-    text = text.replace('%s', arg);
+    text = text.replace('%s', String(arg));
   });
   return text;
 });
