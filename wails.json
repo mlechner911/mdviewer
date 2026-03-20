@@ -14,7 +14,7 @@
   "info": {
     "companyName": "Michael Lechner",
     "productName": "MD Viewer",
-    "productVersion": "0.7.0",
+    "productVersion": "0.7.2",
     "copyright": "Copyright 2026 Michael Lechner",
     "comments": "A modern Markdown viewer."
   },
@@ -22,8 +22,7 @@
     "nsis": {
       "customMessages": "",
       "compression": "lzma",
-      "include": "",
-      "outputfilename": "md-viewer-setup-amd64.exe"
+      "include": ""
     }
   }
 }
