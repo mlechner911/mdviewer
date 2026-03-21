@@ -194,6 +194,21 @@
     overflow-x: auto;
   }
 
+  /* Improve Light Mode Code Readability */
+  :global(.bg-white .prose pre) {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0;
+  }
+  
+  :global(.bg-white .prose pre code) {
+    color: #1e293b !important;
+  }
+
+  /* Darken faint Chroma colors in Light Mode (Comments, Literals, etc.) */
+  :global(.bg-white .chroma .c, .bg-white .chroma .cm, .bg-white .chroma .c1) { color: #64748b !important; font-style: italic; }
+  :global(.bg-white .chroma .m, .bg-white .chroma .mb, .bg-white .chroma .mf) { color: #0f172a !important; font-weight: 600; }
+  :global(.bg-white .chroma .s, .bg-white .chroma .sa, .bg-white .chroma .sb) { color: #0f172a !important; }
+
   /* External Link Indicator */
   :global(.external-link::after) {
     content: " ↗";

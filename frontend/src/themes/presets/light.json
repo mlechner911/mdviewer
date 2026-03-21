@@ -1,7 +1,7 @@
 {
   "id": "light",
   "name": "Light Mode",
-  "chromaStyle": "github",
+  "chromaStyle": "friendly",
   "containerClass": "bg-white text-slate-900",
   "proseClass": "prose-slate prose-headings:text-slate-900 prose-p:text-slate-700 prose-a:text-blue-600",
   "mermaidTheme": "default",

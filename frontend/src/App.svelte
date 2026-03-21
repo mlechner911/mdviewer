@@ -388,7 +388,7 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.7.3</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.7.4</span>
     </div>
   </div>
   <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass} print:hidden">
