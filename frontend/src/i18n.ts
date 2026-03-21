@@ -49,6 +49,12 @@ export const translations: Record<string, any> = {
     deny: 'Deny',
     menuFile: 'File',
     menuEdit: 'Edit',
+    menuView: 'View',
+    menuLanguage: 'Language',
+    menuAppearance: 'Appearance',
+    menuThemeDark: 'Dark',
+    menuThemeLight: 'Light',
+    menuThemeAuto: 'System Default',
     menuNewTab: 'New Tab',
     menuOpen: 'Open...',
     menuSave: 'Save',
@@ -56,7 +62,10 @@ export const translations: Record<string, any> = {
     menuRedo: 'Redo',
     menuCut: 'Cut',
     menuCopy: 'Copy',
-    menuPaste: 'Paste'
+    menuPaste: 'Paste',
+    menuAbout: 'About MD Viewer',
+    aboutTitle: 'About MD Viewer',
+    aboutBody: 'MD Viewer v0.9.0\n\nA modern, high-performance Markdown Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
     open: 'Öffnen',
@@ -91,6 +100,12 @@ export const translations: Record<string, any> = {
     deny: 'Ablehnen',
     menuFile: 'Datei',
     menuEdit: 'Bearbeiten',
+    menuView: 'Ansicht',
+    menuLanguage: 'Sprache',
+    menuAppearance: 'Erscheinungsbild',
+    menuThemeDark: 'Dunkel',
+    menuThemeLight: 'Hell',
+    menuThemeAuto: 'Systemstandard',
     menuNewTab: 'Neuer Tab',
     menuOpen: 'Öffnen...',
     menuSave: 'Speichern',
@@ -98,7 +113,10 @@ export const translations: Record<string, any> = {
     menuRedo: 'Wiederholen',
     menuCut: 'Ausschneiden',
     menuCopy: 'Kopieren',
-    menuPaste: 'Einfügen'
+    menuPaste: 'Einfügen',
+    menuAbout: 'Über MD Viewer',
+    aboutTitle: 'Über MD Viewer',
+    aboutBody: 'MD Viewer v0.9.0\n\nEin moderner, leistungsstarker Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
     open: 'Abrir',
@@ -133,6 +151,12 @@ export const translations: Record<string, any> = {
     deny: 'Denegar',
     menuFile: 'Archivo',
     menuEdit: 'Editar',
+    menuView: 'Ver',
+    menuLanguage: 'Idioma',
+    menuAppearance: 'Apariencia',
+    menuThemeDark: 'Oscuro',
+    menuThemeLight: 'Claro',
+    menuThemeAuto: 'Predeterminado del sistema',
     menuNewTab: 'Nueva pestaña',
     menuOpen: 'Abrir...',
     menuSave: 'Guardar',
@@ -140,7 +164,10 @@ export const translations: Record<string, any> = {
     menuRedo: 'Rehacer',
     menuCut: 'Cortar',
     menuCopy: 'Copiar',
-    menuPaste: 'Pegar'
+    menuPaste: 'Pegar',
+    menuAbout: 'Acerca de MD Viewer',
+    aboutTitle: 'Acerca de MD Viewer',
+    aboutBody: 'MD Viewer v0.9.0\n\nUn visor de Markdown moderno y de alto rendimiento.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
     open: 'Ouvrir',
@@ -175,6 +202,12 @@ export const translations: Record<string, any> = {
     deny: 'Refuser',
     menuFile: 'Fichier',
     menuEdit: 'Édition',
+    menuView: 'Affichage',
+    menuLanguage: 'Langue',
+    menuAppearance: 'Apparence',
+    menuThemeDark: 'Sombre',
+    menuThemeLight: 'Clair',
+    menuThemeAuto: 'Par défaut du système',
     menuNewTab: 'Nouvel onglet',
     menuOpen: 'Ouvrir...',
     menuSave: 'Enregistrer',
@@ -182,7 +215,10 @@ export const translations: Record<string, any> = {
     menuRedo: 'Rétablir',
     menuCut: 'Couper',
     menuCopy: 'Copier',
-    menuPaste: 'Coller'
+    menuPaste: 'Coller',
+    menuAbout: 'À propos de MD Viewer',
+    aboutTitle: 'À propos de MD Viewer',
+    aboutBody: 'MD Viewer v0.9.0\n\nUn visionneur Markdown moderne et performant.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
   }
 };
 

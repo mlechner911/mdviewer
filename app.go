@@ -10,9 +10,9 @@ import (
 	"md-viewer/internal/filesystem"
 	"md-viewer/internal/markdown"
 
-	"github.com/wailsapp/wails/v2/pkg/menu"
-	"github.com/wailsapp/wails/v2/pkg/menu/keys"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/v2/pkg/menu"
+	"github.com/wailsapp/v2/pkg/menu/keys"
+	"github.com/wailsapp/v2/pkg/runtime"
 )
 
 // FileResult holds the outcome of a file open operation.
@@ -67,7 +67,27 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.AddText(t["menuSave"], keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
 		a.MenuSaveFile()
 	})
+	fileMenu.AddSeparator()
+	fileMenu.AddText(t["menuAbout"], nil, func(_ *menu.CallbackData) {
+		a.ShowAbout(t["aboutTitle"], t["aboutBody"])
+	})
+
+	// View Menu (Language & Appearance)
+	viewMenu := appMenu.AddSubmenu(t["menuView"])
 	
+	// Submenu: Language
+	langMenu := viewMenu.AddSubmenu(t["menuLanguage"])
+	langMenu.AddText("English", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "en") })
+	langMenu.AddText("Deutsch", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "de") })
+	langMenu.AddText("Español", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "es") })
+	langMenu.AddText("Français", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "fr") })
+
+	// Submenu: Appearance
+	apprMenu := viewMenu.AddSubmenu(t["menuAppearance"])
+	apprMenu.AddText(t["menuThemeDark"], nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-theme", "dark") })
+	apprMenu.AddText(t["menuThemeLight"], nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-theme", "light") })
+	apprMenu.AddText(t["menuThemeAuto"], nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-theme", "auto") })
+
 	if runtime.GOOS == "darwin" {
 		appMenu.Append(menu.AppMenu())
 		appMenu.Append(menu.EditMenu())
@@ -82,6 +102,15 @@ func (a *App) UpdateMenu(t map[string]string) {
 	}
 
 	runtime.MenuSetApplicationMenu(a.ctx, appMenu)
+}
+
+// ShowAbout displays a native message box with product information.
+func (a *App) ShowAbout(title, message string) {
+	runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		Type:    runtime.InfoDialog,
+		Title:   title,
+		Message: message,
+	})
 }
 
 // IsPathAllowed checks if a local file path is within a whitelisted directory.

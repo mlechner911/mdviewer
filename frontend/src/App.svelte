@@ -1,9 +1,7 @@
 <script lang="ts">
   /**
    * Main Application component for MD Viewer.
-   * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
-   * Refactored into smaller components using shared stores.
-   * Supports dynamic menu translations.
+   * Now with dynamic native menu synchronization for language and themes.
    */
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
@@ -26,6 +24,10 @@
     appTheme, effectiveAppTheme, splitWidth, isFocusMode, 
     isEditorHidden, isPrinting, dropMessage, showToast 
   } from './lib/stores';
+
+  // CONFIGURATION: Set to false to hide the HTML toolbar in the Wails app.
+  // Useful for Vite development where native menus aren't accessible.
+  const SHOW_HTML_TOOLBAR = true;
 
   interface Tab {
     id: string;
@@ -76,7 +78,6 @@
   $: markdown = tabs[activeTabIndex]?.content || "";
   $: activeTab = tabs[activeTabIndex] || null;
 
-  // Feature 6: Word & Character Count
   $: wordCount = markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0;
   $: charCount = markdown ? markdown.length : 0;
   $: readingTime = Math.ceil(wordCount / 225);
@@ -92,7 +93,7 @@
   let currentPreviewTheme = themes[0];
   let fontSize: number = DEFAULTS.fontSize;
 
-  // Security: Whitelist Modal State
+  // Security Modal State
   let showSecurityModal = false;
   let securityType: 'path' | 'url' = 'path';
   let securityResource = "";
@@ -146,6 +147,12 @@
     const menuTranslations = {
         menuFile: tMap.menuFile,
         menuEdit: tMap.menuEdit,
+        menuView: tMap.menuView,
+        menuLanguage: tMap.menuLanguage,
+        menuAppearance: tMap.menuAppearance,
+        menuThemeDark: tMap.menuThemeDark,
+        menuThemeLight: tMap.menuThemeLight,
+        menuThemeAuto: tMap.menuThemeAuto,
         menuNewTab: tMap.menuNewTab,
         menuOpen: tMap.menuOpen,
         menuSave: tMap.menuSave,
@@ -153,7 +160,10 @@
         menuRedo: tMap.menuRedo,
         menuCut: tMap.menuCut,
         menuCopy: tMap.menuCopy,
-        menuPaste: tMap.menuPaste
+        menuPaste: tMap.menuPaste,
+        menuAbout: tMap.menuAbout,
+        aboutTitle: tMap.aboutTitle,
+        aboutBody: tMap.aboutBody
     };
     await backend.updateMenu(menuTranslations);
   }
@@ -271,9 +281,15 @@
     const init = async () => {
       if (checkWailsReady()) {
         isReady = true;
+
+        // Native Menu Listeners
         EventsOn("menu-open-file", handleOpen);
         EventsOn("menu-save-file", handleSave);
         EventsOn("menu-new-tab", addNewTab);
+        
+        // Listeners for native menu language/theme toggles
+        EventsOn("set-locale", (l: string) => locale.set(l));
+        EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
         OnFileDrop(async (x: number, y: number, paths: string[]) => {
           if (!paths || paths.length === 0) return;
@@ -313,7 +329,6 @@
         updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
         
-        // Initial menu sync
         updateNativeMenu(get(locale));
       } else {
         setTimeout(init, 50);
@@ -330,6 +345,8 @@
       EventsOff("menu-open-file");
       EventsOff("menu-save-file");
       EventsOff("menu-new-tab");
+      EventsOff("set-locale");
+      EventsOff("set-theme");
     };
   });
 
@@ -359,7 +376,10 @@
 />
 
 <main class="flex h-screen w-full overflow-hidden flex-col select-none {$isPrinting ? 'is-printing' : ''} {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
-  <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} />
+  {#if SHOW_HTML_TOOLBAR}
+    <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} />
+  {/if}
+  
   <TabsBar tabs={tabs} activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
 
   <div class="flex flex-1 overflow-hidden relative print:block">

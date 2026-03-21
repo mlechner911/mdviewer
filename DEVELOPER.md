@@ -59,6 +59,19 @@ MD Viewer persists user settings and security whitelists in a `config.json` file
 }
 ```
 
+## 🎨 UI & Native Menus
+
+### Toolbar Visibility
+In `App.svelte`, the `SHOW_HTML_TOOLBAR` constant controls whether the top HTML toolbar is rendered. 
+- **`true`**: Recommended for development (Vite) where native menus are unavailable.
+- **`false`**: Recommended for production builds to provide a cleaner, native look.
+
+### Menu Synchronization
+The native application menu is dynamically updated via `backend.UpdateMenu`. 
+- When the application language changes, the frontend sends a map of translated strings to Go.
+- Go rebuilds the menu and updates the system menu bar using `runtime.MenuSetApplicationMenu`.
+- Menu actions (like changing language or theme) emit events back to the frontend using `runtime.EventsEmit`.
+
 ## 🤖 CI/CD
 
 The project uses GitHub Actions for multi-platform builds. The workflow is defined in `.github/workflows/release.yml`. It automatically generates:
