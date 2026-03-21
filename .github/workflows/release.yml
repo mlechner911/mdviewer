@@ -55,13 +55,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install nsis -y
+          choco install nsis -y -v
           $nsisPath = "C:\Program Files (x86)\NSIS"
           if (!(Test-Path $nsisPath)) {
             $nsisPath = "C:\Program Files\NSIS"
           }
           echo "$nsisPath" >> $env:GITHUB_PATH
-          # Verify using full path if needed
+          # Verify using full path
           & "$nsisPath\makensis.exe" /VERSION
 
       - name: Build App
@@ -74,20 +74,23 @@ jobs:
       - name: Prepare Linux Artifact
         if: matrix.os == 'ubuntu-22.04'
         run: |
-          mv build/bin/md-viewer build/bin/md-viewer-linux-amd64
-          chmod +x build/bin/md-viewer-linux-amd64
+          mv build/bin/marksafe build/bin/marksafe-linux-amd64
+          chmod +x build/bin/marksafe-linux-amd64
 
       - name: Package macOS
         if: matrix.os == 'macos-latest'
         run: |
           cd build/bin
-          zip -r md-viewer-macos-arm64.zip md-viewer.app
+          zip -r marksafe-macos-arm64.zip MarkSafe.app
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: md-viewer-${{ matrix.artifact-name }}
-          path: build/bin/*
+          name: marksafe-${{ matrix.artifact-name }}
+          path: |
+            build/bin/*.exe
+            build/bin/marksafe-linux-amd64
+            build/bin/*.zip
           if-no-files-found: error
 
   release:
@@ -107,6 +110,6 @@ jobs:
           files: |
             artifacts/**/*.exe
             artifacts/**/*.zip
-            artifacts/**/md-viewer-linux-amd64
+            artifacts/**/marksafe-linux-amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

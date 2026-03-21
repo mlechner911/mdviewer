@@ -1,4 +1,4 @@
-module md-viewer
+module marksafe
 
 go 1.23
 

@@ -1,9 +1,9 @@
-# MD Viewer
+# MarkSafe
 
 A small,  high-performance Markdown Viewer and Editor for **Windows**, **macOS**, and **Linux**.
 Designed for speed, simplicity, and a polished user experience.
 
-MD Viewer is a quick, native tool for previewing and editing Markdown files. Whether you are a developer, a technical writer, or someone who just needs to read a README, MD Viewer provides a clean, distraction-free environment.
+MarkSafe is a quick, native tool for previewing and editing Markdown files. Whether you are a developer, a technical writer, or someone who just needs to read a README, MarkSafe provides a clean, distraction-free environment.
 
 ##   Key Features
 
@@ -24,26 +24,26 @@ MD Viewer is a quick, native tool for previewing and editing Markdown files. Whe
 
 ## Secured by Default
 
-MD Viewer is built with security in mind. By default, it operates in a restricted environment:
+MarkSafe is built with security in mind. By default, it operates in a restricted environment:
 - **Directory Whitelisting**: The application only accesses files in directories you have explicitly allowed. Opening or saving a file automatically whitelists its location.
 - **External Resource Control**: Every time a document tries to load images or content from a new external website, you will be prompted for permission.
 - **Safe Link Handling**: Links to other Markdown files are intercepted and opened within the viewer after a security check.
 
 ##   Installation
 
-The easiest way to get MD Viewer is to download the latest version from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page.
+The easiest way to get MarkSafe is to download the latest version from the **[Releases](https://github.com/mlechner911/marksafe/releases)** page.
 
 ### Windows
-1. Download `md-viewer-installer.exe`.
-2. Run the installer to set up MD Viewer on your system.
+1. Download `marksafe-installer.exe`.
+2. Run the installer to set up MarkSafe on your system.
 
 ### macOS
-1. Download `md-viewer-mac.zip`.
-2. Extract the ZIP and move `MD Viewer.app` to your `Applications` folder.
+1. Download `marksafe-mac.zip`.
+2. Extract the ZIP and move `MarkSafe.app` to your `Applications` folder.
 
 ### Linux
-1. Download the `md-viewer` binary.
-2. Grant execution permissions: `chmod +x md-viewer`.
+1. Download the `marksafe` binary.
+2. Grant execution permissions: `chmod +x marksafe`.
 3. Run it directly or add it to your path.
 
 ## 📄 License

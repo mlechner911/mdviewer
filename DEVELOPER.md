@@ -1,6 +1,6 @@
-# MD Viewer - Developer Documentation
+# MarkSafe - Developer Documentation
 
-This document provides technical information for developers who wish to build, modify, or contribute to MD Viewer.
+This document provides technical information for developers who wish to build, modify, or contribute to MarkSafe.
 
 ## 🛠 Tech Stack
 
@@ -41,11 +41,11 @@ This document provides technical information for developers who wish to build, m
 
 ## ⚙️ Configuration & Security
 
-MD Viewer persists user settings and security whitelists in a `config.json` file. This file is stored in the system's standard application configuration directory:
+MarkSafe persists user settings and security whitelists in a `config.json` file. This file is stored in the system's standard application configuration directory:
 
-- **Linux**: `~/.config/md-viewer/config.json`
-- **macOS**: `~/Library/Application Support/md-viewer/config.json`
-- **Windows**: `%AppData%\md-viewer\config.json`
+- **Linux**: `~/.config/marksafe/config.json`
+- **macOS**: `~/Library/Application Support/marksafe/config.json`
+- **Windows**: `%AppData%\marksafe\config.json`
 
 ### Structure
 ```json
@@ -79,7 +79,7 @@ The project uses GitHub Actions for multi-platform builds. The workflow is defin
 - **macOS**: Universal Binary (packaged as ZIP).
 - **Linux**: Standalone Binary (AMD64).
 
-Releases are triggered by pushing a tag (e.g., `v0.5.5`).
+Releases are triggered by pushing a tag (e.g., `v1.0.0`).
 
 ## 📄 License
 

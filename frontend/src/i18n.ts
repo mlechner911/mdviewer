@@ -26,7 +26,7 @@ export const translations: Record<string, any> = {
     editor: 'Editor',
     preview: 'Preview',
     placeholder: 'Type markdown here...',
-    welcomeTitle: '# Welcome to MD Viewer',
+    welcomeTitle: '# Welcome to MarkSafe',
     ready: 'Ready',
     toggleTheme: 'Toggle App Theme',
     untitled: 'Untitled',
@@ -67,9 +67,9 @@ export const translations: Record<string, any> = {
     menuBold: 'Bold',
     menuItalic: 'Italic',
     menuCodeBlock: 'Code Block',
-    menuAbout: 'About MD Viewer',
-    aboutTitle: 'About MD Viewer',
-    aboutBody: 'MD Viewer v0.9.0\n\nA modern, high-performance Markdown Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
+    menuAbout: 'About MarkSafe',
+    aboutTitle: 'About MarkSafe',
+    aboutBody: 'MarkSafe v1.0.0\n\nA modern, high-performance Markdown Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
     open: 'Öffnen',
@@ -81,7 +81,7 @@ export const translations: Record<string, any> = {
     editor: 'Editor',
     preview: 'Vorschau',
     placeholder: 'Markdown hier eingeben...',
-    welcomeTitle: '# Willkommen beim MD Viewer',
+    welcomeTitle: '# Willkommen bei MarkSafe',
     ready: 'Bereit',
     toggleTheme: 'App-Design umschalten',
     untitled: 'Unbenannt',
@@ -122,9 +122,9 @@ export const translations: Record<string, any> = {
     menuBold: 'Fett',
     menuItalic: 'Kursiv',
     menuCodeBlock: 'Code-Block',
-    menuAbout: 'Über MD Viewer',
-    aboutTitle: 'Über MD Viewer',
-    aboutBody: 'MD Viewer v0.9.0\n\nEin moderner, leistungsstarker Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
+    menuAbout: 'Über MarkSafe',
+    aboutTitle: 'Über MarkSafe',
+    aboutBody: 'MarkSafe v1.0.0\n\nEin moderner, leistungsstarker Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
     open: 'Abrir',
@@ -136,7 +136,7 @@ export const translations: Record<string, any> = {
     editor: 'Editor',
     preview: 'Vista Previa',
     placeholder: 'Escriba markdown aquí...',
-    welcomeTitle: '# Bienvenido a MD Viewer',
+    welcomeTitle: '# Bienvenido a MarkSafe',
     ready: 'Listo',
     toggleTheme: 'Cambiar tema de la aplicación',
     untitled: 'Sin título',
@@ -177,9 +177,9 @@ export const translations: Record<string, any> = {
     menuBold: 'Negrita',
     menuItalic: 'Cursiva',
     menuCodeBlock: 'Bloque de código',
-    menuAbout: 'Acerca de MD Viewer',
-    aboutTitle: 'Acerca de MD Viewer',
-    aboutBody: 'MD Viewer v0.9.0\n\nUn visor de Markdown moderno y de alto rendimiento.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
+    menuAbout: 'Acerca de MarkSafe',
+    aboutTitle: 'Acerca de MarkSafe',
+    aboutBody: 'MarkSafe v1.0.0\n\nUn visor de Markdown moderno y de alto rendimiento.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
     open: 'Ouvrir',
@@ -191,7 +191,7 @@ export const translations: Record<string, any> = {
     editor: 'Éditeur',
     preview: 'Aperçu',
     placeholder: 'Tapez du markdown ici...',
-    welcomeTitle: '# Bienvenue sur MD Viewer',
+    welcomeTitle: '# Bienvenue sur MarkSafe',
     ready: 'Prêt',
     toggleTheme: 'Changer le thème de l\'application',
     untitled: 'Sans titre',
@@ -208,7 +208,7 @@ export const translations: Record<string, any> = {
     filesLoaded: '%s fichiers chargés',
     securityWarningPath: 'Autorisation de sécurité requise',
     securityDescPath: 'Ce document tente d\'accéder à un fichier dans un répertoire qui n\'est pas sur liste blanche. Voulez-vous autoriser l\'accès à ce répertoire ?',
-    securityWarningURL: 'Demande de contenido externo',
+    securityWarningURL: 'Demande de contenu externe',
     securityDescURL: 'Ce document tente de charger du contenu à partir d\'un site Web externe. Voulez-vous autoriser les requêtes vers ce domaine ?',
     allow: 'Autoriser',
     deny: 'Refuser',
@@ -232,9 +232,9 @@ export const translations: Record<string, any> = {
     menuBold: 'Gras',
     menuItalic: 'Italique',
     menuCodeBlock: 'Bloc de code',
-    menuAbout: 'À propos de MD Viewer',
-    aboutTitle: 'À propos de MD Viewer',
-    aboutBody: 'MD Viewer v0.9.0\n\nUn visionneur Markdown moderne et performant.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
+    menuAbout: 'À propos de MarkSafe',
+    aboutTitle: 'À propos de MarkSafe',
+    aboutBody: 'MarkSafe v1.0.0\n\nUn visionneur Markdown moderne et performant.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
   }
 };
 

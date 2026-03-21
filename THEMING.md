@@ -1,6 +1,6 @@
 # Theming Architecture (v0.2.0)
 
-MD Viewer uses a modular JSON-based theming system.
+MarkSafe uses a modular JSON-based theming system.
 
 ## 1. JSON Configuration
 

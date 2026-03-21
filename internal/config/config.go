@@ -28,7 +28,7 @@ func NewConfigManager() (*ConfigManager, error) {
 		return nil, err
 	}
 
-	appDir := filepath.Join(userConfigDir, "md-viewer")
+	appDir := filepath.Join(userConfigDir, "marksafe")
 	if err := os.MkdirAll(appDir, 0755); err != nil {
 		return nil, err
 	}

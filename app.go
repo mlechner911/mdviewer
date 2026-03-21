@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"md-viewer/internal/config"
-	"md-viewer/internal/filesystem"
-	"md-viewer/internal/markdown"
+	"marksafe/internal/config"
+	"marksafe/internal/filesystem"
+	"marksafe/internal/markdown"
 
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/menu/keys"
