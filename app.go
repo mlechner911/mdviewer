@@ -127,6 +127,21 @@ func (a *App) GetStyleCSS(style string) string {
 	return css
 }
 
+// MenuOpenFile is called from the native application menu.
+func (a *App) MenuOpenFile() {
+	runtime.EventsEmit(a.ctx, "menu-open-file")
+}
+
+// MenuSaveFile is called from the native application menu.
+func (a *App) MenuSaveFile() {
+	runtime.EventsEmit(a.ctx, "menu-save-file")
+}
+
+// MenuNewTab is called from the native application menu.
+func (a *App) MenuNewTab() {
+	runtime.EventsEmit(a.ctx, "menu-new-tab")
+}
+
 // OpenFile opens a native file dialog and returns the path and content.
 func (a *App) OpenFile() (*FileResult, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{

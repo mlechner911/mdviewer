@@ -5,7 +5,7 @@
    * Now supports multiple open files, automatic language detection, and security whitelisting.
    */
   import { onMount, tick } from 'svelte';
-  import { EventsOn, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
+  import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
   import Preview from './components/Preview.svelte';
   import WhitelistModal from './components/WhitelistModal.svelte';
@@ -100,7 +100,6 @@
   let showSecurityModal = false;
   let securityType: 'path' | 'url' = 'path';
   let securityResource = "";
-  let pendingSecurityResolve: (() => void) | null = null;
 
   async function handleSecurityRequest(event: CustomEvent) {
     securityType = event.detail.type;
@@ -115,7 +114,6 @@
       await backend.addURLToWhitelist(securityResource);
     }
     showSecurityModal = false;
-    // Trigger re-render to load now-authorized resources
     debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
   }
 
@@ -199,7 +197,6 @@
         const newTab = createNewTab(title, result.content, result.path);
         tabs = [...tabs, newTab];
         activeTabIndex = tabs.length - 1;
-        // Auto-whitelist the directory of the opened file
         const parentDir = await backend.getParentDir(result.path);
         await backend.addPathToWhitelist(parentDir);
       }
@@ -272,6 +269,12 @@
     const init = async () => {
       if (checkWailsReady()) {
         isReady = true;
+
+        // Native Menu Listeners
+        EventsOn("menu-open-file", handleOpen);
+        EventsOn("menu-save-file", handleSave);
+        EventsOn("menu-new-tab", addNewTab);
+
         OnFileDrop(async (x: number, y: number, paths: string[]) => {
           if (!paths || paths.length === 0) return;
           const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
@@ -321,7 +324,13 @@
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => { if (appTheme === 'auto') updateEffectiveTheme(); };
     mediaQuery.addEventListener('change', handler);
-    return () => { mediaQuery.removeEventListener('change', handler); OnFileDropOff(); };
+    return () => { 
+      mediaQuery.removeEventListener('change', handler); 
+      OnFileDropOff(); 
+      EventsOff("menu-open-file");
+      EventsOff("menu-save-file");
+      EventsOff("menu-new-tab");
+    };
   });
 
   $: if (appTheme) updateEffectiveTheme();
@@ -388,7 +397,7 @@
                 </div>
             {/if}
         </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.7.5</span>
+        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.8.0</span>
     </div>
   </div>
   <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass} print:hidden">
