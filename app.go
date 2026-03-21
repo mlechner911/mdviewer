@@ -10,9 +10,9 @@ import (
 	"md-viewer/internal/filesystem"
 	"md-viewer/internal/markdown"
 
-	"github.com/wailsapp/v2/pkg/menu"
-	"github.com/wailsapp/v2/pkg/menu/keys"
-	"github.com/wailsapp/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // FileResult holds the outcome of a file open operation.
@@ -71,6 +71,17 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.AddText(t["menuAbout"], nil, func(_ *menu.CallbackData) {
 		a.ShowAbout(t["aboutTitle"], t["aboutBody"])
 	})
+
+	// Format Menu
+	formatMenu := appMenu.AddSubmenu(t["menuFormat"])
+	formatMenu.AddText(t["menuBold"], keys.CmdOrCtrl("b"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-bold") })
+	formatMenu.AddText(t["menuItalic"], keys.CmdOrCtrl("i"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-italic") })
+	formatMenu.AddSeparator()
+	formatMenu.AddText("H1", keys.CmdOrCtrl("1"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-h1") })
+	formatMenu.AddText("H2", keys.CmdOrCtrl("2"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-h2") })
+	formatMenu.AddText("H3", keys.CmdOrCtrl("3"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-h3") })
+	formatMenu.AddSeparator()
+	formatMenu.AddText(t["menuCodeBlock"], keys.Combo("c", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-code") })
 
 	// View Menu (Language & Appearance)
 	viewMenu := appMenu.AddSubmenu(t["menuView"])

@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Main Application component for MD Viewer.
-   * Now with dynamic native menu synchronization for language and themes.
+   * Now with dynamic native menu synchronization for language, themes, and formatting.
    */
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
@@ -26,8 +26,8 @@
   } from './lib/stores';
 
   // CONFIGURATION: Set to false to hide the HTML toolbar in the Wails app.
-  // Useful for Vite development where native menus aren't accessible.
-  const SHOW_HTML_TOOLBAR = true;
+  // We keep it true during development (Vite) but default to false for native feel.
+  const SHOW_HTML_TOOLBAR = false;
 
   interface Tab {
     id: string;
@@ -40,6 +40,7 @@
   // State: Tabs
   let tabs: Tab[] = [];
   let activeTabIndex: number = 0;
+  let textareaElement: HTMLTextAreaElement;
 
   const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
 
@@ -86,6 +87,42 @@
     if (tabs[activeTabIndex]) {
         tabs[activeTabIndex].isDirty = true;
     }
+  }
+
+  // Formatting Helpers
+  function wrapSelection(prefix: string, suffix: string) {
+    if (!textareaElement || !tabs[activeTabIndex]) return;
+    const start = textareaElement.selectionStart;
+    const end = textareaElement.selectionEnd;
+    const content = tabs[activeTabIndex].content;
+    const selectedText = content.substring(start, end);
+    
+    const newContent = content.substring(0, start) + prefix + selectedText + suffix + content.substring(end);
+    tabs[activeTabIndex].content = newContent;
+    tabs[activeTabIndex].isDirty = true;
+    
+    // Restore focus and selection
+    tick().then(() => {
+        textareaElement.focus();
+        textareaElement.setSelectionRange(start + prefix.length, end + prefix.length);
+    });
+  }
+
+  function prefixSelection(prefix: string) {
+    if (!textareaElement || !tabs[activeTabIndex]) return;
+    const start = textareaElement.selectionStart;
+    const content = tabs[activeTabIndex].content;
+    
+    // Find the start of the current line
+    const lineStart = content.lastIndexOf('\n', start - 1) + 1;
+    const newContent = content.substring(0, lineStart) + prefix + content.substring(lineStart);
+    tabs[activeTabIndex].content = newContent;
+    tabs[activeTabIndex].isDirty = true;
+
+    tick().then(() => {
+        textareaElement.focus();
+        textareaElement.setSelectionRange(start + prefix.length, start + prefix.length);
+    });
   }
 
   let htmlContent: string = "";
@@ -148,6 +185,7 @@
         menuFile: tMap.menuFile,
         menuEdit: tMap.menuEdit,
         menuView: tMap.menuView,
+        menuFormat: tMap.menuFormat,
         menuLanguage: tMap.menuLanguage,
         menuAppearance: tMap.menuAppearance,
         menuThemeDark: tMap.menuThemeDark,
@@ -161,6 +199,9 @@
         menuCut: tMap.menuCut,
         menuCopy: tMap.menuCopy,
         menuPaste: tMap.menuPaste,
+        menuBold: tMap.menuBold,
+        menuItalic: tMap.menuItalic,
+        menuCodeBlock: tMap.menuCodeBlock,
         menuAbout: tMap.menuAbout,
         aboutTitle: tMap.aboutTitle,
         aboutBody: tMap.aboutBody
@@ -287,6 +328,14 @@
         EventsOn("menu-save-file", handleSave);
         EventsOn("menu-new-tab", addNewTab);
         
+        // Formatting Listeners
+        EventsOn("format-bold", () => wrapSelection('**', '**'));
+        EventsOn("format-italic", () => wrapSelection('*', '*'));
+        EventsOn("format-h1", () => prefixSelection('# '));
+        EventsOn("format-h2", () => prefixSelection('## '));
+        EventsOn("format-h3", () => prefixSelection('### '));
+        EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
+
         // Listeners for native menu language/theme toggles
         EventsOn("set-locale", (l: string) => locale.set(l));
         EventsOn("set-theme", (t: string) => appTheme.set(t as any));
@@ -347,6 +396,12 @@
       EventsOff("menu-new-tab");
       EventsOff("set-locale");
       EventsOff("set-theme");
+      EventsOff("format-bold");
+      EventsOff("format-italic");
+      EventsOff("format-h1");
+      EventsOff("format-h2");
+      EventsOff("format-h3");
+      EventsOff("format-code");
     };
   });
 
@@ -390,6 +445,7 @@
       </div>
       {#if tabs[activeTabIndex]}
       <textarea
+        bind:this={textareaElement}
         bind:value={tabs[activeTabIndex].content}
         on:input={onContentInput}
         spellcheck="false" autocorrect="off" autocapitalize="off"
