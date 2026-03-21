@@ -3,8 +3,10 @@
    * Main Application component for MD Viewer.
    * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
    * Refactored into smaller components using shared stores.
+   * Supports dynamic menu translations.
    */
   import { onMount, tick } from 'svelte';
+  import { get } from 'svelte/store';
   import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
   
@@ -17,7 +19,7 @@
 
   // State & Config
   import { themes } from './themes';
-  import { t, locale } from './i18n';
+  import { t, locale, translations } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
   import { c_initialmd } from './lib/devdefmd.js';
   import { 
@@ -33,7 +35,7 @@
     isDirty: boolean;
   }
 
-  // State: Tabs (Kept in App for now as it owns the complex logic)
+  // State: Tabs
   let tabs: Tab[] = [];
   let activeTabIndex: number = 0;
 
@@ -135,6 +137,25 @@
     } else {
       effectiveAppTheme.set($appTheme as 'dark' | 'light');
     }
+  }
+
+  // Native Menu Translation Sync
+  async function updateNativeMenu(currentLocale: string) {
+    if (!isReady || !checkWailsReady()) return;
+    const tMap = translations[currentLocale];
+    const menuTranslations = {
+        menuFile: tMap.menuFile,
+        menuEdit: tMap.menuEdit,
+        menuNewTab: tMap.menuNewTab,
+        menuOpen: tMap.menuOpen,
+        menuSave: tMap.menuSave,
+        menuUndo: tMap.menuUndo,
+        menuRedo: tMap.menuRedo,
+        menuCut: tMap.menuCut,
+        menuCopy: tMap.menuCopy,
+        menuPaste: tMap.menuPaste
+    };
+    await backend.updateMenu(menuTranslations);
   }
 
   let isResizing = false;
@@ -291,6 +312,9 @@
         activeTabIndex = 0;
         updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
+        
+        // Initial menu sync
+        updateNativeMenu(get(locale));
       } else {
         setTimeout(init, 50);
       }
@@ -310,6 +334,7 @@
   });
 
   $: if ($appTheme) updateEffectiveTheme();
+  $: if ($locale) updateNativeMenu($locale);
   $: if (isReady) updateHighlightingCSS(currentPreviewTheme.chromaStyle);
   $: if (isReady && (markdown !== undefined || currentPreviewTheme !== undefined)) {
     debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);

@@ -13,7 +13,8 @@ import {
   AddPathToWhitelist,
   AddURLToWhitelist,
   GetParentDir,
-  ResolveRelativePath
+  ResolveRelativePath,
+  UpdateMenu
 } from '../../wailsjs/go/main/App.js'
 
 export interface FileResult {
@@ -113,4 +114,10 @@ export async function getParentDir(path: string): Promise<string> {
 export async function resolveRelativePath(baseDir: string, relPath: string): Promise<string> {
   if (!isWailsReady()) return relPath;
   return await ResolveRelativePath(baseDir, relPath);
+}
+
+// Menu Translation Binding
+export async function updateMenu(translations: Record<string, string>): Promise<void> {
+  if (!isWailsReady()) return;
+  await UpdateMenu(translations);
 }

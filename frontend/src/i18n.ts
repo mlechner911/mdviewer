@@ -46,7 +46,17 @@ export const translations: Record<string, any> = {
     securityWarningURL: 'External Content Request',
     securityDescURL: 'This document is trying to load content from an external website. Do you want to allow requests to this domain?',
     allow: 'Allow',
-    deny: 'Deny'
+    deny: 'Deny',
+    menuFile: 'File',
+    menuEdit: 'Edit',
+    menuNewTab: 'New Tab',
+    menuOpen: 'Open...',
+    menuSave: 'Save',
+    menuUndo: 'Undo',
+    menuRedo: 'Redo',
+    menuCut: 'Cut',
+    menuCopy: 'Copy',
+    menuPaste: 'Paste'
   },
   de: {
     open: 'Öffnen',
@@ -78,7 +88,17 @@ export const translations: Record<string, any> = {
     securityWarningURL: 'Externe Inhaltsanfrage',
     securityDescURL: 'Dieses Dokument versucht, Inhalte von einer externen Website zu laden. Möchten Sie Anfragen an diese Domain erlauben?',
     allow: 'Erlauben',
-    deny: 'Ablehnen'
+    deny: 'Ablehnen',
+    menuFile: 'Datei',
+    menuEdit: 'Bearbeiten',
+    menuNewTab: 'Neuer Tab',
+    menuOpen: 'Öffnen...',
+    menuSave: 'Speichern',
+    menuUndo: 'Rückgängig',
+    menuRedo: 'Wiederholen',
+    menuCut: 'Ausschneiden',
+    menuCopy: 'Kopieren',
+    menuPaste: 'Einfügen'
   },
   es: {
     open: 'Abrir',
@@ -110,7 +130,17 @@ export const translations: Record<string, any> = {
     securityWarningURL: 'Solicitud de contenido externo',
     securityDescURL: 'Este documento intenta cargar contenido de un sitio web externo. ¿Desea permitir solicitudes a este dominio?',
     allow: 'Permitir',
-    deny: 'Denegar'
+    deny: 'Denegar',
+    menuFile: 'Archivo',
+    menuEdit: 'Editar',
+    menuNewTab: 'Nueva pestaña',
+    menuOpen: 'Abrir...',
+    menuSave: 'Guardar',
+    menuUndo: 'Deshacer',
+    menuRedo: 'Rehacer',
+    menuCut: 'Cortar',
+    menuCopy: 'Copiar',
+    menuPaste: 'Pegar'
   },
   fr: {
     open: 'Ouvrir',
@@ -142,7 +172,17 @@ export const translations: Record<string, any> = {
     securityWarningURL: 'Demande de contenu externe',
     securityDescURL: 'Ce document tente de charger du contenu à partir d\'un site Web externe. Voulez-vous autoriser les requêtes vers ce domaine ?',
     allow: 'Autoriser',
-    deny: 'Refuser'
+    deny: 'Refuser',
+    menuFile: 'Fichier',
+    menuEdit: 'Édition',
+    menuNewTab: 'Nouvel onglet',
+    menuOpen: 'Ouvrir...',
+    menuSave: 'Enregistrer',
+    menuUndo: 'Annuler',
+    menuRedo: 'Rétablir',
+    menuCut: 'Couper',
+    menuCopy: 'Copier',
+    menuPaste: 'Coller'
   }
 };
 

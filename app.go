@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"runtime"
 
 	"md-viewer/internal/config"
 	"md-viewer/internal/filesystem"
 	"md-viewer/internal/markdown"
 
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -47,6 +50,38 @@ func (a *App) SetInitialFile(path string) {
 // startup is called when the app starts.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// UpdateMenu dynamically updates the application menu with translated strings.
+func (a *App) UpdateMenu(t map[string]string) {
+	appMenu := menu.NewMenu()
+
+	// File Menu
+	fileMenu := appMenu.AddSubmenu(t["menuFile"])
+	fileMenu.AddText(t["menuNewTab"], keys.CmdOrCtrl("t"), func(_ *menu.CallbackData) {
+		a.MenuNewTab()
+	})
+	fileMenu.AddText(t["menuOpen"], keys.CmdOrCtrl("o"), func(_ *menu.CallbackData) {
+		a.MenuOpenFile()
+	})
+	fileMenu.AddText(t["menuSave"], keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
+		a.MenuSaveFile()
+	})
+	
+	if runtime.GOOS == "darwin" {
+		appMenu.Append(menu.AppMenu())
+		appMenu.Append(menu.EditMenu())
+	} else {
+		editMenu := appMenu.AddSubmenu(t["menuEdit"])
+		editMenu.AddText(t["menuUndo"], keys.CmdOrCtrl("z"), func(_ *menu.CallbackData) {})
+		editMenu.AddText(t["menuRedo"], keys.CmdOrCtrl("y"), func(_ *menu.CallbackData) {})
+		editMenu.AddSeparator()
+		editMenu.AddText(t["menuCut"], keys.CmdOrCtrl("x"), func(_ *menu.CallbackData) {})
+		editMenu.AddText(t["menuCopy"], keys.CmdOrCtrl("c"), func(_ *menu.CallbackData) {})
+		editMenu.AddText(t["menuPaste"], keys.CmdOrCtrl("v"), func(_ *menu.CallbackData) {})
+	}
+
+	runtime.MenuSetApplicationMenu(a.ctx, appMenu)
 }
 
 // IsPathAllowed checks if a local file path is within a whitelisted directory.
