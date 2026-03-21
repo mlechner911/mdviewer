@@ -2,18 +2,28 @@
   /**
    * Main Application component for MD Viewer.
    * Manages layout (resizable panes), dual-theming, file I/O, and debounced rendering.
-   * Now supports multiple open files, automatic language detection, and security whitelisting.
+   * Refactored into smaller components using shared stores.
    */
   import { onMount, tick } from 'svelte';
   import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
+  
+  // Components
   import Preview from './components/Preview.svelte';
   import WhitelistModal from './components/WhitelistModal.svelte';
+  import Toolbar from './components/Toolbar.svelte';
+  import TabsBar from './components/TabsBar.svelte';
+  import StatusBar from './components/StatusBar.svelte';
+
+  // State & Config
   import { themes } from './themes';
   import { t, locale } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
-  import type { AppTheme_t } from './lib/constants';
   import { c_initialmd } from './lib/devdefmd.js';
+  import { 
+    appTheme, effectiveAppTheme, splitWidth, isFocusMode, 
+    isEditorHidden, isPrinting, dropMessage, showToast 
+  } from './lib/stores';
 
   interface Tab {
     id: string;
@@ -23,11 +33,10 @@
     isDirty: boolean;
   }
 
-  // State: Tabs
+  // State: Tabs (Kept in App for now as it owns the complex logic)
   let tabs: Tab[] = [];
   let activeTabIndex: number = 0;
 
-  // Set initial default markdown
   const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
 
   function createNewTab(title = $t('untitled'), content = "", path: string | null = null): Tab {
@@ -48,16 +57,13 @@
 
   function handleCloseTab(index: number, event?: MouseEvent) {
     if (event) event.stopPropagation();
-    
     if (tabs.length === 1) {
         tabs = [createNewTab($t('untitled'), defaultMarkdown())];
         activeTabIndex = 0;
         return;
     }
-
     const wasActive = index === activeTabIndex;
     tabs = tabs.filter((_, i) => i !== index);
-    
     if (wasActive) {
       activeTabIndex = Math.max(0, index - 1);
     } else if (index < activeTabIndex) {
@@ -65,14 +71,13 @@
     }
   }
 
-  // Explicit reactive markdown for the editor and preview
   $: markdown = tabs[activeTabIndex]?.content || "";
   $: activeTab = tabs[activeTabIndex] || null;
 
   // Feature 6: Word & Character Count
   $: wordCount = markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0;
   $: charCount = markdown ? markdown.length : 0;
-  $: readingTime = Math.ceil(wordCount / 225); // Average 225 wpm
+  $: readingTime = Math.ceil(wordCount / 225);
 
   function onContentInput() {
     if (tabs[activeTabIndex]) {
@@ -80,21 +85,10 @@
     }
   }
 
-  // State: Rendering results
   let htmlContent: string = "";
   let highlightingCSS: string = "";
-
-  // State: Visual Preferences
   let currentPreviewTheme = themes[0];
   let fontSize: number = DEFAULTS.fontSize;
-  let dropMessage: string | null = null;
-
-  // Feature 7: Focus Mode & Editor Toggle
-  let isFocusMode = false;
-  let isEditorHidden = false;
-
-  // Feature 5: Print State
-  let isPrinting = false;
 
   // Security: Whitelist Modal State
   let showSecurityModal = false;
@@ -132,41 +126,28 @@
     }
   }
 
-  // App Frame Theming
-  let appTheme: AppTheme_t = APP_THEME.DARK;
-  let effectiveAppTheme: 'dark' | 'light' = APP_THEME.DARK as 'dark';
-
   let isReady = false;
   const checkWailsReady = backend.isWailsReady;
 
   function updateEffectiveTheme() {
-    if (appTheme === 'auto') {
-      effectiveAppTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if ($appTheme === 'auto') {
+      effectiveAppTheme.set(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     } else {
-      effectiveAppTheme = appTheme;
+      effectiveAppTheme.set($appTheme as 'dark' | 'light');
     }
   }
 
-  function toggleAppTheme() {
-    if (appTheme === APP_THEME.DARK) appTheme = APP_THEME.LIGHT;
-    else if (appTheme === APP_THEME.LIGHT) appTheme = APP_THEME.AUTO;
-    else appTheme = APP_THEME.DARK;
-  }
-
-  let splitWidth: number = 50;
   let isResizing = false;
-
   function startResizing() { isResizing = true; }
   function stopResizing() { isResizing = false; }
   function onMouseMove(event: MouseEvent) {
-    if (!isResizing || isEditorHidden) return;
-    splitWidth = (event.clientX / window.innerWidth) * 100;
-    if (splitWidth < 10) splitWidth = 10;
-    if (splitWidth > 90) splitWidth = 90;
+    if (!isResizing || $isEditorHidden) return;
+    splitWidth.set((event.clientX / window.innerWidth) * 100);
+    if ($splitWidth < 10) splitWidth.set(10);
+    if ($splitWidth > 90) splitWidth.set(90);
   }
 
   let timeout: ReturnType<typeof setTimeout>;
-
   function debouncedUpdate(value: string, themeStyle: string) {
     if (!isReady || !checkWailsReady()) return;
     clearTimeout(timeout);
@@ -230,7 +211,7 @@
         const cStyle = window.getComputedStyle(containerEl);
         const aStyle = window.getComputedStyle(previewEl.querySelector('a') || previewEl);
         const codeStyle = window.getComputedStyle(previewEl.querySelector('code') || previewEl);
-        const isDark = effectiveAppTheme === 'dark' || currentPreviewTheme.id === 'dark';
+        const isDark = $effectiveAppTheme === 'dark' || currentPreviewTheme.id === 'dark';
         themeVars = `
         :root {
             --bg-color: ${cStyle.backgroundColor};
@@ -251,12 +232,12 @@
   async function handlePrint() {
     const originalTheme = currentPreviewTheme;
     const monochromeTheme = themes.find(t => t.id === 'monochrome') || originalTheme;
-    isPrinting = true;
+    isPrinting.set(true);
     currentPreviewTheme = monochromeTheme;
     await tick();
     setTimeout(() => {
         window.print();
-        isPrinting = false;
+        isPrinting.set(false);
         currentPreviewTheme = originalTheme;
     }, 100);
   }
@@ -269,8 +250,6 @@
     const init = async () => {
       if (checkWailsReady()) {
         isReady = true;
-
-        // Native Menu Listeners
         EventsOn("menu-open-file", handleOpen);
         EventsOn("menu-save-file", handleSave);
         EventsOn("menu-new-tab", addNewTab);
@@ -297,10 +276,7 @@
               }
             }
           }
-          if (loadedCount > 0) {
-            dropMessage = $t('filesLoaded', loadedCount);
-            setTimeout(() => dropMessage = null, 3000);
-          }
+          if (loadedCount > 0) showToast($t('filesLoaded', loadedCount));
         }, false);
 
         const result = await backend.getInitialContent();
@@ -322,7 +298,7 @@
     init();
     updateEffectiveTheme();
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => { if (appTheme === 'auto') updateEffectiveTheme(); };
+    const handler = () => { if ($appTheme === 'auto') updateEffectiveTheme(); };
     mediaQuery.addEventListener('change', handler);
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
@@ -333,20 +309,17 @@
     };
   });
 
-  $: if (appTheme) updateEffectiveTheme();
+  $: if ($appTheme) updateEffectiveTheme();
   $: if (isReady) updateHighlightingCSS(currentPreviewTheme.chromaStyle);
   $: if (isReady && (markdown !== undefined || currentPreviewTheme !== undefined)) {
     debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
   }
 
-  $: toolbarClass = STYLE.toolbar[effectiveAppTheme];
-  $: editorClass = STYLE.editor[effectiveAppTheme];
-  $: buttonClass = STYLE.button[effectiveAppTheme];
-  $: dividerClass = STYLE.divider[effectiveAppTheme];
-  $: activeTabClass = STYLE.tab.active[effectiveAppTheme];
-  $: inactiveTabClass = STYLE.tab.inactive[effectiveAppTheme];
-  $: statusClass = STYLE.status[effectiveAppTheme];
-  $: focusButtonClass = STYLE.focusButton[effectiveAppTheme];
+  $: toolbarClass = STYLE.toolbar[$effectiveAppTheme];
+  $: editorClass = STYLE.editor[$effectiveAppTheme];
+  $: buttonClass = STYLE.button[$effectiveAppTheme];
+  $: dividerClass = STYLE.divider[$effectiveAppTheme];
+  $: focusButtonClass = STYLE.focusButton[$effectiveAppTheme];
 </script>
 
 <svelte:window on:mousemove={onMouseMove} on:mouseup={stopResizing} />
@@ -355,75 +328,18 @@
   show={showSecurityModal} 
   type={securityType} 
   resource={securityResource} 
-  theme={effectiveAppTheme}
+  theme={$effectiveAppTheme}
   onConfirm={confirmSecurityRequest}
   onCancel={() => showSecurityModal = false}
 />
 
-<main class="flex h-screen w-full overflow-hidden flex-col select-none {isPrinting ? 'is-printing' : ''} {effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
-  {#if !isFocusMode && !isPrinting}
-  <div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass} print:hidden">
-    <div class="flex gap-2">
-      <button on:click={handleOpen} title={$t('open')} class="p-2 rounded transition-colors {buttonClass}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-      </button>
-      <button on:click={handleSave} title={$t('save')} class="p-2 rounded transition-colors {buttonClass}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-      </button>
-      <button on:click={addNewTab} title={$t('newTab')} class="p-2 rounded transition-colors {buttonClass}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      </button>
-    </div>
-    <div class="flex-1"></div>
-    <div class="flex items-center gap-4">
-        <div class="flex items-center">
-          <select bind:value={$locale} class="text-[10px] font-bold uppercase rounded border-none py-1 px-2 cursor-pointer bg-transparent focus:ring-1 focus:ring-blue-500 {effectiveAppTheme === 'dark' ? 'text-slate-100' : 'text-slate-900'}">
-            <option value="en">EN</option>
-            <option value="de">DE</option>
-            <option value="es">ES</option>
-            <option value="fr">FR</option>
-          </select>
-        </div>
-        <div class="h-6 w-px {dividerClass}"></div>
-        <button on:click={toggleAppTheme} title={$t('toggleTheme')} class="p-1.5 rounded-full transition-colors {buttonClass}">
-            {#if appTheme === 'dark'}
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-            {:else if appTheme === 'light'}
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-            {:else}
-                <div class="relative">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                    <span class="absolute -top-1 -right-1 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
-                </div>
-            {/if}
-        </button>
-        <span class="text-xs opacity-40 font-mono hidden sm:inline">MD Viewer v0.8.0</span>
-    </div>
-  </div>
-  <div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass} print:hidden">
-    {#each tabs as tab, i}
-      <button 
-        type="button"
-        class="flex items-center px-4 h-9 cursor-pointer transition-colors border-r text-xs font-medium min-w-[120px] max-w-[200px] {i === activeTabIndex ? activeTabClass : inactiveTabClass} {dividerClass}"
-        on:click={() => activeTabIndex = i}
-        on:keydown={(e) => e.key === 'Enter' && (activeTabIndex = i)}
-      >
-        <span class="truncate flex-1 text-left">{tab.title}{tab.isDirty ? ' *' : ''}</span>
-        <button 
-          type="button"
-          on:click={(e) => handleCloseTab(i, e)}
-          class="ml-2 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      </button>
-    {/each}
-  </div>
-  {/if}
+<main class="flex h-screen w-full overflow-hidden flex-col select-none {$isPrinting ? 'is-printing' : ''} {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
+  <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} />
+  <TabsBar tabs={tabs} activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
 
   <div class="flex flex-1 overflow-hidden relative print:block">
-    {#if !isEditorHidden && !isFocusMode && !isPrinting}
-    <div class="flex flex-col border-r relative {editorClass} print:hidden" style="width: {splitWidth}%;">
+    {#if !$isEditorHidden && !$isFocusMode && !$isPrinting}
+    <div class="flex flex-col border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
       <div class="p-2 text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
         {$t('editor')}
       </div>
@@ -442,20 +358,20 @@
 
     <div class="flex-1 flex flex-col relative print:block">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
-      {#if !isPrinting}
+      {#if !$isPrinting}
       <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
         <div class="flex items-center gap-2">
             <button 
-                on:click={() => isEditorHidden = !isEditorHidden} 
-                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isEditorHidden ? focusButtonClass : ''}"
-                title={isEditorHidden ? $t('showEditor') : $t('hideEditor')}
+                on:click={() => isEditorHidden.update(v => !v)} 
+                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isEditorHidden ? focusButtonClass : ''}"
+                title={$isEditorHidden ? $t('showEditor') : $t('hideEditor')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
             </button>
             <button 
-                on:click={() => isFocusMode = !isFocusMode} 
-                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isFocusMode ? focusButtonClass : ''}"
-                title={isFocusMode ? $t('exitFocusMode') : $t('focusMode')}
+                on:click={() => isFocusMode.update(v => !v)} 
+                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isFocusMode ? focusButtonClass : ''}"
+                title={$isFocusMode ? $t('exitFocusMode') : $t('focusMode')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
             </button>
@@ -497,21 +413,10 @@
     </div>
   </div>
 
-  {#if !isPrinting}
-  <div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} print:hidden">
-    <div class="flex gap-4">
-        <span>{wordCount} {$t('words')}</span>
-        <span>{charCount} {$t('characters')}</span>
-    </div>
-    <div class="flex-1"></div>
-    <div>{$t('readingTime', readingTime)}</div>
-    <div class="h-3 w-px {dividerClass}"></div>
-    <div class="uppercase tracking-tighter opacity-80">{activeTab?.path || $t('untitled')}</div>
-  </div>
-  {/if}
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} />
 
-  {#if dropMessage}
-    <div class="drop-toast">{dropMessage}</div>
+  {#if $dropMessage}
+    <div class="drop-toast">{$dropMessage}</div>
   {/if}
 </main>
 
