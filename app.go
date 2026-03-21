@@ -12,7 +12,7 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/menu/keys"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // FileResult holds the outcome of a file open operation.
@@ -74,30 +74,30 @@ func (a *App) UpdateMenu(t map[string]string) {
 
 	// Format Menu
 	formatMenu := appMenu.AddSubmenu(t["menuFormat"])
-	formatMenu.AddText(t["menuBold"], keys.CmdOrCtrl("b"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-bold") })
-	formatMenu.AddText(t["menuItalic"], keys.CmdOrCtrl("i"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-italic") })
+	formatMenu.AddText(t["menuBold"], keys.CmdOrCtrl("b"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-bold") })
+	formatMenu.AddText(t["menuItalic"], keys.CmdOrCtrl("i"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-italic") })
 	formatMenu.AddSeparator()
-	formatMenu.AddText("H1", keys.CmdOrCtrl("1"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-h1") })
-	formatMenu.AddText("H2", keys.CmdOrCtrl("2"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-h2") })
-	formatMenu.AddText("H3", keys.CmdOrCtrl("3"), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-h3") })
+	formatMenu.AddText("H1", keys.CmdOrCtrl("1"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-h1") })
+	formatMenu.AddText("H2", keys.CmdOrCtrl("2"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-h2") })
+	formatMenu.AddText("H3", keys.CmdOrCtrl("3"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-h3") })
 	formatMenu.AddSeparator()
-	formatMenu.AddText(t["menuCodeBlock"], keys.Combo("c", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "format-code") })
+	formatMenu.AddText(t["menuCodeBlock"], keys.Combo("c", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-code") })
 
 	// View Menu (Language & Appearance)
 	viewMenu := appMenu.AddSubmenu(t["menuView"])
 	
 	// Submenu: Language
 	langMenu := viewMenu.AddSubmenu(t["menuLanguage"])
-	langMenu.AddText("English", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "en") })
-	langMenu.AddText("Deutsch", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "de") })
-	langMenu.AddText("Español", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "es") })
-	langMenu.AddText("Français", nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-locale", "fr") })
+	langMenu.AddText("English", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "en") })
+	langMenu.AddText("Deutsch", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "de") })
+	langMenu.AddText("Español", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "es") })
+	langMenu.AddText("Français", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "fr") })
 
 	// Submenu: Appearance
 	apprMenu := viewMenu.AddSubmenu(t["menuAppearance"])
-	apprMenu.AddText(t["menuThemeDark"], nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-theme", "dark") })
-	apprMenu.AddText(t["menuThemeLight"], nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-theme", "light") })
-	apprMenu.AddText(t["menuThemeAuto"], nil, func(_ *menu.CallbackData) { runtime.EventsEmit(a.ctx, "set-theme", "auto") })
+	apprMenu.AddText(t["menuThemeDark"], nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-theme", "dark") })
+	apprMenu.AddText(t["menuThemeLight"], nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-theme", "light") })
+	apprMenu.AddText(t["menuThemeAuto"], nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-theme", "auto") })
 
 	if runtime.GOOS == "darwin" {
 		appMenu.Append(menu.AppMenu())
@@ -112,13 +112,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 		editMenu.AddText(t["menuPaste"], keys.CmdOrCtrl("v"), func(_ *menu.CallbackData) {})
 	}
 
-	runtime.MenuSetApplicationMenu(a.ctx, appMenu)
+	wailsRuntime.MenuSetApplicationMenu(a.ctx, appMenu)
 }
 
 // ShowAbout displays a native message box with product information.
 func (a *App) ShowAbout(title, message string) {
-	runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
-		Type:    runtime.InfoDialog,
+	wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
+		Type:    wailsRuntime.InfoDialog,
 		Title:   title,
 		Message: message,
 	})
@@ -163,7 +163,7 @@ func (a *App) ResolveRelativePath(baseDir string, relPath string) string {
 
 // ReadFile reads the content of a file given its path.
 func (a *App) ReadFile(path string) (string, error) {
-	runtime.LogInfof(a.ctx, "ReadFile: Reading file %s", path)
+	wailsRuntime.LogInfof(a.ctx, "ReadFile: Reading file %s", path)
 	return filesystem.ReadFile(path)
 }
 
@@ -183,10 +183,10 @@ func (a *App) GetInitialContent() *FileResult {
 
 // RenderMarkdown converts markdown string to sanitized HTML.
 func (a *App) RenderMarkdown(input string, theme string) string {
-	runtime.LogDebugf(a.ctx, "Request: RenderMarkdown (Theme: %s)", theme)
+	wailsRuntime.LogDebugf(a.ctx, "Request: RenderMarkdown (Theme: %s)", theme)
 	html, err := a.renderer.Render(input, theme)
 	if err != nil {
-		runtime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
+		wailsRuntime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
 		return fmt.Sprintf("<p>Error rendering markdown: %v</p>", err)
 	}
 	return html
@@ -196,7 +196,7 @@ func (a *App) RenderMarkdown(input string, theme string) string {
 func (a *App) GetStyleCSS(style string) string {
 	css, err := a.renderer.GetStyleCSS(style)
 	if err != nil {
-		runtime.LogErrorf(a.ctx, "Failed to get CSS for style %s: %v", style, err)
+		wailsRuntime.LogErrorf(a.ctx, "Failed to get CSS for style %s: %v", style, err)
 		return ""
 	}
 	return css
@@ -204,24 +204,24 @@ func (a *App) GetStyleCSS(style string) string {
 
 // MenuOpenFile is called from the native application menu.
 func (a *App) MenuOpenFile() {
-	runtime.EventsEmit(a.ctx, "menu-open-file")
+	wailsRuntime.EventsEmit(a.ctx, "menu-open-file")
 }
 
 // MenuSaveFile is called from the native application menu.
 func (a *App) MenuSaveFile() {
-	runtime.EventsEmit(a.ctx, "menu-save-file")
+	wailsRuntime.EventsEmit(a.ctx, "menu-save-file")
 }
 
 // MenuNewTab is called from the native application menu.
 func (a *App) MenuNewTab() {
-	runtime.EventsEmit(a.ctx, "menu-new-tab")
+	wailsRuntime.EventsEmit(a.ctx, "menu-new-tab")
 }
 
 // OpenFile opens a native file dialog and returns the path and content.
 func (a *App) OpenFile() (*FileResult, error) {
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
 		Title: "Open Markdown File",
-		Filters: []runtime.FileFilter{
+		Filters: []wailsRuntime.FileFilter{
 			{DisplayName: "Markdown Files (*.md)", Pattern: "*.md"},
 			{DisplayName: "Text Files (*.txt)", Pattern: "*.txt"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
@@ -251,10 +251,10 @@ func (a *App) GetFileTitle(path string) string {
 
 // SaveFile opens a native save dialog and saves content.
 func (a *App) SaveFile(content string) (string, error) {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+	path, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
 		Title: "Save Markdown File",
 		DefaultFilename: "document.md",
-		Filters: []runtime.FileFilter{
+		Filters: []wailsRuntime.FileFilter{
 			{DisplayName: "Markdown Files (*.md)", Pattern: "*.md"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
 		},
@@ -275,10 +275,10 @@ func (a *App) SaveFile(content string) (string, error) {
 
 // ExportHTML saves the rendered markdown as a standalone HTML file.
 func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+	path, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
 		Title:           "Export to HTML",
 		DefaultFilename: "exported.html",
-		Filters: []runtime.FileFilter{
+		Filters: []wailsRuntime.FileFilter{
 			{DisplayName: "HTML Files (*.html)", Pattern: "*.html"},
 		},
 	})
@@ -310,7 +310,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         }
 
         /* KaTeX Embedded */
-        %%s
+        %s
         
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
@@ -325,7 +325,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; }
         
         /* Syntax Highlighting and Theme Overrides */
-        %%s
+        %s
         
         a { color: var(--link-color); text-decoration: none; }
         a:hover { text-decoration: underline; }
@@ -344,14 +344,14 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
         .markdown-alert-caution { border-color: #cf222e; }
         
         pre { background: var(--code-bg); padding: 1rem; border-radius: 6px; overflow: auto; }
-        code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%%%%; }
+        code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; font-size: 85%%; }
         
-        table { border-collapse: collapse; width: 100%%%%; margin: 1rem 0; display: block; overflow: auto; }
+        table { border-collapse: collapse; width: 100%%; margin: 1rem 0; display: block; overflow: auto; }
         th { font-weight: 600; background-color: var(--code-bg); }
         th, td { border: 1px solid var(--border-color); padding: 6px 13px; }
         tr:nth-child(2n) { background-color: var(--code-bg); }
         
-        img { max-width: 100%%%%; box-sizing: content-box; background-color: #fff; }
+        img { max-width: 100%%; box-sizing: content-box; background-color: #fff; }
         blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid var(--border-color); margin: 0 0 1rem 0; }
 
         /* Mermaid Placeholder Styling */
@@ -368,7 +368,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
 </head>
 <body>
     <article class="markdown-body">
-        %%s
+        %s
     </article>
 </body>
 </html>`, katexCSS, cssContent, htmlContent)
