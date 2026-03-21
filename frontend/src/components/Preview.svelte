@@ -209,6 +209,11 @@
   :global(.bg-white .chroma .m, .bg-white .chroma .mb, .bg-white .chroma .mf) { color: #0f172a !important; font-weight: 600; }
   :global(.bg-white .chroma .s, .bg-white .chroma .sa, .bg-white .chroma .sb) { color: #0f172a !important; }
 
+  /* Ensure Sepia mode headings and text are always visible with high contrast */
+  :global(.bg-\[\#f4ecd8\] article, .bg-\[\#f4ecd8\] h1, .bg-\[\#f4ecd8\] h2, .bg-\[\#f4ecd8\] h3, .bg-\[\#f4ecd8\] h4, .bg-\[\#f4ecd8\] h5, .bg-\[\#f4ecd8\] h6, .bg-\[\#f4ecd8\] p, .bg-\[\#f4ecd8\] li, .bg-\[\#f4ecd8\] strong) {
+    color: #433422 !important;
+  }
+
   /* External Link Indicator */
   :global(.external-link::after) {
     content: " ↗";

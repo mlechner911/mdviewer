@@ -2,8 +2,8 @@
   "id": "sepia",
   "name": "Sepia Paper",
   "chromaStyle": "monokai-light",
-  "containerClass": "bg-[#f4ecd8] text-[#5b4636]",
-  "proseClass": "prose-stone prose-headings:text-[#5b4636] prose-p:text-[#5b4636] prose-a:text-[#0969da] prose-strong:text-[#5b4636]",
+  "containerClass": "bg-[#f4ecd8] text-[#433422]",
+  "proseClass": "prose-slate prose-headings:text-[#433422] prose-p:text-[#433422] prose-a:text-[#0969da] prose-strong:text-[#433422]",
   "mermaidTheme": "neutral",
   "mermaidVars": {
     "primaryColor": "#d4c5a9",
