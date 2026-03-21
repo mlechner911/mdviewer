@@ -1,11 +1,11 @@
 # MD Viewer
 
-A modern, high-performance Markdown Viewer and Editor for **Windows**, **macOS**, and **Linux**.
+A small,  high-performance Markdown Viewer and Editor for **Windows**, **macOS**, and **Linux**.
 Designed for speed, simplicity, and a polished user experience.
 
 MD Viewer is a quick, native tool for previewing and editing Markdown files. Whether you are a developer, a technical writer, or someone who just needs to read a README, MD Viewer provides a clean, distraction-free environment.
 
-## 🚀 Key Features
+##   Key Features
 
 - **Cross-Platform**: Consistent experience across Windows, macOS, and Linux.
 - **Multi-File Support**: Work with multiple documents simultaneously using a clean tabbed interface.
@@ -22,14 +22,14 @@ MD Viewer is a quick, native tool for previewing and editing Markdown files. Whe
 - **Print & Export**: One-click "Print to PDF" or export to standalone HTML.
 - **Multilingual (i18n)**: Native support for English, German, Spanish, and French.
 
-## 🛡️ Secured by Default
+## Secured by Default
 
 MD Viewer is built with security in mind. By default, it operates in a restricted environment:
 - **Directory Whitelisting**: The application only accesses files in directories you have explicitly allowed. Opening or saving a file automatically whitelists its location.
 - **External Resource Control**: Every time a document tries to load images or content from a new external website, you will be prompted for permission.
 - **Safe Link Handling**: Links to other Markdown files are intercepted and opened within the viewer after a security check.
 
-## 📥 Installation
+##   Installation
 
 The easiest way to get MD Viewer is to download the latest version from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page.
 
