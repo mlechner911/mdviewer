@@ -188,7 +188,7 @@
 
 <div
   bind:this={previewContainer}
-  class="flex-1 overflow-y-auto p-8 transition-colors duration-300 {theme.containerClass}"
+  class="flex-1 overflow-auto p-8 transition-colors duration-300 {theme.containerClass}"
 >
   <article
     class="prose lg:prose-xl max-w-none {theme.proseClass}"

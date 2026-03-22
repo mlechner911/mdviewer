@@ -439,7 +439,7 @@
 
   <div class="flex flex-1 overflow-hidden relative print:block">
     {#if !$isEditorHidden && !$isFocusMode && !$isPrinting}
-    <div class="flex flex-col border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
+    <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
       <div class="p-2 text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
         {$t('editor')}
       </div>
@@ -457,7 +457,7 @@
     </div>
     {/if}
 
-    <div class="flex-1 flex flex-col relative print:block">
+    <div class="flex-1 min-w-0 flex flex-col relative print:block">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
       {#if !$isPrinting}
       <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
