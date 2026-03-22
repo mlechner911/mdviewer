@@ -228,6 +228,22 @@
     opacity: 0.6;
   }
 
+  /* Task Lists (Checkboxes) */
+  :global(.prose ul > li:has(input[type="checkbox"])) {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  :global(.prose ul > li > input[type="checkbox"]) {
+    margin-right: 0.5rem;
+    margin-bottom: 0.125rem;
+    vertical-align: middle;
+    pointer-events: none; /* View-only */
+  }
+  :global(.prose-xl ul > li > input[type="checkbox"]) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
   /* GitHub-style Alerts (Admonitions) */
   :global(.markdown-alert) {
     padding: 0.75rem 1rem;

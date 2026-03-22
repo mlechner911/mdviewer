@@ -33,9 +33,14 @@ type Renderer struct {
 func NewRenderer() *Renderer {
 	p := bluemonday.UGCPolicy()
 	// Allow classes/styles for Chroma, Mermaid, and Alerts
-	p.AllowAttrs("class").OnElements("span", "code", "pre", "div", "blockquote", "p", "h1", "h2", "h3", "h4", "h5", "h6")
+	p.AllowAttrs("class").OnElements("span", "code", "pre", "div", "blockquote", "p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "ul")
 	p.AllowAttrs("style").OnElements("span", "code", "pre")
 	p.AllowAttrs("id").OnElements("div")
+
+	// Allow Task Lists (Checkboxes)
+	p.AllowElements("input")
+	p.AllowAttrs("type", "checked", "disabled").OnElements("input")
+	p.AllowAttrs("class").OnElements("input") // Some renderers might use classes
 
 	return &Renderer{
 		p: p,
