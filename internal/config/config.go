@@ -12,6 +12,7 @@ import (
 type AppConfig struct {
 	WhitelistedPaths []string `json:"whitelisted_paths"`
 	WhitelistedURLs  []string `json:"whitelisted_urls"`
+	RecentFiles      []string `json:"recent_files"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.
@@ -43,6 +44,7 @@ func NewConfigManager() (*ConfigManager, error) {
 		m.config = AppConfig{
 			WhitelistedPaths: []string{},
 			WhitelistedURLs:  []string{},
+			RecentFiles:      []string{},
 		}
 		return m, m.Save()
 	}
@@ -60,7 +62,23 @@ func (m *ConfigManager) Load() error {
 		return err
 	}
 
-	return json.Unmarshal(data, &m.config)
+	err = json.Unmarshal(data, &m.config)
+	if err != nil {
+		return err
+	}
+
+	// Ensure slices are initialized
+	if m.config.WhitelistedPaths == nil {
+		m.config.WhitelistedPaths = []string{}
+	}
+	if m.config.WhitelistedURLs == nil {
+		m.config.WhitelistedURLs = []string{}
+	}
+	if m.config.RecentFiles == nil {
+		m.config.RecentFiles = []string{}
+	}
+
+	return nil
 }
 
 // Save writes the config to disk.
@@ -74,6 +92,35 @@ func (m *ConfigManager) Save() error {
 	}
 
 	return os.WriteFile(m.path, data, 0644)
+}
+
+// GetRecentFiles returns the list of recently opened files.
+func (m *ConfigManager) GetRecentFiles() []string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.config.RecentFiles
+}
+
+// AddRecentFile adds a file path to the list of recent files, keeping only the most recent 10.
+func (m *ConfigManager) AddRecentFile(path string) error {
+	m.mu.Lock()
+	
+	// Remove if already exists to move it to the top
+	newList := []string{path}
+	for _, f := range m.config.RecentFiles {
+		if f != path {
+			newList = append(newList, f)
+		}
+	}
+
+	// Limit to 10 items
+	if len(newList) > 10 {
+		newList = newList[:10]
+	}
+	m.config.RecentFiles = newList
+	m.mu.Unlock()
+
+	return m.Save()
 }
 
 // IsPathAllowed checks if a local file path is within a whitelisted directory.

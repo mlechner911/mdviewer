@@ -193,6 +193,8 @@
         menuThemeAuto: tMap.menuThemeAuto,
         menuNewTab: tMap.menuNewTab,
         menuOpen: tMap.menuOpen,
+        menuRecentFiles: tMap.menuRecentFiles,
+        menuNoRecentFiles: tMap.menuNoRecentFiles,
         menuSave: tMap.menuSave,
         menuUndo: tMap.menuUndo,
         menuRedo: tMap.menuRedo,
@@ -252,6 +254,7 @@
         activeTabIndex = tabs.length - 1;
         const parentDir = await backend.getParentDir(result.path);
         await backend.addPathToWhitelist(parentDir);
+        updateNativeMenu(get(locale));
       }
     } catch (err) { console.error("Failed to open file:", err); }
   }
@@ -268,6 +271,7 @@
         tabs = [...tabs];
         const parentDir = await backend.getParentDir(path);
         await backend.addPathToWhitelist(parentDir);
+        updateNativeMenu(get(locale));
       }
     } catch (err) { console.error("Failed to save file:", err); }
   }
@@ -318,6 +322,25 @@
     fontSize = Math.min(Math.max(fontSize + delta, 50), 200);
   }
 
+  async function handleOpenRecent(path: string) {
+    if (!isReady || !checkWailsReady()) return;
+    try {
+      const content = await backend.readFile(path);
+      if (content !== undefined) {
+        const title = await backend.getFileTitle(path);
+        const newTab = createNewTab(title, content, path);
+        tabs = [...tabs, newTab];
+        activeTabIndex = tabs.length - 1;
+        const parentDir = await backend.getParentDir(path);
+        await backend.addPathToWhitelist(parentDir);
+        // Refresh menu to update recents order if needed
+        updateNativeMenu(get(locale));
+      }
+    } catch (err) {
+      console.error("Failed to open recent file:", err);
+    }
+  }
+
   onMount(() => {
     const init = async () => {
       if (checkWailsReady()) {
@@ -325,6 +348,7 @@
 
         // Native Menu Listeners
         EventsOn("menu-open-file", handleOpen);
+        EventsOn("menu-open-recent", handleOpenRecent);
         EventsOn("menu-save-file", handleSave);
         EventsOn("menu-new-tab", addNewTab);
         
@@ -362,7 +386,10 @@
               }
             }
           }
-          if (loadedCount > 0) showToast($t('filesLoaded', loadedCount));
+          if (loadedCount > 0) {
+            showToast($t('filesLoaded', loadedCount));
+            updateNativeMenu(get(locale));
+          }
         }, false);
 
         const result = await backend.getInitialContent();

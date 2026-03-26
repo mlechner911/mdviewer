@@ -64,6 +64,21 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.AddText(t["menuOpen"], keys.CmdOrCtrl("o"), func(_ *menu.CallbackData) {
 		a.MenuOpenFile()
 	})
+
+	// Submenu: Recent Files
+	recentMenu := fileMenu.AddSubmenu(t["menuRecentFiles"])
+	recentFiles := a.config.GetRecentFiles()
+	if len(recentFiles) == 0 {
+		recentMenu.AddText(t["menuNoRecentFiles"], nil, nil).Disable()
+	} else {
+		for _, path := range recentFiles {
+			p := path // Capture for closure
+			recentMenu.AddText(filepath.Base(p), nil, func(_ *menu.CallbackData) {
+				wailsRuntime.EventsEmit(a.ctx, "menu-open-recent", p)
+			})
+		}
+	}
+
 	fileMenu.AddText(t["menuSave"], keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
 		a.MenuSaveFile()
 	})
@@ -172,6 +187,7 @@ func (a *App) GetInitialContent() *FileResult {
 	if a.initialFile != "" {
 		content, err := filesystem.ReadFile(a.initialFile)
 		if err == nil {
+			a.config.AddRecentFile(a.initialFile)
 			return &FileResult{
 				Path:    a.initialFile,
 				Content: content,
@@ -238,6 +254,7 @@ func (a *App) OpenFile() (*FileResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	a.config.AddRecentFile(absPath)
 	return &FileResult{
 		Path:    absPath,
 		Content: content,
@@ -270,6 +287,7 @@ func (a *App) SaveFile(content string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	a.config.AddRecentFile(absPath)
 	return absPath, nil
 }
 

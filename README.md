@@ -1,54 +1,53 @@
 # MarkSafe
 
-A small,  high-performance Markdown Viewer and Editor for **Windows**, **macOS**, and **Linux**.
-Designed for speed, simplicity, and a polished user experience.
+A lightweight, high-performance Markdown Viewer and Editor for **Windows**, **macOS**, and **Linux**.
+Designed for speed, security, and a polished user experience.
 
-MarkSafe is a quick, native tool for previewing and editing Markdown files. Whether you are a developer, a technical writer, or someone who just needs to read a README, MarkSafe provides a clean, distraction-free environment.
+MarkSafe is more than just a viewer; it's a secure, native environment for reading and editing Markdown. Whether you are a developer, a technical writer, or a power user, MarkSafe provides a clean, distraction-free interface with industry-standard security features.
 
-##   Key Features
+## ✨ Key Features
 
-- **Cross-Platform**: Consistent experience across Windows, macOS, and Linux.
-- **Multi-File Support**: Work with multiple documents simultaneously using a clean tabbed interface.
-- **Real-time Rendering**: See your changes instantly as you type.
-- **Comprehensive Markdown Support**:
-  - **GFM**: Tables and interactive tasklists.
-  - **GitHub-style Alerts**: High-visibility notes, tips, and warnings.
-  - **Math**: Support for KaTeX mathematical expressions.
-  - **Diagrams**: Integrated Mermaid.js support for flowcharts and diagrams.
-- **Dual-Theming**:
-  - **App Frame**: Choose between Dark, Light, or Auto modes for the editor.
-  - **Preview**: High-quality preview styles including Dark, Light, Sepia, and Monochrome.
-- **Focus Mode**: Hide everything except the content for a true distraction-free experience.
-- **Print & Export**: One-click "Print to PDF" or export to standalone HTML.
-- **Multilingual (i18n)**: Native support for English, German, Spanish, and French.
+- **🚀 Native Performance**: Built with Go and Wails for a snappy, resource-efficient experience.
+- **📑 Multi-Tab Interface**: Work with multiple documents simultaneously.
+- **⚡ Real-time Rendering**: Instant preview as you type.
+- **🎨 Rich Markdown Support**:
+  - **GFM**: Tables, tasklists, and footnotes.
+  - **GitHub Alerts**: High-visibility notes, tips, and warnings using `> [!NOTE]` syntax.
+  - **Math**: Integrated KaTeX for complex mathematical expressions.
+  - **Diagrams**: Native Mermaid.js support for flowcharts, sequences, and more.
+- **🌓 Dual-Theming**:
+  - **App Frame**: Dark, Light, or System Auto modes.
+  - **Preview**: High-quality styles including **Dark**, **Light**, **Sepia**, and **Monochrome**.
+- **🔍 Focus Mode**: One-click "Zen" mode to hide the editor and UI elements.
+- **📄 Export & Print**: Export to standalone HTML (with embedded CSS) or print to PDF.
+- **🌍 Multilingual**: Support for English, German, Spanish, and French.
 
-## Secured by Default
+## 🛡️ Security First
 
-MarkSafe is built with security in mind. By default, it operates in a restricted environment:
-- **Directory Whitelisting**: The application only accesses files in directories you have explicitly allowed. Opening or saving a file automatically whitelists its location.
-- **External Resource Control**: Every time a document tries to load images or content from a new external website, you will be prompted for permission.
-- **Safe Link Handling**: Links to other Markdown files are intercepted and opened within the viewer after a security check.
+MarkSafe introduces a **Sandboxed Resource Model** to protect you from malicious markdown files:
 
-##   Installation
+1.  **Directory Whitelisting**: The application can only access files in directories you have explicitly allowed. Opening a file via the dialog automatically whitelists its parent directory.
+2.  **External Resource Control**: Every time a document attempts to load images or content from a new domain, MarkSafe prompts for permission.
+3.  **Safe Link Interception**: External links are checked against your whitelist before being opened in your default browser.
 
-The easiest way to get MarkSafe is to download the latest version from the **[Releases](https://github.com/mlechner911/marksafe/releases)** page.
+## 📥 Installation
+
+Download the latest version for your platform from the **[Releases](https://github.com/mlechner911/marksafe/releases)** page.
 
 ### Windows
-1. Download `marksafe-installer.exe`.
-2. Run the installer to set up MarkSafe on your system.
+- Download `marksafe-installer.exe` and run it to install.
 
 ### macOS
-1. Download `marksafe-mac.zip`.
-2. Extract the ZIP and move `MarkSafe.app` to your `Applications` folder.
+- Download `marksafe-mac.zip`, extract, and move `MarkSafe.app` to your `/Applications` folder.
 
 ### Linux
-1. Download the `marksafe` binary.
-2. Grant execution permissions: `chmod +x marksafe`.
-3. Run it directly or add it to your path.
+- Download the `marksafe` binary.
+- Make it executable: `chmod +x marksafe`.
+- Run it or add it to your `$PATH`.
 
 ## 📄 License
 
 MIT License - Copyright (c) 2026 Michael Lechner
 
 ---
-*For technical details, build instructions, and contribution guidelines, see **[DEVELOPER.md](./DEVELOPER.md)**.*
+*For technical details and build instructions, see **[DEVELOPER.md](./DEVELOPER.md)**.*

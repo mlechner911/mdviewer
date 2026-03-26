@@ -1,85 +1,66 @@
 # MarkSafe - Developer Documentation
 
-This document provides technical information for developers who wish to build, modify, or contribute to MarkSafe.
+Technical reference for building and extending MarkSafe.
 
 ## 🛠 Tech Stack
 
 - **Backend**: Go 1.21+
-  - [Wails v2](https://wails.io/) - Native desktop application framework.
-  - [Goldmark](https://github.com/yuin/goldmark) - Markdown parser with Emoji, Math, and custom Alert extensions.
+  - [Wails v2](https://wails.io/) - Desktop framework.
+  - [Goldmark](https://github.com/yuin/goldmark) - Extensible Markdown parser.
   - [Chroma](https://github.com/alecthomas/chroma) - Syntax highlighting.
+  - [Bluemonday](https://github.com/microcosm-cc/bluemonday) - HTML sanitization.
 - **Frontend**: Svelte 3 + TypeScript
-  - [Tailwind CSS v3](https://tailwindcss.com/) - Styling.
-  - [KaTeX](https://katex.org/) - Mathematical expressions.
+  - [Tailwind CSS v3](https://tailwindcss.com/) - Utility-first CSS.
+  - [KaTeX](https://katex.org/) - Math rendering.
   - [Mermaid.js](https://mermaid.js.org/) - Diagram rendering.
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Go 1.21+
-- Node.js 18+
-- Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
-- (Optional) [Task](https://taskfile.dev/) task runner.
-
-### Development Commands
-
-| Command | Description |
-|---------|-------------|
-| `task install` | Installs Go and NPM dependencies. |
-| `task dev` | Runs the app in development mode. |
-| `task build` | Compiles a production-ready binary for the current platform. |
 
 ## 🏗 Project Structure
 
-- `app.go`: Main Wails application logic and backend bindings.
-- `/internal/markdown`: Core rendering logic and Goldmark configuration.
-- `/internal/filesystem`: Native file I/O utilities.
-- `/frontend/src/App.svelte`: Main application UI and state management.
-- `/frontend/src/components/Preview.svelte`: Complex rendering logic (KaTeX/Mermaid).
-- `/frontend/src/themes.ts`: Centralized theme definitions.
-- `/frontend/src/i18n.ts`: Translation dictionary and logic.
-
-## ⚙️ Configuration & Security
-
-MarkSafe persists user settings and security whitelists in a `config.json` file. This file is stored in the system's standard application configuration directory:
-
-- **Linux**: `~/.config/marksafe/config.json`
-- **macOS**: `~/Library/Application Support/marksafe/config.json`
-- **Windows**: `%AppData%\marksafe\config.json`
-
-### Structure
-```json
-{
-  "whitelisted_paths": [
-    "/absolute/path/to/directory"
-  ],
-  "whitelisted_urls": [
-    "example.com"
-  ]
-}
+```text
+/internal/markdown    -> Goldmark configuration & custom AST transformers.
+/internal/config      -> JSON configuration & whitelist management.
+/internal/filesystem  -> Safe file I/O wrappers.
+/frontend/src/lib     -> Shared stores, constants, and backend bindings.
+/frontend/src/themes  -> Theme definitions (base.json + presets).
+/frontend/src/i18n.ts -> Translation dictionary and locale logic.
 ```
 
-## 🎨 UI & Native Menus
+## ⚙️ Core Logic
 
-### Toolbar Visibility
-In `App.svelte`, the `SHOW_HTML_TOOLBAR` constant controls whether the top HTML toolbar is rendered. 
-- **`true`**: Recommended for development (Vite) where native menus are unavailable.
-- **`false`**: Recommended for production builds to provide a cleaner, native look.
+### Markdown Rendering
+The rendering pipeline is split between Go and Svelte:
+1.  **Go**: Parses Markdown, applies `GitHubAlertTransformer`, highlights code with Chroma, and sanitizes the final HTML via `bluemonday`.
+2.  **Svelte (`Preview.svelte`)**: Injects the HTML, scans for Mermaid diagrams and KaTeX formulas, and executes their respective client-side rendering engines.
 
-### Menu Synchronization
-The native application menu is dynamically updated via `backend.UpdateMenu`. 
-- When the application language changes, the frontend sends a map of translated strings to Go.
-- Go rebuilds the menu and updates the system menu bar using `runtime.MenuSetApplicationMenu`.
-- Menu actions (like changing language or theme) emit events back to the frontend using `runtime.EventsEmit`.
+### Security Whitelisting
+All file and URL access is intercepted by `Preview.svelte`. It calls `backend.isPathAllowed` or `backend.isURLAllowed` before rendering resources. If a resource is blocked, a `security-request` event is dispatched to trigger the UI modal.
+
+## 🎨 Extending MarkSafe
+
+### Adding a Preview Theme
+1.  Create a new JSON preset in `/frontend/src/themes/presets/`.
+2.  Import it in `/frontend/src/themes.ts`.
+3.  Add it to the `themes` array using the `createTheme` helper.
+
+### Adding a Language
+1.  Add the new locale code (e.g., `it`) to the `supported` array in `getInitialLocale()` in `i18n.ts`.
+2.  Add the translations to the `translations` object in `i18n.ts`.
+3.  Update the language submenu in `app.go` (`UpdateMenu` method).
+
+## 🚀 Development
+
+### Prerequisites
+- Go 1.21+, Node.js 18+, Wails CLI.
+
+| Task | Command |
+|---------|-------------|
+| Install Deps | `task install` |
+| Dev Mode | `task dev` |
+| Build | `task build` |
 
 ## 🤖 CI/CD
 
-The project uses GitHub Actions for multi-platform builds. The workflow is defined in `.github/workflows/release.yml`. It automatically generates:
-- **Windows**: NSIS Installer (AMD64).
-- **macOS**: Universal Binary (packaged as ZIP).
-- **Linux**: Standalone Binary (AMD64).
-
-Releases are triggered by pushing a tag (e.g., `v1.0.0`).
+Multi-platform builds are automated via GitHub Actions (`.github/workflows/release.yml`). Releases are triggered by version tags (e.g., `v1.0.0`).
 
 ## 📄 License
 
