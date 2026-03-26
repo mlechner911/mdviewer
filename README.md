@@ -7,22 +7,22 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
 
 ## ✨ Key Features
 
-- **🚀 Native Performance**: Built with Go and Wails for a snappy, resource-efficient experience.
-- **📑 Multi-Tab Interface**: Work with multiple documents simultaneously.
-- **⚡ Real-time Rendering**: Instant preview as you type.
-- **🎨 Rich Markdown Support**:
+
+- ** Multi-Tab Interface**: Work with multiple documents simultaneously.
+
+- ** Rich Markdown Support**:
   - **GFM**: Tables, tasklists, and footnotes.
   - **GitHub Alerts**: High-visibility notes, tips, and warnings using `> [!NOTE]` syntax.
   - **Math**: Integrated KaTeX for complex mathematical expressions.
   - **Diagrams**: Native Mermaid.js support for flowcharts, sequences, and more.
-- **🌓 Dual-Theming**:
-  - **App Frame**: Dark, Light, or System Auto modes.
-  - **Preview**: High-quality styles including **Dark**, **Light**, **Sepia**, and **Monochrome**.
-- **🔍 Focus Mode**: One-click "Zen" mode to hide the editor and UI elements.
+
+
+
 - **📄 Export & Print**: Export to standalone HTML (with embedded CSS) or print to PDF.
 - **🌍 Multilingual**: Support for English, German, Spanish, and French.
+- ** Real-time Rendering**: Instant preview as you type.
 
-## 🛡️ Security First
+##  Security First
 
 MarkSafe introduces a **Sandboxed Resource Model** to protect you from malicious markdown files:
 

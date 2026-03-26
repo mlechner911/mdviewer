@@ -493,7 +493,20 @@
         placeholder={$t('placeholder')}
       ></textarea>
       {/if}
-      <div on:mousedown={startResizing} class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors z-10"></div>
+      <div 
+        role="separator"
+        aria-label="Resize editor and preview"
+        aria-valuenow={$splitWidth}
+        aria-valuemin={10}
+        aria-valuemax={90}
+        tabindex="0"
+        on:mousedown={startResizing} 
+        on:keydown={(e) => {
+          if (e.key === 'ArrowLeft') splitWidth.set(Math.max(10, $splitWidth - 1));
+          if (e.key === 'ArrowRight') splitWidth.set(Math.min(90, $splitWidth + 1));
+        }}
+        class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500/50 transition-colors z-10"
+      ></div>
     </div>
     {/if}
 
