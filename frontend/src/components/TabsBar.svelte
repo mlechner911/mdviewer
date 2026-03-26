@@ -1,15 +1,27 @@
 <script lang="ts">
+  /**
+   * TabsBar component for MD Viewer.
+   * Refactored for Svelte 5 Runes.
+   */
   import { STYLE } from '../lib/constants';
   import { effectiveAppTheme, isFocusMode, isPrinting } from '../lib/stores';
 
-  export let tabs: any[];
-  export let activeTabIndex: number;
-  export let onCloseTab: (index: number, event?: MouseEvent) => void;
+  // --- Svelte 5 Runes: Props ---
+  let { 
+    tabs, 
+    activeTabIndex = $bindable(), 
+    onCloseTab 
+  } = $props<{
+    tabs: any[];
+    activeTabIndex: number;
+    onCloseTab: (index: number, event?: MouseEvent) => void;
+  }>();
 
-  $: toolbarClass = STYLE.toolbar[$effectiveAppTheme];
-  $: dividerClass = STYLE.divider[$effectiveAppTheme];
-  $: activeTabClass = STYLE.tab.active[$effectiveAppTheme];
-  $: inactiveTabClass = STYLE.tab.inactive[$effectiveAppTheme];
+  // --- Svelte 5 Runes: Derived ---
+  const toolbarClass = $derived(STYLE.toolbar[$effectiveAppTheme]);
+  const dividerClass = $derived(STYLE.divider[$effectiveAppTheme]);
+  const activeTabClass = $derived(STYLE.tab.active[$effectiveAppTheme]);
+  const inactiveTabClass = $derived(STYLE.tab.inactive[$effectiveAppTheme]);
 </script>
 
 {#if !$isFocusMode && !$isPrinting}
@@ -20,13 +32,13 @@
       tabindex="0"
       aria-selected={i === activeTabIndex}
       class="flex items-center px-4 h-9 cursor-pointer transition-colors border-r text-xs font-medium min-w-[120px] max-w-[200px] {i === activeTabIndex ? activeTabClass : inactiveTabClass} {dividerClass}"
-      on:click={() => activeTabIndex = i}
-      on:keydown={(e) => e.key === 'Enter' && (activeTabIndex = i)}
+      onclick={() => activeTabIndex = i}
+      onkeydown={(e) => e.key === 'Enter' && (activeTabIndex = i)}
     >
       <span class="truncate flex-1 text-left">{tab.title}{tab.isDirty ? ' *' : ''}</span>
       <button 
         type="button"
-        on:click={(e) => { e.stopPropagation(); onCloseTab(i, e); }}
+        onclick={(e) => { e.stopPropagation(); onCloseTab(i, e); }}
         class="ml-2 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
         aria-label="Close tab"
       >

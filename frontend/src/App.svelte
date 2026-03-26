@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
    * Main Application component for MD Viewer.
-   * Now with dynamic native menu synchronization for language, themes, and formatting.
+   * Refactored for Svelte 5 Runes and Vite 8 (Rolldown).
    */
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { get } from 'svelte/store';
   import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
   import * as backend from './lib/backend';
@@ -36,10 +36,34 @@
     isDirty: boolean;
   }
 
-  // State: Tabs
-  let tabs: Tab[] = [];
-  let activeTabIndex: number = 0;
-  let textareaElement: HTMLTextAreaElement;
+  // --- Svelte 5 Runes: State ---
+  let tabs = $state<Tab[]>([]);
+  let activeTabIndex = $state(0);
+  let isReady = $state(false);
+  let htmlContent = $state("");
+  let highlightingCSS = $state("");
+  let currentPreviewTheme = $state(themes[0]);
+  let fontSize = $state(DEFAULTS.fontSize);
+  
+  let showSecurityModal = $state(false);
+  let securityType = $state<'path' | 'url'>('path');
+  let securityResource = $state("");
+
+  let textareaElement: HTMLTextAreaElement | undefined = $state();
+
+  // --- Svelte 5 Runes: Derived ---
+  const markdown = $derived(tabs[activeTabIndex]?.content || "");
+  const activeTab = $derived(tabs[activeTabIndex] || null);
+
+  const wordCount = $derived(markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0);
+  const charCount = $derived(markdown ? markdown.length : 0);
+  const readingTime = $derived(Math.ceil(wordCount / 225));
+
+  const toolbarClass = $derived(STYLE.toolbar[$effectiveAppTheme]);
+  const editorClass = $derived(STYLE.editor[$effectiveAppTheme]);
+  const buttonClass = $derived(STYLE.button[$effectiveAppTheme]);
+  const dividerClass = $derived(STYLE.divider[$effectiveAppTheme]);
+  const focusButtonClass = $derived(STYLE.focusButton[$effectiveAppTheme]);
 
   const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
 
@@ -75,13 +99,6 @@
     }
   }
 
-  $: markdown = tabs[activeTabIndex]?.content || "";
-  $: activeTab = tabs[activeTabIndex] || null;
-
-  $: wordCount = markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0;
-  $: charCount = markdown ? markdown.length : 0;
-  $: readingTime = Math.ceil(wordCount / 225);
-
   function onContentInput() {
     if (tabs[activeTabIndex]) {
         tabs[activeTabIndex].isDirty = true;
@@ -102,8 +119,8 @@
     
     // Restore focus and selection
     tick().then(() => {
-        textareaElement.focus();
-        textareaElement.setSelectionRange(start + prefix.length, end + prefix.length);
+        textareaElement?.focus();
+        textareaElement?.setSelectionRange(start + prefix.length, end + prefix.length);
     });
   }
 
@@ -119,24 +136,14 @@
     tabs[activeTabIndex].isDirty = true;
 
     tick().then(() => {
-        textareaElement.focus();
-        textareaElement.setSelectionRange(start + prefix.length, start + prefix.length);
+        textareaElement?.focus();
+        textareaElement?.setSelectionRange(start + prefix.length, start + prefix.length);
     });
   }
 
-  let htmlContent: string = "";
-  let highlightingCSS: string = "";
-  let currentPreviewTheme = themes[0];
-  let fontSize: number = DEFAULTS.fontSize;
-
-  // Security Modal State
-  let showSecurityModal = false;
-  let securityType: 'path' | 'url' = 'path';
-  let securityResource = "";
-
-  async function handleSecurityRequest(event: CustomEvent) {
-    securityType = event.detail.type;
-    securityResource = event.detail.resource;
+  async function handleSecurityRequest(detail: { type: 'path' | 'url', resource: string }) {
+    securityType = detail.type;
+    securityResource = detail.resource;
     showSecurityModal = true;
   }
 
@@ -150,8 +157,8 @@
     debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
   }
 
-  async function handleOpenExternalMD(event: CustomEvent) {
-    const path = event.detail.path;
+  async function handleOpenExternalMD(detail: { path: string }) {
+    const path = detail.path;
     try {
       const content = await backend.readFile(path);
       if (content !== undefined) {
@@ -165,7 +172,6 @@
     }
   }
 
-  let isReady = false;
   const checkWailsReady = backend.isWailsReady;
 
   function updateEffectiveTheme() {
@@ -210,7 +216,7 @@
     await backend.updateMenu(menuTranslations);
   }
 
-  let isResizing = false;
+  let isResizing = $state(false);
   function startResizing() { isResizing = true; }
   function stopResizing() { isResizing = false; }
   function onMouseMove(event: MouseEvent) {
@@ -263,11 +269,9 @@
     try { 
       const path = await backend.saveFile(markdown); 
       if (path && activeTab) {
-        const title = await backend.getFileTitle(path);
         tabs[activeTabIndex].path = path;
-        tabs[activeTabIndex].title = title;
+        tabs[activeTabIndex].title = await backend.getFileTitle(path);
         tabs[activeTabIndex].isDirty = false;
-        tabs = [...tabs];
         const parentDir = await backend.getParentDir(path);
         await backend.addPathToWhitelist(parentDir);
         updateNativeMenu(get(locale));
@@ -332,7 +336,6 @@
         activeTabIndex = tabs.length - 1;
         const parentDir = await backend.getParentDir(path);
         await backend.addPathToWhitelist(parentDir);
-        // Refresh menu to update recents order if needed
         updateNativeMenu(get(locale));
       }
     } catch (err) {
@@ -343,28 +346,19 @@
   onMount(() => {
     const init = async () => {
       const wailsReady = checkWailsReady();
-      
-      // In development mode, we allow the app to initialize even without Wails
-      // to support pure Vite frontend development with mocks.
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
           isReady = true;
-
-          // Native Menu Listeners
           EventsOn("menu-open-file", handleOpen);
           EventsOn("menu-open-recent", handleOpenRecent);
           EventsOn("menu-save-file", handleSave);
           EventsOn("menu-new-tab", addNewTab);
-          
-          // Formatting Listeners
           EventsOn("format-bold", () => wrapSelection('**', '**'));
           EventsOn("format-italic", () => wrapSelection('*', '*'));
           EventsOn("format-h1", () => prefixSelection('# '));
           EventsOn("format-h2", () => prefixSelection('## '));
           EventsOn("format-h3", () => prefixSelection('### '));
           EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
-
-          // Listeners for native menu language/theme toggles
           EventsOn("set-locale", (l: string) => locale.set(l));
           EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
@@ -385,9 +379,7 @@
                     const parentDir = await backend.getParentDir(path);
                     await backend.addPathToWhitelist(parentDir);
                   }
-                } catch (err) {
-                  console.error("Failed to read dropped file:", err);
-                }
+                } catch (err) { console.error("Failed to read dropped file:", err); }
               }
             }
             if (loadedCount > 0) {
@@ -408,17 +400,11 @@
         }
         activeTabIndex = 0;
 
-        // In pure Vite dev mode (no Wails), we still want to see the preview
-        if (import.meta.env.DEV && !wailsReady) {
-          isReady = true; // Enable reactive rendering
-        }
+        if (import.meta.env.DEV && !wailsReady) isReady = true;
 
         updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
-        
-        if (wailsReady) {
-          updateNativeMenu(get(locale));
-        }
+        if (wailsReady) updateNativeMenu(get(locale));
       } else {
         setTimeout(init, 50);
       }
@@ -431,32 +417,33 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file");
-      EventsOff("menu-save-file");
-      EventsOff("menu-new-tab");
-      EventsOff("set-locale");
-      EventsOff("set-theme");
-      EventsOff("format-bold");
-      EventsOff("format-italic");
-      EventsOff("format-h1");
-      EventsOff("format-h2");
-      EventsOff("format-h3");
-      EventsOff("format-code");
+      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-new-tab");
+      EventsOff("set-locale"); EventsOff("set-theme");
+      EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
 
-  $: if ($appTheme) updateEffectiveTheme();
-  $: if ($locale) updateNativeMenu($locale);
-  $: if (isReady) updateHighlightingCSS(currentPreviewTheme.chromaStyle);
-  $: if (isReady && (markdown !== undefined || currentPreviewTheme !== undefined)) {
-    debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
-  }
+  // --- Svelte 5 Runes: Effects ---
+  $effect(() => {
+    if ($appTheme) untrack(() => updateEffectiveTheme());
+  });
 
-  $: toolbarClass = STYLE.toolbar[$effectiveAppTheme];
-  $: editorClass = STYLE.editor[$effectiveAppTheme];
-  $: buttonClass = STYLE.button[$effectiveAppTheme];
-  $: dividerClass = STYLE.divider[$effectiveAppTheme];
-  $: focusButtonClass = STYLE.focusButton[$effectiveAppTheme];
+  $effect(() => {
+    if ($locale) untrack(() => updateNativeMenu($locale));
+  });
+
+  $effect(() => {
+    if (isReady) {
+      updateHighlightingCSS(currentPreviewTheme.chromaStyle);
+    }
+  });
+
+  $effect(() => {
+    if (isReady && (markdown !== undefined || currentPreviewTheme !== undefined)) {
+      debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
+    }
+  });
+
 </script>
 
 <svelte:window on:mousemove={onMouseMove} on:mouseup={stopResizing} />
@@ -487,7 +474,7 @@
       <textarea
         bind:this={textareaElement}
         bind:value={tabs[activeTabIndex].content}
-        on:input={onContentInput}
+        oninput={onContentInput}
         spellcheck="false" autocorrect="off" autocapitalize="off"
         class="flex-1 p-4 focus:outline-none resize-none font-mono text-sm select-text bg-transparent"
         placeholder={$t('placeholder')}
@@ -500,8 +487,8 @@
         aria-valuemin={10}
         aria-valuemax={90}
         tabindex="0"
-        on:mousedown={startResizing} 
-        on:keydown={(e) => {
+        onmousedown={startResizing} 
+        onkeydown={(e) => {
           if (e.key === 'ArrowLeft') splitWidth.set(Math.max(10, $splitWidth - 1));
           if (e.key === 'ArrowRight') splitWidth.set(Math.min(90, $splitWidth + 1));
         }}
@@ -516,14 +503,14 @@
       <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
         <div class="flex items-center gap-2">
             <button 
-                on:click={() => isEditorHidden.update(v => !v)} 
+                onclick={() => isEditorHidden.update(v => !v)} 
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isEditorHidden ? focusButtonClass : ''}"
                 title={$isEditorHidden ? $t('showEditor') : $t('hideEditor')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
             </button>
             <button 
-                on:click={() => isFocusMode.update(v => !v)} 
+                onclick={() => isFocusMode.update(v => !v)} 
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isFocusMode ? focusButtonClass : ''}"
                 title={$isFocusMode ? $t('exitFocusMode') : $t('focusMode')}
             >
@@ -532,10 +519,10 @@
         </div>
         <div class="text-xs font-bold uppercase tracking-wider opacity-50">{$t('preview')}</div>
         <div class="flex-1"></div>
-        <button on:click={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
+        <button onclick={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
-        <button on:click={handleExport} title={$t('export')} class="p-1 rounded transition-colors {buttonClass}">
+        <button onclick={handleExport} title={$t('export')} class="p-1 rounded transition-colors {buttonClass}">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
         <div class="h-4 w-px {dividerClass}"></div>
@@ -549,9 +536,9 @@
         </div>
         <div class="h-4 w-px {dividerClass}"></div>
         <div class="flex gap-1 items-center">
-          <button on:click={() => adjustFontSize(-5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">-</button>
+          <button onclick={() => adjustFontSize(-5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">-</button>
           <span class="text-[10px] opacity-60 w-8 text-center font-mono">{fontSize}%</span>
-          <button on:click={() => adjustFontSize(5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">+</button>
+          <button onclick={() => adjustFontSize(5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">+</button>
         </div>
       </div>
       {/if}
@@ -561,8 +548,8 @@
         theme={currentPreviewTheme} 
         fontSize={fontSize} 
         currentFilePath={tabs[activeTabIndex]?.path}
-        on:security-request={handleSecurityRequest}
-        on:open-file={handleOpenExternalMD}
+        onsecurity_request={handleSecurityRequest}
+        onopen_file={handleOpenExternalMD}
       />
     </div>
   </div>

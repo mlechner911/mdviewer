@@ -1,17 +1,32 @@
 <script lang="ts">
+  /**
+   * WhitelistModal component for MD Viewer.
+   * Refactored for Svelte 5 Runes.
+   */
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
 
-  export let show = false;
-  export let type: 'path' | 'url' = 'path';
-  export let resource = "";
-  export let onConfirm: () => void;
-  export let onCancel: () => void;
-  export let theme: 'dark' | 'light' = 'dark';
+  // --- Svelte 5 Runes: Props ---
+  let { 
+    show = false, 
+    type = 'path', 
+    resource = "", 
+    onConfirm, 
+    onCancel, 
+    theme = 'dark' 
+  } = $props<{
+    show?: boolean;
+    type?: 'path' | 'url';
+    resource?: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+    theme?: 'dark' | 'light';
+  }>();
 
-  $: toolbarClass = STYLE.toolbar[theme];
-  $: buttonClass = STYLE.button[theme];
-  $: editorClass = STYLE.editor[theme];
+  // --- Svelte 5 Runes: Derived ---
+  const toolbarClass = $derived(STYLE.toolbar[theme]);
+  const buttonClass = $derived(STYLE.button[theme]);
+  const editorClass = $derived(STYLE.editor[theme]);
 </script>
 
 {#if show}
@@ -31,13 +46,13 @@
 
       <div class="flex justify-end gap-3">
         <button 
-          on:click={onCancel}
+          onclick={onCancel}
           class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}"
         >
           {$t('deny')}
         </button>
         <button 
-          on:click={onConfirm}
+          onclick={onConfirm}
           class="px-4 py-2 rounded text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
         >
           {$t('allow')}

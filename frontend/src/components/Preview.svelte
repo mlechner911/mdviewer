@@ -1,10 +1,9 @@
 <script lang="ts">
   /**
    * Preview component handles the complex rendering of Markdown-derived HTML.
-   * It integrates Mermaid.js for diagrams and KaTeX for mathematical expressions.
-   * Now with security whitelist enforcement for local and external resources.
+   * Refactored for Svelte 5 Runes.
    */
-  import { onMount, tick, createEventDispatcher } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import mermaid from 'mermaid';
   import katex from 'katex';
   import 'katex/dist/katex.min.css';
@@ -13,33 +12,42 @@
   import * as backend from '../lib/backend';
   import type { Theme } from '../themes';
 
-  const dispatch = createEventDispatcher();
+  // --- Svelte 5 Runes: Props ---
+  let { 
+    html, 
+    css = "", 
+    theme, 
+    fontSize = 100, 
+    currentFilePath = null,
+    onsecurity_request,
+    onopen_file
+  } = $props<{
+    html: string;
+    css?: string;
+    theme: Theme;
+    fontSize?: number;
+    currentFilePath?: string | null;
+    onsecurity_request?: (detail: { type: 'path' | 'url', resource: string }) => void;
+    onopen_file?: (detail: { path: string }) => void;
+  }>();
 
-  // Component Props
-  export let html: string;
-  export let css: string = "";
-  export let theme: Theme;
-  export let fontSize: number = 100;
-  export let currentFilePath: string | null = null;
-
-  let previewContainer: HTMLElement;
+  let previewContainer = $state<HTMLElement>();
 
   /**
    * checkAndHandleResource validates if a path or URL is whitelisted.
-   * Returns true if allowed, otherwise triggers a security request and returns false.
    */
   async function checkAndHandleResource(target: string, type: 'path' | 'url'): Promise<boolean> {
     if (type === 'url') {
       const isAllowed = await backend.isURLAllowed(target);
       if (!isAllowed) {
-        dispatch('security-request', { type: 'url', resource: target });
+        onsecurity_request?.({ type: 'url', resource: target });
         return false;
       }
     } else {
       const isAllowed = await backend.isPathAllowed(target);
       if (!isAllowed) {
         const parentDir = await backend.getParentDir(target);
-        dispatch('security-request', { type: 'path', resource: parentDir });
+        onsecurity_request?.({ type: 'path', resource: parentDir });
         return false;
       }
     }
@@ -64,33 +72,27 @@
 
       if (isExternal) {
         link.classList.add('external-link');
-        // Prevent default browser opening. Only open via Wails after whitelist check.
         link.onclick = async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          e.preventDefault(); e.stopPropagation();
           try {
             const domain = new URL(href).hostname;
             if (await checkAndHandleResource(domain, 'url')) {
               BrowserOpenURL(href);
             }
-          } catch (err) {
-            console.error("Invalid URL clicked:", href);
-          }
+          } catch (err) { console.error("Invalid URL clicked:", href); }
         };
       } else if (isMarkdown && !href.startsWith('#')) {
         link.onclick = async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          e.preventDefault(); e.stopPropagation();
           const baseDir = currentFilePath ? await backend.getParentDir(currentFilePath) : "";
           const absPath = await backend.resolveRelativePath(baseDir, href);
           if (await checkAndHandleResource(absPath, 'path')) {
-            dispatch('open-file', { path: absPath });
+            onopen_file?.({ path: absPath });
           }
         };
       } else if (href.startsWith('#')) {
         // Internal anchor links: let the browser/webview handle scroll to ID
       } else {
-        // Other local file links
         link.onclick = (e) => {
             e.preventDefault();
             console.warn("Direct file links are blocked for security. Use Markdown files or explicit whitelist.");
@@ -105,14 +107,13 @@
       if (!src) continue;
 
       const isExternal = src.startsWith('http://') || src.startsWith('https://');
-      
       if (isExternal) {
         try {
             const domain = new URL(src).hostname;
             const isAllowed = await backend.isURLAllowed(domain);
             if (!isAllowed) {
-              img.style.display = 'none'; // Hide until allowed
-              dispatch('security-request', { type: 'url', resource: domain });
+              img.style.display = 'none';
+              onsecurity_request?.({ type: 'url', resource: domain });
             }
         } catch (e) { img.style.display = 'none'; }
       } else if (!src.startsWith('data:')) {
@@ -122,7 +123,7 @@
         if (!isAllowed) {
           img.style.display = 'none';
           const parentDir = await backend.getParentDir(absPath);
-          dispatch('security-request', { type: 'path', resource: parentDir });
+          onsecurity_request?.({ type: 'path', resource: parentDir });
         } else {
           img.src = "wails:///" + absPath.replace(/\\/g, '/');
         }
@@ -152,14 +153,9 @@
     try {
       const nodes = previewContainer.querySelectorAll('.mermaid');
       if (nodes.length > 0) {
-          await mermaid.run({ 
-            querySelector: '.mermaid',
-            suppressErrors: true
-          });
+          await mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
       }
-    } catch (err) {
-      console.error("Mermaid render failed:", err);
-    }
+    } catch (err) { console.error("Mermaid render failed:", err); }
 
     // 4. Render Mathematical Expressions (KaTeX)
     renderMathInElement(previewContainer, {
@@ -173,14 +169,13 @@
     });
   }
 
-  // Reactive updates
-  $: if (html !== undefined || theme !== undefined) {
-    renderContent();
-  }
-
-  onMount(() => {
-    renderContent();
+  // --- Svelte 5 Runes: Effect ---
+  $effect(() => {
+    if (html !== undefined || theme !== undefined) {
+      untrack(() => renderContent());
+    }
   });
+
 </script>
 
 <!-- Inject dynamic Chroma Syntax Highlighting CSS -->

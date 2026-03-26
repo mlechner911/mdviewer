@@ -1,15 +1,28 @@
 <script lang="ts">
+  /**
+   * StatusBar component for MD Viewer.
+   * Refactored for Svelte 5 Runes.
+   */
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
   import { effectiveAppTheme, isPrinting } from '../lib/stores';
 
-  export let wordCount: number;
-  export let charCount: number;
-  export let readingTime: number;
-  export let activeTab: any;
+  // --- Svelte 5 Runes: Props ---
+  let { 
+    wordCount, 
+    charCount, 
+    readingTime, 
+    activeTab 
+  } = $props<{
+    wordCount: number;
+    charCount: number;
+    readingTime: number;
+    activeTab: any;
+  }>();
 
-  $: statusClass = STYLE.status[$effectiveAppTheme];
-  $: dividerClass = STYLE.divider[$effectiveAppTheme];
+  // --- Svelte 5 Runes: Derived ---
+  const statusClass = $derived(STYLE.status[$effectiveAppTheme]);
+  const dividerClass = $derived(STYLE.divider[$effectiveAppTheme]);
 </script>
 
 {#if !$isPrinting}
