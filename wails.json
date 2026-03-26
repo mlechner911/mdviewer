@@ -16,7 +16,7 @@
     "productName": "MarkSafe",
     "productVersion": "1.1.0",
     "copyright": "Copyright 2026 Michael Lechner",
-    "comments": "A modern Markdown viewer."
+    "comments": "An easy to use cross platform Markdown viewer."
   },
   "windows": {
     "nsis": {

@@ -25,9 +25,8 @@
     isEditorHidden, isPrinting, dropMessage, showToast 
   } from './lib/stores';
 
-  // CONFIGURATION: Set to false to hide the HTML toolbar in the Wails app.
-  // We keep it true during development (Vite) but default to false for native feel.
-  const SHOW_HTML_TOOLBAR = false;
+  // CONFIGURATION: Show HTML toolbar in Vite development mode, hide in production.
+  const SHOW_HTML_TOOLBAR = import.meta.env.DEV;
 
   interface Tab {
     id: string;
@@ -343,56 +342,62 @@
 
   onMount(() => {
     const init = async () => {
-      if (checkWailsReady()) {
-        isReady = true;
+      const wailsReady = checkWailsReady();
+      
+      // In development mode, we allow the app to initialize even without Wails
+      // to support pure Vite frontend development with mocks.
+      if (wailsReady || import.meta.env.DEV) {
+        if (wailsReady) {
+          isReady = true;
 
-        // Native Menu Listeners
-        EventsOn("menu-open-file", handleOpen);
-        EventsOn("menu-open-recent", handleOpenRecent);
-        EventsOn("menu-save-file", handleSave);
-        EventsOn("menu-new-tab", addNewTab);
-        
-        // Formatting Listeners
-        EventsOn("format-bold", () => wrapSelection('**', '**'));
-        EventsOn("format-italic", () => wrapSelection('*', '*'));
-        EventsOn("format-h1", () => prefixSelection('# '));
-        EventsOn("format-h2", () => prefixSelection('## '));
-        EventsOn("format-h3", () => prefixSelection('### '));
-        EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
+          // Native Menu Listeners
+          EventsOn("menu-open-file", handleOpen);
+          EventsOn("menu-open-recent", handleOpenRecent);
+          EventsOn("menu-save-file", handleSave);
+          EventsOn("menu-new-tab", addNewTab);
+          
+          // Formatting Listeners
+          EventsOn("format-bold", () => wrapSelection('**', '**'));
+          EventsOn("format-italic", () => wrapSelection('*', '*'));
+          EventsOn("format-h1", () => prefixSelection('# '));
+          EventsOn("format-h2", () => prefixSelection('## '));
+          EventsOn("format-h3", () => prefixSelection('### '));
+          EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
 
-        // Listeners for native menu language/theme toggles
-        EventsOn("set-locale", (l: string) => locale.set(l));
-        EventsOn("set-theme", (t: string) => appTheme.set(t as any));
+          // Listeners for native menu language/theme toggles
+          EventsOn("set-locale", (l: string) => locale.set(l));
+          EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
-        OnFileDrop(async (x: number, y: number, paths: string[]) => {
-          if (!paths || paths.length === 0) return;
-          const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
-          let loadedCount = 0;
-          for (const path of paths) {
-            if (allowedExt.test(path)) {
-              try {
-                const content = await backend.readFile(path);
-                if (content !== undefined && content !== null) {
-                  const title = await backend.getFileTitle(path);
-                  const newTab = createNewTab(title, content, path);
-                  tabs = [...tabs, newTab];
-                  activeTabIndex = tabs.length - 1;
-                  loadedCount++;
-                  const parentDir = await backend.getParentDir(path);
-                  await backend.addPathToWhitelist(parentDir);
+          OnFileDrop(async (x: number, y: number, paths: string[]) => {
+            if (!paths || paths.length === 0) return;
+            const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
+            let loadedCount = 0;
+            for (const path of paths) {
+              if (allowedExt.test(path)) {
+                try {
+                  const content = await backend.readFile(path);
+                  if (content !== undefined && content !== null) {
+                    const title = await backend.getFileTitle(path);
+                    const newTab = createNewTab(title, content, path);
+                    tabs = [...tabs, newTab];
+                    activeTabIndex = tabs.length - 1;
+                    loadedCount++;
+                    const parentDir = await backend.getParentDir(path);
+                    await backend.addPathToWhitelist(parentDir);
+                  }
+                } catch (err) {
+                  console.error("Failed to read dropped file:", err);
                 }
-              } catch (err) {
-                console.error("Failed to read dropped file:", err);
               }
             }
-          }
-          if (loadedCount > 0) {
-            showToast($t('filesLoaded', loadedCount));
-            updateNativeMenu(get(locale));
-          }
-        }, false);
+            if (loadedCount > 0) {
+              showToast($t('filesLoaded', loadedCount));
+              updateNativeMenu(get(locale));
+            }
+          }, false);
+        }
 
-        const result = await backend.getInitialContent();
+        const result = wailsReady ? await backend.getInitialContent() : null;
         if (result) {
           const title = await backend.getFileTitle(result.path);
           tabs = [createNewTab(title, result.content, result.path)];
@@ -402,10 +407,18 @@
           tabs = [createNewTab($t('untitled'), defaultMarkdown())];
         }
         activeTabIndex = 0;
+
+        // In pure Vite dev mode (no Wails), we still want to see the preview
+        if (import.meta.env.DEV && !wailsReady) {
+          isReady = true; // Enable reactive rendering
+        }
+
         updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
         
-        updateNativeMenu(get(locale));
+        if (wailsReady) {
+          updateNativeMenu(get(locale));
+        }
       } else {
         setTimeout(init, 50);
       }

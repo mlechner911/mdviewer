@@ -107,23 +107,20 @@ Section
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
 
-    ; --- Associate .md files with this application (simple ProgID) ---
-    ; Create a ProgID like ${INFO_PROJECTNAME}.mdfile and point .md to it
-    WriteRegStr HKCR ".md" "" "${INFO_PROJECTNAME}.mdfile"
-    WriteRegStr HKCR "${INFO_PROJECTNAME}.mdfile" "" "${INFO_PRODUCTNAME} Markdown File"
-    WriteRegStr HKCR "${INFO_PROJECTNAME}.mdfile\\DefaultIcon" "" "$INSTDIR\\${PRODUCT_EXECUTABLE},0"
-    WriteRegStr HKCR "${INFO_PROJECTNAME}.mdfile\\shell\\open\\command" "" '"$INSTDIR\\${PRODUCT_EXECUTABLE}" "%1"'
-    ; Also associate common .markdown/.mdown extensions (optional)
-    WriteRegStr HKCR ".markdown" "" "${INFO_PROJECTNAME}.mdfile"
-    WriteRegStr HKCR ".mdown" "" "${INFO_PROJECTNAME}.mdfile"
+    ; --- Associate .md files with this application ---
+    WriteRegStr SHCTX "Software\Classes\.md" "" "${INFO_PROJECTNAME}.mdfile"
+    WriteRegStr SHCTX "Software\Classes\${INFO_PROJECTNAME}.mdfile" "" "${INFO_PRODUCTNAME} Markdown File"
+    WriteRegStr SHCTX "Software\Classes\${INFO_PROJECTNAME}.mdfile\DefaultIcon" "" "$INSTDIR\${PRODUCT_EXECUTABLE},0"
+    WriteRegStr SHCTX "Software\Classes\${INFO_PROJECTNAME}.mdfile\shell\open\command" "" '"$INSTDIR\${PRODUCT_EXECUTABLE}" "%1"'
+    
+    WriteRegStr SHCTX "Software\Classes\.markdown" "" "${INFO_PROJECTNAME}.mdfile"
+    WriteRegStr SHCTX "Software\Classes\.mdown" "" "${INFO_PROJECTNAME}.mdfile"
 
-    ; Register application under Applications registry so it appears in "Open with" lists
-    WriteRegStr HKCR "Applications\\${PRODUCT_EXECUTABLE}\\shell\\open\\command" "" '"$INSTDIR\\${PRODUCT_EXECUTABLE}" "%1"'
+    ; Register application for "Open with" list
+    WriteRegStr SHCTX "Software\Classes\Applications\${PRODUCT_EXECUTABLE}\shell\open\command" "" '"$INSTDIR\${PRODUCT_EXECUTABLE}" "%1"'
 
-    ; Add per-user OpenWithProgids so the user can choose this app without system-wide keys
-    WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.md\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile" "" ""
-    WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.markdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile" "" ""
-    WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.mdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile" "" ""
+    ; Notify Windows about the changes to file associations
+    System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)' ; SHCNE_ASSOCCHANGED
 
     !insertmacro wails.writeUninstaller
 SectionEnd
@@ -141,18 +138,21 @@ Section "uninstall"
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
 
-    ; Remove our ProgID and extension associations created above. Note: this is simplistic
-    ; and will remove the keys even if another app set them after installation.
-    DeleteRegKey HKCR "${INFO_PROJECTNAME}.mdfile"
-    DeleteRegKey HKCR ".md"
-    DeleteRegKey HKCR ".markdown"
-    DeleteRegKey HKCR ".mdown"
-    ; Remove Applications entry
-    DeleteRegKey HKCR "Applications\\${PRODUCT_EXECUTABLE}"
-    ; Remove per-user OpenWithProgids entries
-    DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.md\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile"
-    DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.markdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile"
-    DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\.mdown\\OpenWithProgids\\${INFO_PROJECTNAME}.mdfile"
+    ; --- Safer Uninstallation of File Associations ---
+    ; Only delete the association if it still points to our application
+    ReadRegStr $0 SHCTX "Software\Classes\.md" ""
+    StrCmp $0 "${INFO_PROJECTNAME}.mdfile" 0 +2
+    DeleteRegValue SHCTX "Software\Classes\.md" ""
+
+    ReadRegStr $0 SHCTX "Software\Classes\.markdown" ""
+    StrCmp $0 "${INFO_PROJECTNAME}.mdfile" 0 +2
+    DeleteRegValue SHCTX "Software\Classes\.markdown" ""
+
+    DeleteRegKey SHCTX "Software\Classes\${INFO_PROJECTNAME}.mdfile"
+    DeleteRegKey SHCTX "Software\Classes\Applications\${PRODUCT_EXECUTABLE}"
+
+    ; Notify Windows about the removal
+    System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 
     !insertmacro wails.deleteUninstaller
 SectionEnd
