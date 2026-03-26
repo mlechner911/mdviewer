@@ -71,7 +71,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Code Block',
     menuAbout: 'About MarkSafe',
     aboutTitle: 'About MarkSafe',
-    aboutBody: 'MarkSafe v1.1.0\n\nA modern, high-performance Markdown Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
+    aboutBody: 'MarkSafe v1.0.3\n\nA modern, high-performance Markdown Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
     open: 'Öffnen',
@@ -128,7 +128,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Code-Block',
     menuAbout: 'Über MarkSafe',
     aboutTitle: 'Über MarkSafe',
-    aboutBody: 'MarkSafe v1.1.0\n\nEin moderner, leistungsstarker Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
+    aboutBody: 'MarkSafe v1.0.3\n\nEin moderner, leistungsstarker Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
     open: 'Abrir',
@@ -185,7 +185,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Bloque de código',
     menuAbout: 'Acerca de MarkSafe',
     aboutTitle: 'Acerca de MarkSafe',
-    aboutBody: 'MarkSafe v1.1.0\n\nUn visor de Markdown moderno y de alto rendimiento.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
+    aboutBody: 'MarkSafe v1.0.3\n\nUn visor de Markdown moderno y de alto rendimiento.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
     open: 'Ouvrir',
@@ -242,7 +242,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Bloc de code',
     menuAbout: 'À propos de MarkSafe',
     aboutTitle: 'À propos de MarkSafe',
-    aboutBody: 'MarkSafe v1.1.0\n\nUn visionneur Markdown moderne et performant.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
+    aboutBody: 'MarkSafe v1.0.3\n\nUn visionneur Markdown moderne et performant.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
   }
 };
 

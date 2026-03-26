@@ -7,6 +7,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
 //go:embed all:frontend/dist
@@ -37,6 +38,13 @@ func main() {
 		// Enable Drag and Drop support
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop: true,
+		},
+		Windows: &windows.Options{
+			WebviewIsTransparent: false,
+			WindowIsTranslucent:  false,
+			DisableWindowIcon:    false,
+			// CustomTheme allows us to define Dark Mode for the title bar on Windows
+			Theme: windows.Dark,
 		},
 	})
 
