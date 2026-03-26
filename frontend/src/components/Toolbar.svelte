@@ -59,7 +59,7 @@
               </div>
           {/if}
       </button>
-      <span class="text-xs opacity-40 font-mono hidden sm:inline">MarkSafe v1.1.0</span>
+      <span class="text-xs opacity-40 font-mono hidden sm:inline">MarkSafe v1.1.1</span>
   </div>
 </div>
 {/if}

@@ -32,7 +32,7 @@ MarkSafe introduces a **Sandboxed Resource Model** to protect you from malicious
 
 ## 📥 Installation
 
-Download the latest version for your platform from the **[Releases](https://github.com/mlechner911/marksafe/releases)** page.
+Download the latest version for your platform from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page.
 
 ### Windows
 - Download `marksafe-installer.exe` and run it to install.
