@@ -36,6 +36,7 @@ export const translations: Record<string, any> = {
     showEditor: 'Show Editor',
     focusMode: 'Focus Mode',
     exitFocusMode: 'Exit Focus Mode',
+    syncScroll: 'Synchronized Scrolling',
     words: 'words',
     characters: 'characters',
     readingTime: 'Approx. %s min read',
@@ -71,7 +72,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Code Block',
     menuAbout: 'About MarkSafe',
     aboutTitle: 'About MarkSafe',
-    aboutBody: 'MarkSafe v1.2.1\n\nAn easy to use cross platform Markdown viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
+    aboutBody: 'MarkSafe v1.2.2\n\nAn easy to use cross platform Markdown viewer.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
     open: 'Öffnen',
@@ -93,6 +94,7 @@ export const translations: Record<string, any> = {
     showEditor: 'Editor einblenden',
     focusMode: 'Fokus-Modus',
     exitFocusMode: 'Fokus-Modus verlassen',
+    syncScroll: 'Synchronisiertes Scrollen',
     words: 'Wörter',
     characters: 'Zeichen',
     readingTime: 'Ca. %s Min. Lesezeit',
@@ -128,7 +130,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Code-Block',
     menuAbout: 'Über MarkSafe',
     aboutTitle: 'Über MarkSafe',
-    aboutBody: 'MarkSafe v1.2.1\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
+    aboutBody: 'MarkSafe v1.2.2\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Viewer.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
     open: 'Abrir',
@@ -150,6 +152,7 @@ export const translations: Record<string, any> = {
     showEditor: 'Mostrar editor',
     focusMode: 'Modo enfoque',
     exitFocusMode: 'Salir del modo enfoque',
+    syncScroll: 'Desplazamiento sincronizado',
     words: 'palabras',
     characters: 'caracteres',
     readingTime: 'Aprox. %s min de lectura',
@@ -185,7 +188,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Bloque de código',
     menuAbout: 'Acerca de MarkSafe',
     aboutTitle: 'Acerca de MarkSafe',
-    aboutBody: 'MarkSafe v1.2.1\n\nUn visor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
+    aboutBody: 'MarkSafe v1.2.2\n\nUn visor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
     open: 'Ouvrir',
@@ -207,6 +210,7 @@ export const translations: Record<string, any> = {
     showEditor: 'Afficher l\'éditeur',
     focusMode: 'Mode focus',
     exitFocusMode: 'Quitter le mode focus',
+    syncScroll: 'Défilement synchronisé',
     words: 'mots',
     characters: 'caractères',
     readingTime: 'Environ %s min de lecture',
@@ -242,7 +246,7 @@ export const translations: Record<string, any> = {
     menuCodeBlock: 'Bloc de code',
     menuAbout: 'À propos de MarkSafe',
     aboutTitle: 'À propos de MarkSafe',
-    aboutBody: 'MarkSafe v1.2.1\n\nUn visionneur Markdown multiplateforme facile à utiliser.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
+    aboutBody: 'MarkSafe v1.2.2\n\nUn visionneur Markdown multiplateforme facile à utiliser.\n\nCopyright (c) 2026 Michael Lechner\nSous licence MIT.'
   }
 };
 

@@ -20,7 +20,8 @@
     fontSize = 100, 
     currentFilePath = null,
     onsecurity_request,
-    onopen_file
+    onopen_file,
+    onscroll
   } = $props<{
     html: string;
     css?: string;
@@ -29,9 +30,29 @@
     currentFilePath?: string | null;
     onsecurity_request?: (detail: { type: 'path' | 'url', resource: string }) => void;
     onopen_file?: (detail: { path: string }) => void;
+    onscroll?: (e: Event) => void;
   }>();
 
   let previewContainer = $state<HTMLElement>();
+
+  /**
+   * getScrollPercentage returns the current scroll position as a percentage (0-1).
+   */
+  export function getScrollPercentage(): number {
+    if (!previewContainer) return 0;
+    const { scrollTop, scrollHeight, clientHeight } = previewContainer;
+    if (scrollHeight <= clientHeight) return 0;
+    return scrollTop / (scrollHeight - clientHeight);
+  }
+
+  /**
+   * setScrollPercentage sets the scroll position based on a percentage (0-1).
+   */
+  export function setScrollPercentage(percentage: number) {
+    if (!previewContainer) return;
+    const { scrollHeight, clientHeight } = previewContainer;
+    previewContainer.scrollTop = percentage * (scrollHeight - clientHeight);
+  }
 
   /**
    * checkAndHandleResource validates if a path or URL is whitelisted.
@@ -183,6 +204,9 @@
 
 <div
   bind:this={previewContainer}
+  onscroll={(e) => {
+    onscroll?.(e);
+  }}
   class="flex-1 overflow-auto p-8 transition-colors duration-300 {theme.containerClass}"
 >
   <article

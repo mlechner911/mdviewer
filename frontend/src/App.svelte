@@ -49,7 +49,29 @@
   let securityType = $state<'path' | 'url'>('path');
   let securityResource = $state("");
 
+  let isSyncScroll = $state(true);
+  let previewComponent: any = $state();
+  let scrollLock = false;
+
   let textareaElement: HTMLTextAreaElement | undefined = $state();
+
+  function handleEditorScroll() {
+    if (!isSyncScroll || scrollLock || !textareaElement || !previewComponent) return;
+    scrollLock = true;
+    const { scrollTop, scrollHeight, clientHeight } = textareaElement;
+    const percentage = scrollTop / (scrollHeight - clientHeight);
+    previewComponent.setScrollPercentage(percentage);
+    setTimeout(() => { scrollLock = false; }, 50);
+  }
+
+  function handlePreviewScroll() {
+    if (!isSyncScroll || scrollLock || !textareaElement || !previewComponent) return;
+    scrollLock = true;
+    const percentage = previewComponent.getScrollPercentage();
+    const { scrollHeight, clientHeight } = textareaElement;
+    textareaElement.scrollTop = percentage * (scrollHeight - clientHeight);
+    setTimeout(() => { scrollLock = false; }, 50);
+  }
 
   // --- Svelte 5 Runes: Derived ---
   const markdown = $derived(tabs[activeTabIndex]?.content || "");
@@ -475,6 +497,7 @@
         bind:this={textareaElement}
         bind:value={tabs[activeTabIndex].content}
         oninput={onContentInput}
+        onscroll={handleEditorScroll}
         spellcheck="false" autocorrect="off" autocapitalize="off"
         class="flex-1 p-4 focus:outline-none resize-none font-mono text-sm select-text bg-transparent"
         placeholder={$t('placeholder')}
@@ -516,6 +539,13 @@
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
             </button>
+            <button 
+                onclick={() => isSyncScroll = !isSyncScroll} 
+                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {isSyncScroll ? focusButtonClass : ''}"
+                title={$t('syncScroll')}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>
+            </button>
         </div>
         <div class="text-xs font-bold uppercase tracking-wider opacity-50">{$t('preview')}</div>
         <div class="flex-1"></div>
@@ -543,6 +573,7 @@
       </div>
       {/if}
       <Preview 
+        bind:this={previewComponent}
         html={htmlContent} 
         css={highlightingCSS} 
         theme={currentPreviewTheme} 
@@ -550,6 +581,7 @@
         currentFilePath={tabs[activeTabIndex]?.path}
         onsecurity_request={handleSecurityRequest}
         onopen_file={handleOpenExternalMD}
+        onscroll={handlePreviewScroll}
       />
     </div>
   </div>
