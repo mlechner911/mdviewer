@@ -481,7 +481,7 @@
       ></textarea>
       {/if}
       <div 
-        role="separator"
+        role="slider"
         aria-label="Resize editor and preview"
         aria-valuenow={$splitWidth}
         aria-valuemin={10}
