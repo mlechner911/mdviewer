@@ -18,6 +18,29 @@
     "copyright": "Copyright 2026 Michael Lechner",
     "comments": "An easy to use cross platform Markdown viewer."
   },
+  "fileAssociations": [
+    {
+      "ext": "md",
+      "name": "Markdown File",
+      "description": "Markdown formatted text file",
+      "iconName": "appicon",
+      "role": "Editor"
+    },
+    {
+      "ext": "markdown",
+      "name": "Markdown File",
+      "description": "Markdown formatted text file",
+      "iconName": "appicon",
+      "role": "Editor"
+    },
+    {
+      "ext": "mdown",
+      "name": "Markdown File",
+      "description": "Markdown formatted text file",
+      "iconName": "appicon",
+      "role": "Editor"
+    }
+  ],
   "windows": {
     "nsis": {
       "customMessages": "",
