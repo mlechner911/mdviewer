@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#0078d4" rx="5"/>
+  <rect x="5" y="5" width="790" height="490" fill="#fff" rx="2"/>
+  <text x="400" y="270" font-family="sans-serif" font-size="24" fill="#888" text-anchor="middle">MarkSafe for Windows (Placeholder)</text>
+</svg>
