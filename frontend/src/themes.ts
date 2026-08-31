@@ -1,19 +1,17 @@
 import baseTheme from './themes/base.json';
 import darkPreset from './themes/presets/dark.json';
 import lightPreset from './themes/presets/light.json';
-import sepiaPreset from './themes/presets/sepia.json';
-import monochromePreset from './themes/presets/monochrome.json';
 
 /**
  * Theme defines the structural and visual properties for a preview style.
  */
 export interface Theme {
-  id: string;
+  id: 'dark' | 'light';
   name: string;
   chromaStyle: string;
   containerClass: string;
   proseClass: string;
-  mermaidTheme: 'dark' | 'default' | 'neutral' | 'forest';
+  mermaidTheme: 'dark' | 'default';
   mermaidVars?: Record<string, string>;
   customCSS?: Record<string, string>;
 }
@@ -36,9 +34,11 @@ function createTheme(preset: any): Theme {
   } as Theme;
 }
 
-export const themes: Theme[] = [
-  createTheme(darkPreset),
-  createTheme(lightPreset),
-  createTheme(sepiaPreset),
-  createTheme(monochromePreset)
-];
+export const darkTheme: Theme = createTheme(darkPreset);
+export const lightTheme: Theme = createTheme(lightPreset);
+
+export const themes: Theme[] = [darkTheme, lightTheme];
+
+export function getTheme(mode: 'dark' | 'light'): Theme {
+  return mode === 'dark' ? darkTheme : lightTheme;
+}

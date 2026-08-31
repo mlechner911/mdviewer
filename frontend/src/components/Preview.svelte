@@ -1,7 +1,8 @@
 <script lang="ts">
   /**
-   * Preview component handles the complex rendering of Markdown-derived HTML.
-   * Refactored for Svelte 5 Runes.
+   * Preview component handles the rendering of Markdown-derived HTML,
+   * syntax highlighting, Mermaid diagrams, and KaTeX math.
+   * Refactored for Svelte 5 Runes and clean Dark/Light mode support.
    */
   import { tick, untrack } from 'svelte';
   import mermaid from 'mermaid';
@@ -112,11 +113,11 @@
           }
         };
       } else if (href.startsWith('#')) {
-        // Internal anchor links: let the browser/webview handle scroll to ID
+        // Internal anchor links: let webview handle scroll to ID
       } else {
         link.onclick = (e) => {
-            e.preventDefault();
-            console.warn("Direct file links are blocked for security. Use Markdown files or explicit whitelist.");
+          e.preventDefault();
+          console.warn("Direct file links are blocked for security. Use Markdown files or explicit whitelist.");
         };
       }
     }
@@ -130,12 +131,12 @@
       const isExternal = src.startsWith('http://') || src.startsWith('https://');
       if (isExternal) {
         try {
-            const domain = new URL(src).hostname;
-            const isAllowed = await backend.isURLAllowed(domain);
-            if (!isAllowed) {
-              img.style.display = 'none';
-              onsecurity_request?.({ type: 'url', resource: domain });
-            }
+          const domain = new URL(src).hostname;
+          const isAllowed = await backend.isURLAllowed(domain);
+          if (!isAllowed) {
+            img.style.display = 'none';
+            onsecurity_request?.({ type: 'url', resource: domain });
+          }
         } catch (e) { img.style.display = 'none'; }
       } else if (!src.startsWith('data:')) {
         const baseDir = currentFilePath ? await backend.getParentDir(currentFilePath) : "";
@@ -164,30 +165,36 @@
       }
     });
 
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: theme.mermaidTheme,
-      themeVariables: theme.mermaidVars || {},
-      fontFamily: 'inherit',
-    });
-
     try {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: theme.mermaidTheme,
+        themeVariables: theme.mermaidVars || {},
+        fontFamily: 'inherit',
+      });
+
       const nodes = previewContainer.querySelectorAll('.mermaid');
       if (nodes.length > 0) {
-          await mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
+        await mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
       }
-    } catch (err) { console.error("Mermaid render failed:", err); }
+    } catch (err) {
+      console.error("Mermaid render failed:", err);
+    }
 
     // 4. Render Mathematical Expressions (KaTeX)
-    renderMathInElement(previewContainer, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', inline: true},
-        {left: '\\(', right: '\\)', inline: true},
-        {left: '\\[', right: '\\]', display: true}
-      ],
-      throwOnError: false
-    });
+    try {
+      renderMathInElement(previewContainer, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', inline: true},
+          {left: '\\(', right: '\\)', inline: true},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    } catch (err) {
+      console.error("KaTeX render failed:", err);
+    }
   }
 
   // --- Svelte 5 Runes: Effect ---
@@ -196,7 +203,6 @@
       untrack(() => renderContent());
     }
   });
-
 </script>
 
 <!-- Inject dynamic Chroma Syntax Highlighting CSS -->
@@ -207,7 +213,7 @@
   onscroll={(e) => {
     onscroll?.(e);
   }}
-  class="flex-1 overflow-auto p-8 transition-colors duration-300 {theme.containerClass}"
+  class="preview-container flex-1 overflow-auto p-8 transition-colors duration-200 {theme.containerClass}"
 >
   <article
     class="prose lg:prose-xl max-w-none {theme.proseClass}"
@@ -218,14 +224,14 @@
 </div>
 
 <style>
-  /* Base Markdown Styling from JSON Config */
+  /* Base Markdown Styling */
   :global(.prose pre) {
     border-radius: 0.5rem;
     padding: 1rem;
     overflow-x: auto;
   }
 
-  /* Improve Light Mode Code Readability */
+  /* Light Mode Code Styling */
   :global(.bg-white .prose pre) {
     background-color: #f8fafc !important;
     border: 1px solid #e2e8f0;
@@ -235,10 +241,12 @@
   :global(.bg-white .chroma .m, .bg-white .chroma .mb, .bg-white .chroma .mf) { color: #0f172a !important; font-weight: 600; }
   :global(.bg-white .chroma .s, .bg-white .chroma .sa, .bg-white .chroma .sb) { color: #0f172a !important; }
 
-  /* Ensure Sepia mode headings and text are always visible with high contrast */
-  :global(.bg-\[\#f4ecd8\] article, .bg-\[\#f4ecd8\] h1, .bg-\[\#f4ecd8\] h2, .bg-\[\#f4ecd8\] h3, .bg-\[\#f4ecd8\] h4, .bg-\[\#f4ecd8\] h5, .bg-\[\#f4ecd8\] h6, .bg-\[\#f4ecd8\] p, .bg-\[\#f4ecd8\] li, .bg-\[\#f4ecd8\] strong) {
-    color: #433422 !important;
+  /* Dark Mode Code Styling */
+  :global(.bg-slate-900 .prose pre) {
+    background-color: #0f172a !important;
+    border: 1px solid #334155;
   }
+  :global(.bg-slate-900 .prose pre code) { color: #f1f5f9 !important; }
 
   /* External Link Indicator */
   :global(.external-link::after) {
@@ -256,7 +264,7 @@
     margin-right: 0.5rem;
     margin-bottom: 0.125rem;
     vertical-align: middle;
-    pointer-events: none; /* View-only */
+    pointer-events: none;
   }
   :global(.prose-xl ul > li > input[type="checkbox"]) {
     width: 1.25rem;
@@ -301,20 +309,288 @@
   :global(.mermaid .edgeLabel rect) { opacity: 0.8; }
   :global(.mermaid svg[id^="mermaid-error"]) { border: 3px solid #ef4444 !important; border-radius: 0.5rem; padding: 1rem; background: rgba(239, 68, 68, 0.1) !important; }
 
-  /* Dynamic Theme Overrides for Mermaid */
-  :global(.bg-white .mermaid) { background: #f9fafb; }
-  :global(.bg-slate-900 .mermaid) { background: #1e293b; }
-  :global(.bg-\[\#f4ecd8\] .mermaid) { background: #e4dcc7; }
-  :global(.monochrome .mermaid) { background: #ffffff; border: 1px solid #000; }
-  :global(.bg-slate-900 .mermaid .edgeLabel rect) { fill: #1e293b !important; }
-  :global(.bg-white .mermaid .edgeLabel rect) { fill: #f9fafb !important; }
-  :global(.bg-\[\#f4ecd8\] .mermaid .edgeLabel rect) { fill: #f4ecd8 !important; }
-  :global(.monochrome .mermaid .edgeLabel rect) { fill: #ffffff !important; }
+  /* Theme Overrides for Mermaid */
+  :global(.bg-white .mermaid) { background: #f8fafc; border: 1px solid #e2e8f0; }
+  :global(.bg-slate-900 .mermaid) { background: #0f172a; border: 1px solid #334155; }
+  :global(.bg-white .mermaid .edgeLabel rect) { fill: #f8fafc !important; }
+  :global(.bg-slate-900 .mermaid .edgeLabel rect) { fill: #0f172a !important; }
 
-  :global(.monochrome) { filter: grayscale(100%) contrast(110%); }
+  /* Front Matter Metadata Styling */
+  :global(.frontmatter-container) {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background-color: #f8fafc;
+    margin-bottom: 1.5rem;
+  }
+  :global(.frontmatter-container summary) {
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f1f5f9;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  :global(.bg-slate-900 .frontmatter-container) {
+    border-color: #334155;
+    background-color: #0f172a;
+  }
+  :global(.bg-slate-900 .frontmatter-container summary) {
+    border-color: #334155;
+    background-color: #1e293b;
+    color: #f1f5f9;
+  }
+  :global(.frontmatter-tag) {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    margin: 0.1rem 0.2rem 0.1rem 0;
+    font-size: 0.75rem;
+    font-family: ui-monospace, monospace;
+    border-radius: 9999px;
+    background-color: #e2e8f0;
+    color: #1e293b;
+  }
+  :global(.bg-slate-900 .frontmatter-tag) {
+    background-color: #334155;
+    color: #f1f5f9;
+  }
 
+  /* =========================================================
+   * PRINT STYLESHEET: Pristine, High-Contrast Document Output
+   * ========================================================= */
   @media print {
-    div { overflow: visible !important; height: auto !important; padding: 0 !important; background: transparent !important; border: none !important; }
-    article { font-size: 12pt !important; max-width: 100% !important; }
+    :global(html), :global(body), :global(#app), :global(main), .preview-container {
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      color: #111827 !important;
+      height: auto !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+      display: block !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    .preview-container {
+      padding: 0 !important;
+    }
+
+    article.prose {
+      font-size: 11pt !important;
+      line-height: 1.55 !important;
+      max-width: 100% !important;
+      color: #111827 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Headings */
+    :global(.prose h1), :global(.prose h2), :global(.prose h3),
+    :global(.prose h4), :global(.prose h5), :global(.prose h6) {
+      color: #000000 !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    :global(.prose h1) {
+      font-size: 18pt !important;
+      margin-top: 0 !important;
+      margin-bottom: 0.8rem !important;
+      border-bottom: 1.5pt solid #e5e7eb !important;
+      padding-bottom: 0.3rem !important;
+    }
+
+    :global(.prose h2) {
+      font-size: 14pt !important;
+      margin-top: 1.2rem !important;
+      margin-bottom: 0.5rem !important;
+      border-bottom: 1pt solid #f3f4f6 !important;
+      padding-bottom: 0.2rem !important;
+    }
+
+    :global(.prose h3) {
+      font-size: 12pt !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.4rem !important;
+    }
+
+    :global(.prose p), :global(.prose li) {
+      color: #1f2937 !important;
+      orphans: 3 !important;
+      widows: 3 !important;
+    }
+
+    :global(.prose li) {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    /* Code Blocks & Inlines in Print */
+    :global(.prose pre) {
+      background-color: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 4px !important;
+      padding: 8pt 10pt !important;
+      margin: 10pt 0 !important;
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      box-shadow: none !important;
+    }
+
+    :global(.prose pre code) {
+      background: transparent !important;
+      color: #0f172a !important;
+      font-size: 9.5pt !important;
+      line-height: 1.4 !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    }
+
+    :global(.prose :not(pre) > code) {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 3px !important;
+      padding: 1px 4px !important;
+      font-size: 9.5pt !important;
+    }
+
+    /* Chroma Syntax Highlighting for Print */
+    :global(.chroma) { color: #0f172a !important; background-color: transparent !important; }
+    :global(.chroma .k), :global(.chroma .kd), :global(.chroma .kn), :global(.chroma .kp), :global(.chroma .kr) { color: #cf222e !important; font-weight: bold !important; }
+    :global(.chroma .s), :global(.chroma .sa), :global(.chroma .sb), :global(.chroma .sc), :global(.chroma .s1), :global(.chroma .s2) { color: #0a3069 !important; }
+    :global(.chroma .c), :global(.chroma .ch), :global(.chroma .cm), :global(.chroma .c1), :global(.chroma .cs) { color: #57606a !important; font-style: italic !important; }
+    :global(.chroma .nf), :global(.chroma .na), :global(.chroma .nb) { color: #8250df !important; }
+    :global(.chroma .nc), :global(.chroma .nn) { color: #953800 !important; font-weight: bold !important; }
+    :global(.chroma .m), :global(.chroma .mb), :global(.chroma .mf), :global(.chroma .mh), :global(.chroma .mi), :global(.chroma .mo) { color: #0550ae !important; }
+    :global(.chroma .o), :global(.chroma .ow) { color: #cf222e !important; }
+
+    /* Tables */
+    :global(.prose table) {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin: 12pt 0 !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      font-size: 10pt !important;
+    }
+
+    :global(.prose th), :global(.prose td) {
+      border: 1px solid #cbd5e1 !important;
+      padding: 5pt 8pt !important;
+      color: #111827 !important;
+    }
+
+    :global(.prose th) {
+      background-color: #f1f5f9 !important;
+      font-weight: 600 !important;
+    }
+
+    :global(.prose tr:nth-child(even) td) {
+      background-color: #f8fafc !important;
+    }
+
+    :global(.prose tr) {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    /* Blockquotes & Alerts */
+    :global(.prose blockquote) {
+      border-left: 3pt solid #94a3b8 !important;
+      background-color: #f8fafc !important;
+      color: #334155 !important;
+      padding: 6pt 10pt !important;
+      margin: 10pt 0 !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      border-radius: 0 4px 4px 0 !important;
+    }
+
+    :global(.markdown-alert) {
+      padding: 8pt 10pt !important;
+      margin: 10pt 0 !important;
+      border-left: 3.5pt solid !important;
+      border-radius: 0 4px 4px 0 !important;
+      background-color: #f8fafc !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      color: #1f2937 !important;
+    }
+
+    :global(.markdown-alert-note) { border-color: #0969da !important; background-color: #f0f6fc !important; }
+    :global(.markdown-alert-tip) { border-color: #1a7f37 !important; background-color: #f0fdf4 !important; }
+    :global(.markdown-alert-important) { border-color: #8250df !important; background-color: #faf5ff !important; }
+    :global(.markdown-alert-warning) { border-color: #9a6700 !important; background-color: #fffbeb !important; }
+    :global(.markdown-alert-caution) { border-color: #cf222e !important; background-color: #fef2f2 !important; }
+
+    /* Mermaid Diagrams in Print */
+    :global(.mermaid) {
+      background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 4px !important;
+      padding: 10pt !important;
+      margin: 12pt auto !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      max-width: 100% !important;
+    }
+
+    :global(.mermaid svg) {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+
+    /* KaTeX & Media in Print */
+    :global(.katex-display) {
+      margin: 10pt 0 !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    :global(.katex) {
+      color: #000000 !important;
+    }
+
+    :global(.prose img) {
+      max-width: 100% !important;
+      height: auto !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      margin: 10pt auto !important;
+    }
+
+    :global(.prose a) {
+      color: #0969da !important;
+      text-decoration: underline !important;
+    }
+
+    :global(.external-link::after) {
+      content: "" !important;
+    }
+
+    /* Front Matter Metadata in Print */
+    :global(.frontmatter-container) {
+      border: 1px solid #cbd5e1 !important;
+      background-color: #f8fafc !important;
+      margin-bottom: 12pt !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      border-radius: 4px !important;
+    }
+    :global(.frontmatter-container summary) {
+      border-bottom: 1px solid #cbd5e1 !important;
+      background-color: #f1f5f9 !important;
+      color: #111827 !important;
+      padding: 4pt 8pt !important;
+    }
+    :global(.frontmatter-tag) {
+      border: 1px solid #cbd5e1 !important;
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
   }
 </style>

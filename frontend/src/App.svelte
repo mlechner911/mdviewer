@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Main Application component for MD Viewer.
-   * Refactored for Svelte 5 Runes and Vite 8 (Rolldown).
+   * Refactored for Svelte 5 Runes, CodeMirror 6 markdown editor, dark/light themes, and crisp print output.
    */
   import { onMount, tick, untrack } from 'svelte';
   import { get } from 'svelte/store';
@@ -9,6 +9,7 @@
   import * as backend from './lib/backend';
   
   // Components
+  import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import Toolbar from './components/Toolbar.svelte';
@@ -16,7 +17,7 @@
   import StatusBar from './components/StatusBar.svelte';
 
   // State & Config
-  import { themes } from './themes';
+  import { getTheme } from './themes';
   import { t, locale, translations } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
   import { c_initialmd } from './lib/devdefmd.js';
@@ -42,7 +43,6 @@
   let isReady = $state(false);
   let htmlContent = $state("");
   let highlightingCSS = $state("");
-  let currentPreviewTheme = $state(themes[0]);
   let fontSize = $state(DEFAULTS.fontSize);
   
   let showSecurityModal = $state(false);
@@ -50,32 +50,29 @@
   let securityResource = $state("");
 
   let isSyncScroll = $state(true);
+  let editorComponent: any = $state();
   let previewComponent: any = $state();
   let scrollLock = false;
 
-  let textareaElement: HTMLTextAreaElement | undefined = $state();
-
-  function handleEditorScroll() {
-    if (!isSyncScroll || scrollLock || !textareaElement || !previewComponent) return;
+  function handleEditorScroll(percentage: number) {
+    if (!isSyncScroll || scrollLock || !previewComponent) return;
     scrollLock = true;
-    const { scrollTop, scrollHeight, clientHeight } = textareaElement;
-    const percentage = scrollTop / (scrollHeight - clientHeight);
     previewComponent.setScrollPercentage(percentage);
     setTimeout(() => { scrollLock = false; }, 50);
   }
 
   function handlePreviewScroll() {
-    if (!isSyncScroll || scrollLock || !textareaElement || !previewComponent) return;
+    if (!isSyncScroll || scrollLock || !editorComponent || !previewComponent) return;
     scrollLock = true;
     const percentage = previewComponent.getScrollPercentage();
-    const { scrollHeight, clientHeight } = textareaElement;
-    textareaElement.scrollTop = percentage * (scrollHeight - clientHeight);
+    editorComponent.setScrollPercentage(percentage);
     setTimeout(() => { scrollLock = false; }, 50);
   }
 
   // --- Svelte 5 Runes: Derived ---
   const markdown = $derived(tabs[activeTabIndex]?.content || "");
   const activeTab = $derived(tabs[activeTabIndex] || null);
+  const currentPreviewTheme = $derived(getTheme($effectiveAppTheme));
 
   const wordCount = $derived(markdown ? (markdown.trim().split(/\s+/).filter(Boolean).length) : 0);
   const charCount = $derived(markdown ? markdown.length : 0);
@@ -87,7 +84,7 @@
   const dividerClass = $derived(STYLE.divider[$effectiveAppTheme]);
   const focusButtonClass = $derived(STYLE.focusButton[$effectiveAppTheme]);
 
-  const defaultMarkdown = () => $t('welcomeTitle')+c_initialmd;
+  const defaultMarkdown = () => $t('welcomeTitle') + c_initialmd;
 
   function createNewTab(title = $t('untitled'), content = "", path: string | null = null): Tab {
     return {
@@ -108,9 +105,9 @@
   function handleCloseTab(index: number, event?: MouseEvent) {
     if (event) event.stopPropagation();
     if (tabs.length === 1) {
-        tabs = [createNewTab($t('untitled'), defaultMarkdown())];
-        activeTabIndex = 0;
-        return;
+      tabs = [createNewTab($t('untitled'), defaultMarkdown())];
+      activeTabIndex = 0;
+      return;
     }
     const wasActive = index === activeTabIndex;
     tabs = tabs.filter((_, i) => i !== index);
@@ -123,44 +120,23 @@
 
   function onContentInput() {
     if (tabs[activeTabIndex]) {
-        tabs[activeTabIndex].isDirty = true;
+      tabs[activeTabIndex].isDirty = true;
     }
   }
 
-  // Formatting Helpers
+  // Formatting Helpers for native menu and toolbar shortcuts
   function wrapSelection(prefix: string, suffix: string) {
-    if (!textareaElement || !tabs[activeTabIndex]) return;
-    const start = textareaElement.selectionStart;
-    const end = textareaElement.selectionEnd;
-    const content = tabs[activeTabIndex].content;
-    const selectedText = content.substring(start, end);
-    
-    const newContent = content.substring(0, start) + prefix + selectedText + suffix + content.substring(end);
-    tabs[activeTabIndex].content = newContent;
-    tabs[activeTabIndex].isDirty = true;
-    
-    // Restore focus and selection
-    tick().then(() => {
-        textareaElement?.focus();
-        textareaElement?.setSelectionRange(start + prefix.length, end + prefix.length);
-    });
+    if (editorComponent?.wrapSelection) {
+      editorComponent.wrapSelection(prefix, suffix);
+      onContentInput();
+    }
   }
 
   function prefixSelection(prefix: string) {
-    if (!textareaElement || !tabs[activeTabIndex]) return;
-    const start = textareaElement.selectionStart;
-    const content = tabs[activeTabIndex].content;
-    
-    // Find the start of the current line
-    const lineStart = content.lastIndexOf('\n', start - 1) + 1;
-    const newContent = content.substring(0, lineStart) + prefix + content.substring(lineStart);
-    tabs[activeTabIndex].content = newContent;
-    tabs[activeTabIndex].isDirty = true;
-
-    tick().then(() => {
-        textareaElement?.focus();
-        textareaElement?.setSelectionRange(start + prefix.length, start + prefix.length);
-    });
+    if (editorComponent?.prefixSelection) {
+      editorComponent.prefixSelection(prefix);
+      onContentInput();
+    }
   }
 
   async function handleSecurityRequest(detail: { type: 'path' | 'url', resource: string }) {
@@ -198,42 +174,52 @@
 
   function updateEffectiveTheme() {
     if ($appTheme === 'auto') {
-      effectiveAppTheme.set(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      effectiveAppTheme.set(isDark ? 'dark' : 'light');
     } else {
       effectiveAppTheme.set($appTheme as 'dark' | 'light');
     }
+  }
+
+  function toggleAppTheme() {
+    appTheme.update(current => {
+      if (current === APP_THEME.DARK) return APP_THEME.LIGHT;
+      if (current === APP_THEME.LIGHT) return APP_THEME.AUTO;
+      return APP_THEME.DARK;
+    });
   }
 
   // Native Menu Translation Sync
   async function updateNativeMenu(currentLocale: string) {
     if (!isReady || !checkWailsReady()) return;
     const tMap = translations[currentLocale];
+    if (!tMap) return;
     const menuTranslations = {
-        menuFile: tMap.menuFile,
-        menuEdit: tMap.menuEdit,
-        menuView: tMap.menuView,
-        menuFormat: tMap.menuFormat,
-        menuLanguage: tMap.menuLanguage,
-        menuAppearance: tMap.menuAppearance,
-        menuThemeDark: tMap.menuThemeDark,
-        menuThemeLight: tMap.menuThemeLight,
-        menuThemeAuto: tMap.menuThemeAuto,
-        menuNewTab: tMap.menuNewTab,
-        menuOpen: tMap.menuOpen,
-        menuRecentFiles: tMap.menuRecentFiles,
-        menuNoRecentFiles: tMap.menuNoRecentFiles,
-        menuSave: tMap.menuSave,
-        menuUndo: tMap.menuUndo,
-        menuRedo: tMap.menuRedo,
-        menuCut: tMap.menuCut,
-        menuCopy: tMap.menuCopy,
-        menuPaste: tMap.menuPaste,
-        menuBold: tMap.menuBold,
-        menuItalic: tMap.menuItalic,
-        menuCodeBlock: tMap.menuCodeBlock,
-        menuAbout: tMap.menuAbout,
-        aboutTitle: tMap.aboutTitle,
-        aboutBody: tMap.aboutBody
+      menuFile: tMap.menuFile,
+      menuEdit: tMap.menuEdit,
+      menuView: tMap.menuView,
+      menuFormat: tMap.menuFormat,
+      menuLanguage: tMap.menuLanguage,
+      menuAppearance: tMap.menuAppearance,
+      menuThemeDark: tMap.menuThemeDark,
+      menuThemeLight: tMap.menuThemeLight,
+      menuThemeAuto: tMap.menuThemeAuto,
+      menuNewTab: tMap.menuNewTab,
+      menuOpen: tMap.menuOpen,
+      menuRecentFiles: tMap.menuRecentFiles,
+      menuNoRecentFiles: tMap.menuNoRecentFiles,
+      menuSave: tMap.menuSave,
+      menuUndo: tMap.menuUndo,
+      menuRedo: tMap.menuRedo,
+      menuCut: tMap.menuCut,
+      menuCopy: tMap.menuCopy,
+      menuPaste: tMap.menuPaste,
+      menuBold: tMap.menuBold,
+      menuItalic: tMap.menuItalic,
+      menuCodeBlock: tMap.menuCodeBlock,
+      menuAbout: tMap.menuAbout,
+      aboutTitle: tMap.aboutTitle,
+      aboutBody: tMap.aboutBody
     };
     await backend.updateMenu(menuTranslations);
   }
@@ -304,43 +290,25 @@
   async function handleExport() {
     if (!isReady || !checkWailsReady()) return;
     try {
-      const previewEl = document.querySelector('.prose');
-      const containerEl = previewEl?.parentElement;
-      let themeVars = "";
-      if (previewEl && containerEl) {
-        const pStyle = window.getComputedStyle(previewEl);
-        const cStyle = window.getComputedStyle(containerEl);
-        const aStyle = window.getComputedStyle(previewEl.querySelector('a') || previewEl);
-        const codeStyle = window.getComputedStyle(previewEl.querySelector('code') || previewEl);
-        const isDark = $effectiveAppTheme === 'dark' || currentPreviewTheme.id === 'dark';
-        themeVars = `
+      const isDark = $effectiveAppTheme === 'dark';
+      const themeVars = `
         :root {
-            --bg-color: ${cStyle.backgroundColor};
-            --text-color: ${pStyle.color};
-            --link-color: ${aStyle.color !== pStyle.color ? aStyle.color : (isDark ? '#58a6ff' : '#0969da')};
-            --border-color: ${isDark ? '#30363d' : '#dfe2e5'};
-            --code-bg: ${codeStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' ? codeStyle.backgroundColor : (isDark ? '#161b22' : '#f6f8fa')};
+            --bg-color: ${isDark ? '#0f172a' : '#ffffff'};
+            --text-color: ${isDark ? '#f1f5f9' : '#0f172a'};
+            --link-color: ${isDark ? '#60a5fa' : '#0969da'};
+            --border-color: ${isDark ? '#334155' : '#e2e8f0'};
+            --code-bg: ${isDark ? '#1e293b' : '#f8fafc'};
             --alert-bg: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};
         }
-        `;
-      }
+      `;
       await backend.exportHTML(htmlContent, themeVars + highlightingCSS);
     } catch (err) {
       console.error("Failed to export HTML:", err);
     }
   }
 
-  async function handlePrint() {
-    const originalTheme = currentPreviewTheme;
-    const monochromeTheme = themes.find(t => t.id === 'monochrome') || originalTheme;
-    isPrinting.set(true);
-    currentPreviewTheme = monochromeTheme;
-    await tick();
-    setTimeout(() => {
-        window.print();
-        isPrinting.set(false);
-        currentPreviewTheme = originalTheme;
-    }, 100);
+  function handlePrint() {
+    window.print();
   }
 
   function adjustFontSize(delta: number) {
@@ -455,20 +423,22 @@
   });
 
   $effect(() => {
-    if (isReady) {
-      updateHighlightingCSS(currentPreviewTheme.chromaStyle);
+    if (isReady && $effectiveAppTheme) {
+      const theme = getTheme($effectiveAppTheme);
+      updateHighlightingCSS(theme.chromaStyle);
+      debouncedUpdate(markdown, theme.chromaStyle);
     }
   });
 
   $effect(() => {
-    if (isReady && (markdown !== undefined || currentPreviewTheme !== undefined)) {
+    if (isReady && markdown !== undefined) {
       debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
     }
   });
 
 </script>
 
-<svelte:window on:mousemove={onMouseMove} on:mouseup={stopResizing} />
+<svelte:window onmousemove={onMouseMove} onmouseup={stopResizing} />
 
 <WhitelistModal 
   show={showSecurityModal} 
@@ -479,29 +449,30 @@
   onCancel={() => showSecurityModal = false}
 />
 
-<main class="flex h-screen w-full overflow-hidden flex-col select-none {$isPrinting ? 'is-printing' : ''} {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
+<main class="flex h-screen w-full overflow-hidden flex-col select-none {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
   {#if SHOW_HTML_TOOLBAR}
     <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} />
   {/if}
   
-  <TabsBar tabs={tabs} activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
+  <TabsBar tabs={tabs} bind:activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
 
-  <div class="flex flex-1 overflow-hidden relative print:block">
-    {#if !$isEditorHidden && !$isFocusMode && !$isPrinting}
+  <div class="flex flex-1 overflow-hidden relative">
+    {#if !$isEditorHidden && !$isFocusMode}
     <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
       <div class="p-2 text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
         {$t('editor')}
       </div>
       {#if tabs[activeTabIndex]}
-      <textarea
-        bind:this={textareaElement}
-        bind:value={tabs[activeTabIndex].content}
-        oninput={onContentInput}
-        onscroll={handleEditorScroll}
-        spellcheck="false" autocorrect="off" autocapitalize="off"
-        class="flex-1 p-4 focus:outline-none resize-none font-mono text-sm select-text bg-transparent"
-        placeholder={$t('placeholder')}
-      ></textarea>
+      <div class="flex-1 min-h-0 relative">
+        <Editor
+          bind:this={editorComponent}
+          bind:value={tabs[activeTabIndex].content}
+          theme={$effectiveAppTheme}
+          placeholder={$t('placeholder')}
+          onchange={onContentInput}
+          onscroll={handleEditorScroll}
+        />
+      </div>
       {/if}
       <div 
         role="slider"
@@ -520,9 +491,8 @@
     </div>
     {/if}
 
-    <div class="flex-1 min-w-0 flex flex-col relative print:block">
+    <div class="flex-1 min-w-0 flex flex-col relative">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
-      {#if !$isPrinting}
       <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
         <div class="flex items-center gap-2">
             <button 
@@ -556,14 +526,22 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
         <div class="h-4 w-px {dividerClass}"></div>
-        <div class="flex gap-2 items-center">
-          <span class="text-[10px] uppercase opacity-60 font-bold">{$t('themeLabel')}</span>
-          <select bind:value={currentPreviewTheme} class="text-xs rounded border-none py-0.5 cursor-pointer bg-transparent focus:ring-1 focus:ring-blue-500">
-            {#each themes as theme}
-              <option value={theme}>{theme.name}</option>
-            {/each}
-          </select>
-        </div>
+        <button 
+          onclick={toggleAppTheme} 
+          title={$t('toggleTheme') + ' (' + ($appTheme === 'auto' ? $t('menuThemeAuto') : ($appTheme === 'dark' ? $t('menuThemeDark') : $t('menuThemeLight'))) + ')'}
+          class="flex items-center gap-1.5 px-2 py-0.5 rounded text-xs transition-colors {buttonClass}"
+        >
+          {#if $appTheme === 'dark'}
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <span>{$t('menuThemeDark')}</span>
+          {:else if $appTheme === 'light'}
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <span>{$t('menuThemeLight')}</span>
+          {:else}
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>{$t('menuThemeAuto')}</span>
+          {/if}
+        </button>
         <div class="h-4 w-px {dividerClass}"></div>
         <div class="flex gap-1 items-center">
           <button onclick={() => adjustFontSize(-5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">-</button>
@@ -571,7 +549,6 @@
           <button onclick={() => adjustFontSize(5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">+</button>
         </div>
       </div>
-      {/if}
       <Preview 
         bind:this={previewComponent}
         html={htmlContent} 
@@ -595,8 +572,6 @@
 
 <style>
   :global(body) { margin: 0; }
-  select option { background-color: white; color: black; }
-  :global(.bg-slate-900) select option, :global(.bg-slate-800) select option { background-color: #1e293b; color: white; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .drop-toast {
@@ -615,15 +590,15 @@
     animation: slideUp 0.3s ease-out;
   }
   @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
   @media print {
-    :global(body), main.is-printing {
-        background: white !important;
-        background-color: white !important;
-        color: black !important;
-        height: auto !important;
-        overflow: visible !important;
-        display: block !important;
-        filter: grayscale(100%) !important;
+    :global(body), main {
+      background: white !important;
+      background-color: white !important;
+      color: #111827 !important;
+      height: auto !important;
+      overflow: visible !important;
+      display: block !important;
     }
   }
 </style>

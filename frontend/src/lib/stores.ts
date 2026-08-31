@@ -1,12 +1,21 @@
-import { writable, derived } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { APP_THEME } from './constants';
-import type { AppTheme_t } from './constants';
+import type { AppTheme_t, EffectiveTheme_t } from './constants';
 
-// App Theme Store
-export const appTheme = writable<AppTheme_t>(APP_THEME.DARK);
+const savedTheme = (typeof localStorage !== 'undefined' ? localStorage.getItem('marksafe_theme') : null) as AppTheme_t | null;
+const initialTheme: AppTheme_t = savedTheme && ['dark', 'light', 'auto'].includes(savedTheme) ? savedTheme : APP_THEME.AUTO;
+
+// App Theme Store (dark, light, auto)
+export const appTheme = writable<AppTheme_t>(initialTheme);
+
+appTheme.subscribe(val => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('marksafe_theme', val);
+  }
+});
 
 // Effective Theme (resolves 'auto' to 'dark' or 'light')
-export const effectiveAppTheme = writable<'dark' | 'light'>('dark');
+export const effectiveAppTheme = writable<EffectiveTheme_t>('dark');
 
 // Layout
 export const splitWidth = writable(50);
@@ -18,6 +27,6 @@ export const isPrinting = writable(false);
 export const dropMessage = writable<string | null>(null);
 
 export function showToast(message: string, duration = 3000) {
-    dropMessage.set(message);
-    setTimeout(() => dropMessage.set(null), duration);
+  dropMessage.set(message);
+  setTimeout(() => dropMessage.set(null), duration);
 }

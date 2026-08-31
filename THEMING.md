@@ -1,44 +1,37 @@
-# Theming Architecture (v0.2.0)
+# Theming & Print Architecture
 
-MarkSafe uses a modular JSON-based theming system.
+MarkSafe features a streamlined, fully synchronized theming architecture focused on **Dark Mode** and **Light Mode** (with automatic System default support), along with a dedicated high-contrast **Print Stylesheet**.
 
-## 1. JSON Configuration
+## 1. Unified Dark / Light System
 
-The themes are now defined in external JSON files located in `frontend/src/themes/`.
+Instead of disjointed UI vs. Preview theme selections, the application theme (`appTheme`) serves as the single source of truth:
+- **`dark`**: Dark application frame, editor pane, markdown preview, `github-dark` syntax highlighting, and dark Mermaid diagrams.
+- **`light`**: Crisp white/light frame, editor pane, markdown preview, `github` syntax highlighting, and light Mermaid diagrams.
+- **`auto`**: Dynamically follows the OS system appearance preference (`prefers-color-scheme`).
 
-- **`base.json`**: Contains the default settings shared by all themes (default Mermaid variables, base CSS, etc.).
-- **`presets/*.json`**: Individual theme definitions (Dark, Light, Sepia, Monochrome) that override the base settings.
+### Theme Definitions
+Themes are located in `frontend/src/themes/`:
+- `base.json`: Base configuration shared by themes (base CSS, mermaid markers, error styling).
+- `presets/dark.json`: Dark mode styling tokens and variables.
+- `presets/light.json`: Light mode styling tokens and variables.
 
-### Merging Logic
-Themes are automatically merged in `themes.ts`:
-1. Start with `base.json`.
-2. Apply properties from the selected `preset.json`.
-3. Deep-merge complex objects like `mermaidVars` and `customCSS`.
+Theme merging is handled in `frontend/src/themes.ts` via `getTheme('dark' | 'light')`.
 
-## 2. Structure of a Theme JSON
+## 2. Dynamic Syntax Highlighting & Diagram Sync
 
-```json
-{
-  "id": "theme-id",
-  "name": "Display Name",
-  "chromaStyle": "syntax-style-name",
-  "containerClass": "tailwind-background-classes",
-  "proseClass": "tailwind-typography-classes",
-  "mermaidTheme": "mermaid-id",
-  "mermaidVars": {
-    "lineColor": "#hex",
-    "textColor": "#hex"
-  }
-}
-```
+When the active theme transitions:
+1. `$effectiveAppTheme` resolves `'auto'` to the active `'dark'` or `'light'` mode.
+2. The Chroma syntax highlighting CSS is dynamically retrieved from the backend renderer (`GetStyleCSS`) and applied.
+3. Mermaid initializes with matching theme parameters (`'dark'` vs `'default'`) and re-renders SVG diagrams.
+4. Tailwind and custom CSS classes update seamlessly across the entire interface.
 
-## 3. Adding a New Theme
+## 3. High-Contrast Print & PDF Output
 
-To add a new theme:
-1. Create a new JSON file in `frontend/src/themes/presets/`.
-2. Open `frontend/src/themes.ts`.
-3. Import your new JSON file.
-4. Add it to the `themes` array using the `createTheme()` helper.
-
-## 4. Future Roadmap
-The move to JSON allows for a future **Theme Editor** where users can modify these values directly in the app and save them to their local configuration.
+MarkSafe includes comprehensive `@media print` styling:
+- **UI Chrome Removal**: Toolbar, tabs, editor, status bar, modals, and toasts are automatically excluded from print.
+- **Paper Optimization**: Sets clean page margins (`@page`), pure white backgrounds, crisp dark typography, and proper line heights.
+- **Page-Break Protection**:
+  - Headings (`h1`-`h6`) enforce `break-after: avoid;` to prevent orphan headers.
+  - Code blocks (`pre`), tables, blockquotes, GitHub alerts, images, and Mermaid diagrams enforce `break-inside: avoid;` to prevent awkward splits across pages.
+  - Code blocks wrap long lines gracefully (`white-space: pre-wrap; word-break: break-word;`).
+- **High-Contrast Syntax Highlighting**: Overrides syntax tokens in `@media print` for maximum legibility on physical paper and PDF exports.

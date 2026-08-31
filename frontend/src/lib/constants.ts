@@ -1,5 +1,3 @@
-
-
 export const APP_THEME = {
   DARK: 'dark',
   LIGHT: 'light',
@@ -7,6 +5,7 @@ export const APP_THEME = {
 } as const;
 
 export type AppTheme_t = typeof APP_THEME[keyof typeof APP_THEME];
+export type EffectiveTheme_t = 'dark' | 'light';
 
 export const STYLE = {
   toolbar: {
@@ -18,8 +17,8 @@ export const STYLE = {
     light: 'bg-white text-slate-900 border-slate-300'
   },
   button: {
-    dark: 'bg-slate-700 hover:bg-slate-600',
-    light: 'bg-slate-200 hover:bg-slate-300'
+    dark: 'bg-slate-700 hover:bg-slate-600 text-slate-100',
+    light: 'bg-slate-200 hover:bg-slate-300 text-slate-900'
   },
   divider: {
     dark: 'bg-slate-700',
@@ -46,5 +45,5 @@ export const STYLE = {
 } as const;
 
 export const DEFAULTS = {
-  fontSize: 90
-} as const;
+  fontSize: 90 as number
+};

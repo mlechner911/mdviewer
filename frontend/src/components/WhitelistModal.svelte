@@ -5,6 +5,7 @@
    */
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
+  import type { EffectiveTheme_t } from '../lib/constants';
 
   // --- Svelte 5 Runes: Props ---
   let { 
@@ -20,17 +21,18 @@
     resource?: string;
     onConfirm: () => void;
     onCancel: () => void;
-    theme?: 'dark' | 'light';
+    theme?: EffectiveTheme_t;
   }>();
 
   // --- Svelte 5 Runes: Derived ---
-  const toolbarClass = $derived(STYLE.toolbar[theme]);
-  const buttonClass = $derived(STYLE.button[theme]);
-  const editorClass = $derived(STYLE.editor[theme]);
+  const currentTheme = $derived<EffectiveTheme_t>(theme === 'light' ? 'light' : 'dark');
+  const toolbarClass = $derived(STYLE.toolbar[currentTheme]);
+  const buttonClass = $derived(STYLE.button[currentTheme]);
+  const editorClass = $derived(STYLE.editor[currentTheme]);
 </script>
 
 {#if show}
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print:hidden">
   <div class="max-w-lg w-full rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <div class="p-6">
       <h3 class="text-lg font-bold mb-2">

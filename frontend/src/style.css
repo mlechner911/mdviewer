@@ -16,3 +16,24 @@ html, body {
 #app {
     height: 100%;
 }
+
+@page {
+    size: auto;
+    margin: 15mm 15mm 20mm 15mm;
+}
+
+@media print {
+    *, *::before, *::after {
+        text-shadow: none !important;
+        box-shadow: none !important;
+    }
+
+    html, body, #app {
+        height: auto !important;
+        min-height: 100% !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #111827 !important;
+    }
+}

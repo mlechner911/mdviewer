@@ -5,16 +5,16 @@
 !include "FileFunc.nsh"
 
 !ifndef INFO_PROJECTNAME
-    !define INFO_PROJECTNAME "md-viewer"
+    !define INFO_PROJECTNAME "marksafe"
 !endif
 !ifndef INFO_COMPANYNAME
     !define INFO_COMPANYNAME "Michael Lechner"
 !endif
 !ifndef INFO_PRODUCTNAME
-    !define INFO_PRODUCTNAME "MD Viewer"
+    !define INFO_PRODUCTNAME "MarkSafe"
 !endif
 !ifndef INFO_PRODUCTVERSION
-    !define INFO_PRODUCTVERSION "0.3.0"
+    !define INFO_PRODUCTVERSION "1.3.0"
 !endif
 !ifndef INFO_COPYRIGHT
     !define INFO_COPYRIGHT "Copyright 2026 Michael Lechner"

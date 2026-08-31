@@ -4,24 +4,27 @@ Technical reference for building and extending MarkSafe.
 
 ## 🛠 Tech Stack
 
-- **Backend**: Go 1.21+
+- **Backend**: Go 1.23+
   - [Wails v2](https://wails.io/) - Desktop framework.
   - [Goldmark](https://github.com/yuin/goldmark) - Extensible Markdown parser.
+  - [goldmark-meta](https://github.com/yuin/goldmark-meta) - YAML Front Matter parser.
   - [Chroma](https://github.com/alecthomas/chroma) - Syntax highlighting.
   - [Bluemonday](https://github.com/microcosm-cc/bluemonday) - HTML sanitization.
-- **Frontend**: Svelte 3 + TypeScript
-  - [Tailwind CSS v3](https://tailwindcss.com/) - Utility-first CSS.
-  - [KaTeX](https://katex.org/) - Math rendering.
-  - [Mermaid.js](https://mermaid.js.org/) - Diagram rendering.
+- **Frontend**: Svelte 5 (Runes) + TypeScript + Vite 8
+  - [CodeMirror 6](https://codemirror.net/) - Modular markdown editor with syntax highlighting and line numbers.
+  - [Tailwind CSS v3](https://tailwindcss.com/) - Utility-first CSS (`@tailwindcss/typography`).
+  - [KaTeX](https://katex.org/) - Mathematical formula rendering.
+  - [Mermaid.js](https://mermaid.js.org/) - Diagram and chart rendering.
 
 ## 🏗 Project Structure
 
 ```text
-/internal/markdown    -> Goldmark configuration & custom AST transformers.
+/internal/markdown    -> Goldmark configuration, AST transformers & frontmatter parsing.
 /internal/config      -> JSON configuration & whitelist management.
 /internal/filesystem  -> Safe file I/O wrappers.
+/frontend/src/components -> Svelte 5 components (Editor, Preview, TabsBar, Toolbar, etc.).
 /frontend/src/lib     -> Shared stores, constants, and backend bindings.
-/frontend/src/themes  -> Theme definitions (base.json + presets).
+/frontend/src/themes  -> Unified theme definitions (base.json + dark/light presets).
 /frontend/src/i18n.ts -> Translation dictionary and locale logic.
 ```
 
@@ -29,38 +32,29 @@ Technical reference for building and extending MarkSafe.
 
 ### Markdown Rendering
 The rendering pipeline is split between Go and Svelte:
-1.  **Go**: Parses Markdown, applies `GitHubAlertTransformer`, highlights code with Chroma, and sanitizes the final HTML via `bluemonday`.
-2.  **Svelte (`Preview.svelte`)**: Injects the HTML, scans for Mermaid diagrams and KaTeX formulas, and executes their respective client-side rendering engines.
+1. **Go (`internal/markdown/markdown.go`)**: Parses Markdown, extracts Front Matter via `goldmark-meta`, applies `GitHubAlertTransformer`, highlights code blocks with Chroma (`github-dark` / `github`), and sanitizes output via `bluemonday`.
+2. **Svelte (`Preview.svelte`)**: Injects HTML, renders Front Matter metadata box, and executes client-side Mermaid diagrams and KaTeX formulas.
+
+### CodeMirror 6 Editor
+`components/Editor.svelte` wraps CodeMirror 6 using Svelte 5 Runes. Themes are dynamically reconfigured via CodeMirror `Compartment` without unmounting or losing document/cursor state.
 
 ### Security Whitelisting
 All file and URL access is intercepted by `Preview.svelte`. It calls `backend.isPathAllowed` or `backend.isURLAllowed` before rendering resources. If a resource is blocked, a `security-request` event is dispatched to trigger the UI modal.
 
-## 🎨 Extending MarkSafe
-
-### Adding a Preview Theme
-1.  Create a new JSON preset in `/frontend/src/themes/presets/`.
-2.  Import it in `/frontend/src/themes.ts`.
-3.  Add it to the `themes` array using the `createTheme` helper.
-
-### Adding a Language
-1.  Add the new locale code (e.g., `it`) to the `supported` array in `getInitialLocale()` in `i18n.ts`.
-2.  Add the translations to the `translations` object in `i18n.ts`.
-3.  Update the language submenu in `app.go` (`UpdateMenu` method).
-
-## 🚀 Development
+## 🚀 Development & Build
 
 ### Prerequisites
-- Go 1.21+, Node.js 18+, Wails CLI.
+- Go 1.23+, Node.js 20+, Wails CLI v2.12+, NSIS (`makensis`).
 
-| Task | Command |
-|---------|-------------|
-| Install Deps | `task install` |
-| Dev Mode | `task dev` |
-| Build | `task build` |
-
-## 🤖 CI/CD
-
-Multi-platform builds are automated via GitHub Actions (`.github/workflows/release.yml`). Releases are triggered by version tags (e.g., `v1.0.0`).
+| Task | Command | Description |
+|---|---|---|
+| Install Deps | `task install` | Install Go and NPM dependencies |
+| Dev Mode | `task dev` | Run Wails dev with live reload |
+| Build Linux | `task build` | Compile Linux AMD64 binary |
+| Build Windows | `task build:windows` | Compile Windows binary & NSIS installer |
+| Build All | `task build:all` | Build both platforms |
+| Release | `task release` | Build and copy installers to `/mnt/data2tb/dropzone/` |
+| Check | `task check` | Run `svelte-check` and `go test` |
 
 ## 📄 License
 

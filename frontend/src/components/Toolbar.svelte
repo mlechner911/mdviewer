@@ -59,7 +59,11 @@
 
       <div class="h-6 w-px {STYLE.divider[$effectiveAppTheme]}"></div>
 
-      <button onclick={toggleTheme} title={$t('toggleTheme')} class="p-1.5 rounded-full transition-colors {buttonClass}">
+      <button 
+        onclick={toggleTheme} 
+        title={$t('toggleTheme') + ' (' + ($appTheme === 'auto' ? $t('menuThemeAuto') : ($appTheme === 'dark' ? $t('menuThemeDark') : $t('menuThemeLight'))) + ')'} 
+        class="p-1.5 rounded-full transition-colors flex items-center gap-1.5 {buttonClass}"
+      >
           {#if $appTheme === 'dark'}
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
           {:else if $appTheme === 'light'}
@@ -71,7 +75,7 @@
               </div>
           {/if}
       </button>
-      <span class="text-xs opacity-40 font-mono hidden sm:inline">MarkSafe v1.2.2</span>
+      <span class="text-xs opacity-40 font-mono hidden sm:inline">MarkSafe v1.3.0</span>
   </div>
 </div>
 {/if}
