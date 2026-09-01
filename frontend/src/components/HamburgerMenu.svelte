@@ -1,7 +1,11 @@
 <script lang="ts">
 import { appTheme, menuVisible } from '../lib/stores';
+import { get } from 'svelte/store';
 import type { EffectiveTheme_t } from '../lib/constants';
-import { t } from '../i18n';
+import { t, locale } from '../i18n';
+
+let currentLocale = $derived(get(locale));
+let tFn = $derived(get(t));
 
 interface HamburgerMenuProps {
 	onFileNew?: () => void;
@@ -178,8 +182,8 @@ const menuSections = [
 					isOpen = !isOpen;
 					menuVisible.set(!isOpen);
 					}}
-				:aria-expanded={isOpen}
-				aria-label="menu"
+		aria-expanded={isOpen}
+		aria-label="menu"
 				title="Menü"
 			>
 				{#if isOpen}
@@ -189,16 +193,19 @@ const menuSections = [
 				{:else}
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+					</svg>
+				{/if}
+			</button>
 
-<!-- Dropdown Menu -->
-{#if isOpen}
+			<!-- Dropdown Menu -->
+			{#if isOpen}
 	<div class="fixed inset-0 z-40" on:click={closeMenu} />
 	<div class="fixed top-12 left-4 right-4 md:left-auto md:right-auto md:top-12 md:min-w-[280px] z-50 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto">
 		<div class="p-2">
 			{#each menuSections as section}
 				<div class="mb-2 last:mb-0">
 					<div class="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-						{t(section.label)}
+						{tFn(section.label)}
 					</div>
 					<div class="mt-1 space-y-0.5">
 						{#each section.items as item}
@@ -274,7 +281,7 @@ const menuSections = [
 										</svg>
 									{/if}
 								</span>
-								<span>{t(item.label)}</span>
+								<span>{tFn(item.label)}</span>
 							</button>
 						{/each}
 					</div>
