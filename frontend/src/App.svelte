@@ -12,7 +12,7 @@
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
   import WhitelistModal from './components/WhitelistModal.svelte';
-  import Toolbar from './components/Toolbar.svelte';
+  import HamburgerMenu from './components/HamburgerMenu.svelte';
   import TabsBar from './components/TabsBar.svelte';
   import StatusBar from './components/StatusBar.svelte';
 
@@ -469,7 +469,25 @@
 
 <main class="flex h-screen w-full overflow-hidden flex-col select-none {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
   {#if SHOW_HTML_TOOLBAR}
-    <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} onCreateNewTab={() => {}} />
+    <HamburgerMenu 
+      onFileNew={addNewTab}
+      onFileOpenLocal={handleOpen}
+      onFileOpenRecent={handleOpenRecent}
+      onEditCopyAsMarkdown={() => handleExport()}
+      onEditCopyAsHtml={() => handleExport()}
+      onEditCopyAsRTF={() => handleExport()}
+      onEditCopyImage={() => handleExport()}
+      onEditCopyImageText={() => handleExport()}
+      onFormatToggle={() => isEditorHidden.update(v => !v)}
+      onFormatWordCount={() => console.log('wordCount')}
+      onViewZoomIn={() => adjustFontSize(5)}
+      onViewZoomOut={() => adjustFontSize(-5)}
+      onViewResetZoom={() => fontSize = 100}
+      onHelpAbout={() => alert(`MarkSafe v${appVersion}`)}
+      onOpenSettings={() => console.log('settings')}
+      onAboutWails={() => alert('MarkSafe')}
+      onOpenProductPage={() => window.open('https://mlcgo.eu/products/marksafe/', '_blank')}
+    />
   {/if}
   
   <TabsBar tabs={tabs} bind:activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
