@@ -1,7 +1,7 @@
 <script lang="ts">
-import { browser } from '$app/environment';
-import { menuVisible, theme } from '../lib/stores';
-import { getBackend } from '../lib/backend';
+import { appTheme, menuVisible } from '../lib/stores';
+import type { EffectiveTheme_t } from '../lib/constants';
+import { t } from '../i18n';
 
 interface HamburgerMenuProps {
 	onFileNew?: () => void;
@@ -53,9 +53,7 @@ function closeMenu() {
 }
 
 function handleMenuEvent(action: string) {
-	if (!browser) return;
-	
-	const backend = getBackend();
+	const backend = { openURL: async (url: string) => window.open(url, '_blank') };
 	
 	switch(action) {
 		case 'file-new':
@@ -175,25 +173,22 @@ const menuSections = [
 <div class="relative">
 	<!-- Hamburger Button -->
 	<button
-		class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-		on:click={() => {
-			isOpen = !isOpen;
-			menuVisible.set(!isOpen);
-		}}
-	:aria-expanded={isOpen}
-	aria-label="menu"
-	title="Menü"
->
-	{#if isOpen}
-		<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-		</svg>
-	{:else}
-		<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-		</svg>
-	{/if}
-</button>
+			class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+				on:click={() => {
+					isOpen = !isOpen;
+					menuVisible.set(!isOpen);
+					}}
+				:aria-expanded={isOpen}
+				aria-label="menu"
+				title="Menü"
+			>
+				{#if isOpen}
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				{:else}
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
 
 <!-- Dropdown Menu -->
 {#if isOpen}
@@ -203,7 +198,7 @@ const menuSections = [
 			{#each menuSections as section}
 				<div class="mb-2 last:mb-0">
 					<div class="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-						{i18n[section.label]}
+						{t(section.label)}
 					</div>
 					<div class="mt-1 space-y-0.5">
 						{#each section.items as item}
@@ -279,7 +274,7 @@ const menuSections = [
 										</svg>
 									{/if}
 								</span>
-								<span>{i18n[item.label]}</span>
+								<span>{t(item.label)}</span>
 							</button>
 						{/each}
 					</div>
