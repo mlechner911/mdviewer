@@ -47,3 +47,5 @@ export const STYLE = {
 export const DEFAULTS = {
   fontSize: 90 as number
 };
+
+export const EDITOR_PADDING = 'p-8' as const;
