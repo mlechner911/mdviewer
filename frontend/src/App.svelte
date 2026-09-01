@@ -20,10 +20,11 @@
   import { getTheme } from './themes';
   import { t, locale, translations } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
-  import { c_initialmd } from './lib/devdefmd.js';
+  import { c_welcomeMarkdown } from './lib/devdefmd.js';
   import { 
     appTheme, effectiveAppTheme, splitWidth, isFocusMode, 
-    isEditorHidden, isPrinting, dropMessage, showToast 
+    isEditorHidden, isPrinting, dropMessage, showToast,
+    appVersion, toastType
   } from './lib/stores';
 
   // CONFIGURATION: Show HTML toolbar in Vite development mode, hide in production.
@@ -84,7 +85,16 @@
   const dividerClass = $derived(STYLE.divider[$effectiveAppTheme]);
   const focusButtonClass = $derived(STYLE.focusButton[$effectiveAppTheme]);
 
-  const defaultMarkdown = () => $t('welcomeTitle') + c_initialmd;
+  const defaultMarkdown = () => get(t)('welcomeTitle') + (c_welcomeMarkdown[$locale as 'en'|'de'|'es'|'fr'] ?? c_welcomeMarkdown.en);
+
+  // Re-render welcome tabs when the app language changes.
+  let prevLocale = $locale;
+  $effect(() => {
+    if ($locale === prevLocale) return;
+    prevLocale = $locale;
+    const newContent = defaultMarkdown();
+    tabs = tabs.map(tab => (!tab.path && !tab.isDirty) ? { ...tab, content: newContent } : tab);
+  });
 
   function createNewTab(title = $t('untitled'), content = "", path: string | null = null): Tab {
     return {
@@ -219,7 +229,7 @@
       menuCodeBlock: tMap.menuCodeBlock,
       menuAbout: tMap.menuAbout,
       aboutTitle: tMap.aboutTitle,
-      aboutBody: tMap.aboutBody
+      aboutBody: tMap.aboutBody.replace('%s', get(appVersion))
     };
     await backend.updateMenu(menuTranslations);
   }
@@ -269,7 +279,7 @@
         await backend.addPathToWhitelist(parentDir);
         updateNativeMenu(get(locale));
       }
-    } catch (err) { console.error("Failed to open file:", err); }
+    } catch (err) { console.error("Failed to open file:", err); showToast($t('openFailed'), 3000, 'error'); }
   }
 
   async function handleSave() {
@@ -284,7 +294,7 @@
         await backend.addPathToWhitelist(parentDir);
         updateNativeMenu(get(locale));
       }
-    } catch (err) { console.error("Failed to save file:", err); }
+    } catch (err) { console.error("Failed to save file:", err); showToast($t('saveFailed'), 3000, 'error'); }
   }
 
   async function handleExport() {
@@ -304,6 +314,7 @@
       await backend.exportHTML(htmlContent, themeVars + highlightingCSS);
     } catch (err) {
       console.error("Failed to export HTML:", err);
+      showToast($t('exportFailed'), 3000, 'error');
     }
   }
 
@@ -330,11 +341,14 @@
       }
     } catch (err) {
       console.error("Failed to open recent file:", err);
+      showToast($t('loadFailed'), 3000, 'error');
     }
   }
 
   onMount(() => {
     const init = async () => {
+      const version = await backend.getVersion();
+      appVersion.set(version);
       const wailsReady = checkWailsReady();
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
@@ -352,31 +366,35 @@
           EventsOn("set-locale", (l: string) => locale.set(l));
           EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
-          OnFileDrop(async (x: number, y: number, paths: string[]) => {
-            if (!paths || paths.length === 0) return;
-            const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
-            let loadedCount = 0;
-            for (const path of paths) {
-              if (allowedExt.test(path)) {
-                try {
-                  const content = await backend.readFile(path);
-                  if (content !== undefined && content !== null) {
-                    const title = await backend.getFileTitle(path);
-                    const newTab = createNewTab(title, content, path);
-                    tabs = [...tabs, newTab];
-                    activeTabIndex = tabs.length - 1;
-                    loadedCount++;
-                    const parentDir = await backend.getParentDir(path);
-                    await backend.addPathToWhitelist(parentDir);
-                  }
-                } catch (err) { console.error("Failed to read dropped file:", err); }
-              }
-            }
-            if (loadedCount > 0) {
-              showToast($t('filesLoaded', loadedCount));
-              updateNativeMenu(get(locale));
-            }
-          }, false);
+      const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
+        OnFileDrop(async (x: number, y: number, paths: string[]) => {
+        if (!paths || paths.length === 0) return;
+        const newTabs: Tab[] = [];
+        let loadedCount = 0;
+        for (const path of paths) {
+        if (allowedExt.test(path)) {
+        try {
+        const content = await backend.readFile(path);
+        if (content !== undefined && content !== null) {
+          const title = await backend.getFileTitle(path);
+          const newTab = createNewTab(title, content, path);
+          newTabs.push(newTab);
+          loadedCount++;
+          const parentDir = await backend.getParentDir(path);
+          await backend.addPathToWhitelist(parentDir);
+        }
+        } catch (err) { console.error("Failed to read dropped file:", err); }
+        }
+        }
+        if (loadedCount > 0) {
+        tabs = [...tabs, ...newTabs];
+        activeTabIndex = tabs.length - 1 - loadedCount;
+        const parentDir = await backend.getParentDir(paths[0]);
+        await backend.addPathToWhitelist(parentDir);
+        showToast($t('filesLoaded', loadedCount));
+        updateNativeMenu(get(locale));
+        }
+        }, false);
         }
 
         const result = wailsReady ? await backend.getInitialContent() : null;
@@ -451,7 +469,7 @@
 
 <main class="flex h-screen w-full overflow-hidden flex-col select-none {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
   {#if SHOW_HTML_TOOLBAR}
-    <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} />
+    <Toolbar onOpen={handleOpen} onSave={handleSave} onNewTab={addNewTab} onCreateNewTab={() => {}} />
   {/if}
   
   <TabsBar tabs={tabs} bind:activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
@@ -476,7 +494,7 @@
       {/if}
       <div 
         role="slider"
-        aria-label="Resize editor and preview"
+        aria-label={$t('resizeSplitter')}
         aria-valuenow={$splitWidth}
         aria-valuemin={10}
         aria-valuemax={90}
@@ -566,7 +584,7 @@
   <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} />
 
   {#if $dropMessage}
-    <div class="drop-toast">{$dropMessage}</div>
+    <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>
   {/if}
 </main>
 
@@ -589,6 +607,7 @@
     z-index: 50;
     animation: slideUp 0.3s ease-out;
   }
+  .drop-toast.error { background: #ef4444; }
   @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
   @media print {

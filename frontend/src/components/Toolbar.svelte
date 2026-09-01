@@ -5,17 +5,19 @@
    */
   import { t, locale } from '../i18n';
   import { STYLE, APP_THEME } from '../lib/constants';
-  import { appTheme, effectiveAppTheme, isFocusMode, isPrinting } from '../lib/stores';
+  import { appTheme, effectiveAppTheme, isFocusMode, isPrinting, appVersion } from '../lib/stores';
 
   // --- Svelte 5 Runes: Props ---
   let { 
     onOpen, 
     onSave, 
-    onNewTab 
+    onNewTab,
+    onCreateNewTab
   } = $props<{
     onOpen: () => void;
     onSave: () => void;
     onNewTab: () => void;
+    onCreateNewTab?: () => void;
   }>();
 
   // --- Svelte 5 Runes: Derived ---
@@ -34,15 +36,20 @@
 {#if !$isFocusMode && !$isPrinting}
 <div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass} print:hidden">
   <div class="flex gap-2">
-    <button onclick={onOpen} title={$t('open')} class="p-2 rounded transition-colors {buttonClass}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-    </button>
-    <button onclick={onSave} title={$t('save')} class="p-2 rounded transition-colors {buttonClass}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-    </button>
-    <button onclick={onNewTab} title={$t('newTab')} class="p-2 rounded transition-colors {buttonClass}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    </button>
+  <button onclick={onOpen} title={$t('open')} class="p-2 rounded transition-colors {buttonClass}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+  </button>
+  <button onclick={onSave} title={$t('save')} class="p-2 rounded transition-colors {buttonClass}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+  </button>
+  <button onclick={onNewTab} title={$t('newTab')} class="p-2 rounded transition-colors {buttonClass}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+  </button>
+  {#if onCreateNewTab}
+  <button onclick={onCreateNewTab} title={$t('openInstaller')} class="p-2 rounded transition-colors {buttonClass}">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  </button>
+  {/if}
   </div>
 
   <div class="flex-1"></div>
@@ -75,7 +82,7 @@
               </div>
           {/if}
       </button>
-      <span class="text-xs opacity-40 font-mono hidden sm:inline">MarkSafe v1.3.0</span>
+      <span class="text-xs opacity-40 font-mono hidden sm:inline">MarkSafe v{$appVersion}</span>
   </div>
 </div>
 {/if}

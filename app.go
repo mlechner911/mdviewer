@@ -21,6 +21,14 @@ type FileResult struct {
 	Content string `json:"content"`
 }
 
+// appVersion is set at build time via -ldflags "-X main.appVersion=...".
+var appVersion = "1.3.1"
+
+// GetVersion returns the application version to the frontend.
+func (a *App) GetVersion() string {
+	return appVersion
+}
+
 // App struct defines the main application state and dependencies.
 type App struct {
 	ctx         context.Context

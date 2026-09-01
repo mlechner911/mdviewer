@@ -25,8 +25,13 @@ export const isPrinting = writable(false);
 
 // Global UI feedback
 export const dropMessage = writable<string | null>(null);
+export const toastType = writable<'info' | 'error'>('info');
 
-export function showToast(message: string, duration = 3000) {
+export function showToast(message: string, duration = 3000, type: 'info' | 'error' = 'info') {
+  toastType.set(type);
   dropMessage.set(message);
   setTimeout(() => dropMessage.set(null), duration);
 }
+
+// Application version (fetched from Go backend on startup, falls back to default)
+export const appVersion = writable('1.3.1');

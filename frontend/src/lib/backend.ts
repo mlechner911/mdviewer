@@ -14,8 +14,11 @@ import {
   AddURLToWhitelist,
   GetParentDir,
   ResolveRelativePath,
-  UpdateMenu
+  UpdateMenu,
+  GetVersion
 } from '../../wailsjs/go/main/App.js'
+import { get } from 'svelte/store';
+import { t } from '../i18n';
 
 export interface FileResult {
   path: string;
@@ -48,10 +51,10 @@ export async function renderMarkdown(value: string, themeStyle: string): Promise
     if (typeof (window as any).marked === 'function') {
       return (window as any).marked(value);
     }
-    return '<pre style="white-space:pre-wrap;">Preview unavailable (no backend runtime)</pre>';
+    return `<pre style="white-space:pre-wrap;">${get(t)('previewUnavailable')}</pre>`;
   } catch (err) {
     console.error('renderMarkdown failed:', err);
-    return '<pre style="white-space:pre-wrap;">Preview error</pre>';
+    return `<pre style="white-space:pre-wrap;">${get(t)('previewError')}</pre>`;
   }
 }
 
@@ -120,4 +123,17 @@ export async function resolveRelativePath(baseDir: string, relPath: string): Pro
 export async function updateMenu(translations: Record<string, string>): Promise<void> {
   if (!isWailsReady()) return;
   await UpdateMenu(translations);
+}
+
+// Version Binding
+export async function getVersion(): Promise<string> {
+  if (isWailsReady()) {
+    try {
+      const v = await GetVersion();
+      if (v) return v;
+    } catch (err) {
+      console.error('getVersion failed:', err);
+    }
+  }
+  return '1.3.1';
 }

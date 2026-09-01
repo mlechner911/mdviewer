@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   VERSION:
-    sh: cat VERSION 2>/dev/null || echo "1.3.0"
+    sh: cat VERSION 2>/dev/null || echo "1.3.1"
   DROPZONE: /mnt/data2tb/dropzone
 
 tasks:
@@ -20,21 +20,23 @@ tasks:
   build:
     desc: Build the application for Linux (AMD64)
     cmds:
-      - wails build
+      - wails build -ldflags "-X main.appVersion={{.VERSION}}"
 
   build:windows:
     desc: Build the Windows executable & NSIS installer (AMD64)
     cmds:
-      - wails build -platform windows/amd64 -nsis
+      - wails build -platform windows/amd64 -nsis -ldflags "-X main.appVersion={{.VERSION}}"
 
   build:all:
     desc: Build Linux binary and Windows installer
-    deps: [build, build:windows]
+    cmds:
+      - task build
+      - task build:windows
 
   release:
     desc: Build all platforms and copy installers to dropzone
-    deps: [build:all]
     cmds:
+      - task build:all
       - mkdir -p {{.DROPZONE}}
       - cp build/bin/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows-setup.exe
       - cp build/bin/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-amd64-installer.exe

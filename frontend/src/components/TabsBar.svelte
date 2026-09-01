@@ -5,6 +5,7 @@
    */
   import { STYLE } from '../lib/constants';
   import { effectiveAppTheme, isFocusMode, isPrinting } from '../lib/stores';
+  import { t } from '../i18n';
 
   // --- Svelte 5 Runes: Props ---
   let { 
@@ -40,7 +41,7 @@
         type="button"
         onclick={(e) => { e.stopPropagation(); onCloseTab(i, e); }}
         class="ml-2 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
-        aria-label="Close tab"
+        aria-label={$t('closeTab')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
