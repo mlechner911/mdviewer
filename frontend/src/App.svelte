@@ -496,7 +496,7 @@
   <div class="flex flex-1 overflow-hidden relative">
     {#if !$isEditorHidden && !$isFocusMode}
     <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
-    <div class="p-8 text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
+    <div class="{EDITOR_PADDING} text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
         {$t('editor')}
       </div>
       {#if tabs[activeTabIndex]}
