@@ -19,7 +19,7 @@
   // State & Config
   import { getTheme } from './themes';
   import { t, locale, translations } from './i18n';
-  import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
+  import { APP_THEME, STYLE, DEFAULTS, EDITOR_PADDING } from './lib/constants';
   import { c_welcomeMarkdown } from './lib/devdefmd.js';
   import { 
     appTheme, effectiveAppTheme, splitWidth, isFocusMode, 
