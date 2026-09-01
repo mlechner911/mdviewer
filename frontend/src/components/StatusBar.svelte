@@ -26,7 +26,7 @@
 </script>
 
 {#if !$isPrinting}
-<div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} print:hidden">
+<div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} py-3 print:hidden">
   <div class="flex gap-4">
       <span>{wordCount} {$t('words')}</span>
       <span>{charCount} {$t('characters')}</span>
