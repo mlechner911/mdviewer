@@ -310,10 +310,10 @@
   :global(.mermaid svg[id^="mermaid-error"]) { border: 3px solid #ef4444 !important; border-radius: 0.5rem; padding: 1rem; background: rgba(239, 68, 68, 0.1) !important; }
 
   /* Theme Overrides for Mermaid */
-  :global(.bg-white .mermaid) { background: #f8fafc; border: 1px solid #e2e8f0; }
-  :global(.bg-slate-900 .mermaid) { background: #0f172a; border: 1px solid #334155; }
-  :global(.bg-white .mermaid .edgeLabel rect) { fill: #f8fafc !important; }
-  :global(.bg-slate-900 .mermaid .edgeLabel rect) { fill: #0f172a !important; }
+    :global(.bg-white .mermaid) { background: transparent !important; border: 1px solid #e2e8f0; }
+    :global(.bg-slate-900 .mermaid) { background: transparent !important; border: 1px solid #334155; }
+    :global(.bg-white .mermaid .edgeLabel rect) { fill: transparent !important; }
+    :global(.bg-slate-900 .mermaid .edgeLabel rect) { fill: transparent !important; }
 
   /* Front Matter Metadata Styling */
   :global(.frontmatter-container) {

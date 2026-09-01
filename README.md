@@ -1,4 +1,4 @@
-# MarkSafe
+# MarkSafe 1.3.2
 
 > **[mlcgo.eu](https://mlcgo.eu)** — tools, libraries and manuals · [Product page](https://mlcgo.eu/products/marksafe/)
 
