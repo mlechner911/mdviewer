@@ -35,4 +35,4 @@ export function showToast(message: string, duration = 3000, type: 'info' | 'erro
 }
 
 // Application version (fetched from Go backend on startup, falls back to default)
-export const appVersion = writable('1.3.1');
+export const appVersion = writable('1.4.0');

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -22,7 +23,7 @@ type FileResult struct {
 }
 
 // appVersion is set at build time via -ldflags "-X main.appVersion=...".
-var appVersion = "1.3.1"
+var appVersion = "1.4.0"
 
 // GetVersion returns the application version to the frontend.
 func (a *App) GetVersion() string {
@@ -90,6 +91,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.AddText(t["menuSave"], keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
 		a.MenuSaveFile()
 	})
+	saveAsLabel := t["menuSaveAs"]
+	if saveAsLabel == "" {
+		saveAsLabel = "Save As..."
+	}
+	fileMenu.AddText(saveAsLabel, keys.Combo("s", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) {
+		a.MenuSaveAsFile()
+	})
 	fileMenu.AddSeparator()
 	fileMenu.AddText(t["menuAbout"], nil, func(_ *menu.CallbackData) {
 		a.ShowAbout(t["aboutTitle"], t["aboutBody"])
@@ -140,11 +148,24 @@ func (a *App) UpdateMenu(t map[string]string) {
 
 // ShowAbout displays a native message box with product information.
 func (a *App) ShowAbout(title, message string) {
+	if title == "" {
+		title = "Über MarkSafe"
+	}
+	if message == "" {
+		message = "MarkSafe v" + a.GetVersion() + "\n\nMarkdown-Betrachter und -Editor\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT."
+	}
 	wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
 		Type:    wailsRuntime.InfoDialog,
 		Title:   title,
 		Message: message,
 	})
+}
+
+// SetWindowTitle dynamically updates the native OS application window title.
+func (a *App) SetWindowTitle(title string) {
+	if a.ctx != nil {
+		wailsRuntime.WindowSetTitle(a.ctx, title)
+	}
 }
 
 // IsPathAllowed checks if a local file path is within a whitelisted directory.
@@ -200,6 +221,11 @@ func (a *App) GetInitialContent() *FileResult {
 				Path:    a.initialFile,
 				Content: content,
 			}
+		} else if os.IsNotExist(err) {
+			return &FileResult{
+				Path:    a.initialFile,
+				Content: "",
+			}
 		}
 	}
 	return nil
@@ -234,6 +260,11 @@ func (a *App) MenuOpenFile() {
 // MenuSaveFile is called from the native application menu.
 func (a *App) MenuSaveFile() {
 	wailsRuntime.EventsEmit(a.ctx, "menu-save-file")
+}
+
+// MenuSaveAsFile is called from the native application menu.
+func (a *App) MenuSaveAsFile() {
+	wailsRuntime.EventsEmit(a.ctx, "menu-save-file-as")
 }
 
 // MenuNewTab is called from the native application menu.
@@ -274,11 +305,32 @@ func (a *App) GetFileTitle(path string) string {
 	return filepath.Base(path)
 }
 
-// SaveFile opens a native save dialog and saves content.
-func (a *App) SaveFile(content string) (string, error) {
-	path, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
-		Title: "Save Markdown File",
-		DefaultFilename: "document.md",
+// SaveFile saves content directly to the given path, or prompts if path is empty.
+func (a *App) SaveFile(path string, content string) (string, error) {
+	if path == "" {
+		return a.SaveFileAs("document.md", content)
+	}
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	if err := filesystem.WriteFile(absPath, content); err != nil {
+		return "", err
+	}
+	a.config.AddRecentFile(absPath)
+	return absPath, nil
+}
+
+// SaveFileAs opens a native save dialog and saves content to the chosen path.
+func (a *App) SaveFileAs(defaultFilename string, content string) (string, error) {
+	if defaultFilename == "" {
+		defaultFilename = "document.md"
+	} else {
+		defaultFilename = filepath.Base(defaultFilename)
+	}
+	selectedPath, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
+		Title:           "Save Markdown File",
+		DefaultFilename: defaultFilename,
 		Filters: []wailsRuntime.FileFilter{
 			{DisplayName: "Markdown Files (*.md)", Pattern: "*.md"},
 			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
@@ -287,12 +339,11 @@ func (a *App) SaveFile(content string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if path == "" {
+	if selectedPath == "" {
 		return "", nil
 	}
-	absPath, _ := filepath.Abs(path)
-	err = filesystem.WriteFile(absPath, content)
-	if err != nil {
+	absPath, _ := filepath.Abs(selectedPath)
+	if err := filesystem.WriteFile(absPath, content); err != nil {
 		return "", err
 	}
 	a.config.AddRecentFile(absPath)
@@ -322,7 +373,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>MD Viewer Export</title>
+    <title>MarkSafe Export</title>
     <!-- Optional: Uncomment the following line to use KaTeX fonts from CDN if you have internet access -->
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"> -->
     <style>

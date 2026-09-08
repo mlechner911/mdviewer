@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   VERSION:
-    sh: cat VERSION 2>/dev/null || echo "1.3.1"
+    sh: cat VERSION 2>/dev/null || echo "1.4.0"
   DROPZONE: /mnt/data2tb/dropzone
 
 tasks:
@@ -27,6 +27,83 @@ tasks:
     cmds:
       - wails build -platform windows/amd64 -nsis -ldflags "-X main.appVersion={{.VERSION}}"
 
+  build:macos:remote:
+    desc: "Build and sign the macOS universal .app + .dmg on macstudio via SSH → /mnt/data2tb/dropzone/marksafe-{VERSION}.dmg"
+    vars:
+      MAC_HOST: mlc@macstudio.fritz.box
+      REMOTE_DIR: marksafe-build
+    cmds:
+      # 1 — sync source to macstudio
+      - |
+        rsync -az --delete \
+          --exclude='.git' --exclude='build/bin/' --exclude='dist/' \
+          --exclude='node_modules/' --exclude='frontend/node_modules/' --exclude='frontend/dist/' \
+          --exclude='mlcprodweb/' \
+          . {{.MAC_HOST}}:{{.REMOTE_DIR}}/
+        echo "→ Source synced to {{.MAC_HOST}}:{{.REMOTE_DIR}}"
+      # 2 — build and sign on macstudio
+      - |
+        KEYCHAIN_PASS="${MARKSAFE_KEYCHAIN_PASS:-${MLCTERM_KEYCHAIN_PASS:-${KEYCHAIN_PASS:-}}}"
+        if [ -z "$KEYCHAIN_PASS" ]; then
+          echo "HINWEIS: MARKSAFE_KEYCHAIN_PASS (oder MLCTERM_KEYCHAIN_PASS) ist nicht gesetzt."
+          echo "Ohne Passwort bleibt der Mac-Schlüsselbund gesperrt; codesign & Notarisierung werden übersprungen."
+        fi
+        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS bash -s" << 'ENDSSH'
+          set -e
+          export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:/opt/homebrew/bin
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          cd ~/marksafe-build
+
+          VERSION=$(cat VERSION 2>/dev/null || echo "1.4.0")
+          echo "→ Building MarkSafe v${VERSION} on macOS (universal)..."
+          
+          cd frontend && npm install && npm run build && cd ..
+          wails build -platform darwin/universal -ldflags "-X main.appVersion=${VERSION}"
+
+          if [ -n "$KEYCHAIN_PASS" ]; then
+            echo "→ Unlocking keychain and signing build/bin/marksafe.app..."
+            security unlock-keychain -p "$KEYCHAIN_PASS" ~/Library/Keychains/login.keychain-db
+            wails3 tool sign --input build/bin/marksafe.app \
+              --identity "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
+              --entitlements build/signing/marksafe.entitlements \
+              --notarize --keychain-profile mlcterm-notary
+            codesign --verify --strict --verbose=2 build/bin/marksafe.app
+            xcrun stapler validate build/bin/marksafe.app
+          else
+            echo "→ Skipping codesign & notarization for .app (no KEYCHAIN_PASS provided)."
+          fi
+
+          echo "→ Building .dmg with create-dmg..."
+          mkdir -p build/release
+          rm -f "build/release/marksafe-${VERSION}.dmg"
+          create-dmg \
+            --volname "MarkSafe ${VERSION}" \
+            --window-pos 200 150 --window-size 660 440 --icon-size 120 \
+            --icon "marksafe.app" 180 180 --hide-extension "marksafe.app" \
+            --app-drop-link 480 180 \
+            --no-internet-enable --skip-jenkins \
+            "build/release/marksafe-${VERSION}.dmg" "build/bin/marksafe.app"
+
+          if [ -n "$KEYCHAIN_PASS" ]; then
+            echo "→ Signing and notarizing .dmg..."
+            codesign --force --sign "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
+                     --timestamp "build/release/marksafe-${VERSION}.dmg"
+            xcrun notarytool submit "build/release/marksafe-${VERSION}.dmg" \
+                  --keychain-profile mlcterm-notary --wait
+            xcrun stapler staple "build/release/marksafe-${VERSION}.dmg"
+            xcrun stapler validate "build/release/marksafe-${VERSION}.dmg"
+          fi
+
+          echo "→ Done: build/release/marksafe-${VERSION}.dmg"
+        ENDSSH
+      # 3 — copy .dmg back to dropzone
+      - mkdir -p {{.DROPZONE}} build/bin
+      - scp "{{.MAC_HOST}}:{{.REMOTE_DIR}}/build/release/marksafe-{{.VERSION}}.dmg" {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg
+      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.DROPZONE}}/marksafe.dmg
+      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg build/bin/marksafe-{{.VERSION}}.dmg
+      - echo "Successfully published macOS DMG to {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg"
+
   build:all:
     desc: Build Linux binary and Windows installer
     cmds:
@@ -44,6 +121,38 @@ tasks:
       - cp build/bin/marksafe {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64
       - cp build/bin/marksafe {{.DROPZONE}}/marksafe
       - echo "Successfully published MarkSafe {{.VERSION}} to {{.DROPZONE}}"
+
+  publish:downloads:
+    desc: "Upload release binaries from dropzone to mlcgo.eu:/var/www/html/downloads/marksafe"
+    vars:
+      WEB_DEST: '{{.WEB_DEST | default "mlc@mlcgo.eu:/var/www/html/downloads/marksafe"}}'
+    cmds:
+      - |
+        set -eu
+        ssh mlc@mlcgo.eu "mkdir -p /var/www/html/downloads/marksafe"
+        pairs="
+        {{.DROPZONE}}/marksafe-{{.VERSION}}-windows-setup.exe|marksafe-windows-setup.exe
+        {{.DROPZONE}}/marksafe-{{.VERSION}}-windows.exe|marksafe-windows.exe
+        {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64|marksafe-linux
+        {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg|marksafe-macos.dmg
+        "
+        missing=0
+        sent=0
+        for pair in $pairs; do
+          src="${pair%%|*}"; dst="${pair##*|}"
+          if [ ! -f "$src" ]; then
+            echo "  — übersprungen: $(basename "$src") nicht gefunden"
+            missing=$((missing+1))
+            continue
+          fi
+          rsync -avh "$src" "{{.WEB_DEST}}/$dst"
+          rsync -avh "$src" "{{.WEB_DEST}}/$(basename "$src")"
+          echo "  ✓ $(basename "$src") → $dst (und als $(basename "$src"))"
+          sent=$((sent+1))
+        done
+        echo "────────────────────────────────────"
+        echo "  {{.WEB_DEST}}"
+        echo "  $sent hochgeladen, $missing übersprungen"
 
   check:
     desc: Run Svelte check and Go tests

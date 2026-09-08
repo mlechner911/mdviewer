@@ -4,6 +4,7 @@ import {
   RenderMarkdown, 
   OpenFile, 
   SaveFile, 
+  SaveFileAs, 
   GetInitialContent, 
   ReadFile, 
   ExportHTML, 
@@ -15,7 +16,8 @@ import {
   GetParentDir,
   ResolveRelativePath,
   UpdateMenu,
-  GetVersion
+  GetVersion,
+  ShowAbout
 } from '../../wailsjs/go/main/App.js'
 import { get } from 'svelte/store';
 import { t } from '../i18n';
@@ -68,9 +70,14 @@ export async function getFileTitle(path: string): Promise<string> {
   try { return await GetFileTitle(path); } catch (err) { console.error('getFileTitle failed:', err); return path; }
 }
 
-export async function saveFile(content: string): Promise<string | undefined> {
+export async function saveFile(path: string, content: string): Promise<string | undefined> {
   if (!isWailsReady()) return undefined;
-  try { return await SaveFile(content); } catch (err) { console.error('saveFile failed:', err); return undefined; }
+  try { return await SaveFile(path, content); } catch (err) { console.error('saveFile failed:', err); return undefined; }
+}
+
+export async function saveFileAs(defaultFilename: string, content: string): Promise<string | undefined> {
+  if (!isWailsReady()) return undefined;
+  try { return await SaveFileAs(defaultFilename, content); } catch (err) { console.error('saveFileAs failed:', err); return undefined; }
 }
 
 export async function exportHTML(html: string, css: string): Promise<void> {
@@ -125,6 +132,20 @@ export async function updateMenu(translations: Record<string, string>): Promise<
   await UpdateMenu(translations);
 }
 
+// About Dialog Binding
+export async function showAbout(title: string, message: string): Promise<void> {
+  if (!isWailsReady()) {
+    alert(`${title}\n\n${message}`);
+    return;
+  }
+  try {
+    await ShowAbout(title, message);
+  } catch (err) {
+    console.error('showAbout failed:', err);
+    alert(`${title}\n\n${message}`);
+  }
+}
+
 // Version Binding
 export async function getVersion(): Promise<string> {
   if (isWailsReady()) {
@@ -135,5 +156,16 @@ export async function getVersion(): Promise<string> {
       console.error('getVersion failed:', err);
     }
   }
-  return '1.3.1';
+  return '1.4.0';
+}
+
+// Window Title Binding
+export async function setWindowTitle(title: string): Promise<void> {
+  if (isWailsReady() && (window as any).go?.main?.App?.SetWindowTitle) {
+    try {
+      await (window as any).go.main.App.SetWindowTitle(title);
+    } catch (err) {
+      console.error('setWindowTitle failed:', err);
+    }
+  }
 }

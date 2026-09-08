@@ -19,7 +19,7 @@
   // State & Config
   import { getTheme } from './themes';
   import { t, locale, translations } from './i18n';
-  import { APP_THEME, STYLE, DEFAULTS, EDITOR_PADDING } from './lib/constants';
+  import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
   import { c_welcomeMarkdown } from './lib/devdefmd.js';
   import { 
     appTheme, effectiveAppTheme, splitWidth, isFocusMode, 
@@ -168,6 +168,11 @@
   async function handleOpenExternalMD(detail: { path: string }) {
     const path = detail.path;
     try {
+      const existingIndex = tabs.findIndex(t => t.path === path);
+      if (existingIndex >= 0) {
+        activeTabIndex = existingIndex;
+        return;
+      }
       const content = await backend.readFile(path);
       if (content !== undefined) {
         const title = await backend.getFileTitle(path);
@@ -219,6 +224,7 @@
       menuRecentFiles: tMap.menuRecentFiles,
       menuNoRecentFiles: tMap.menuNoRecentFiles,
       menuSave: tMap.menuSave,
+      menuSaveAs: tMap.menuSaveAs,
       menuUndo: tMap.menuUndo,
       menuRedo: tMap.menuRedo,
       menuCut: tMap.menuCut,
@@ -270,11 +276,21 @@
     if (!isReady || !checkWailsReady()) return;
     try {
       const result = await backend.openFile();
-      if (result) {
+      if (result && result.path) {
+        const existingIndex = tabs.findIndex(t => t.path === result.path);
+        if (existingIndex >= 0) {
+          activeTabIndex = existingIndex;
+          return;
+        }
         const title = await backend.getFileTitle(result.path);
         const newTab = createNewTab(title, result.content, result.path);
-        tabs = [...tabs, newTab];
-        activeTabIndex = tabs.length - 1;
+        if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
+          tabs = [newTab];
+          activeTabIndex = 0;
+        } else {
+          tabs = [...tabs, newTab];
+          activeTabIndex = tabs.length - 1;
+        }
         const parentDir = await backend.getParentDir(result.path);
         await backend.addPathToWhitelist(parentDir);
         updateNativeMenu(get(locale));
@@ -282,19 +298,65 @@
     } catch (err) { console.error("Failed to open file:", err); showToast($t('openFailed'), 3000, 'error'); }
   }
 
+  let isSaving = false;
+
   async function handleSave() {
-    if (!isReady || !checkWailsReady()) return;
-    try { 
-      const path = await backend.saveFile(markdown); 
-      if (path && activeTab) {
-        tabs[activeTabIndex].path = path;
-        tabs[activeTabIndex].title = await backend.getFileTitle(path);
+    if (!isReady || !checkWailsReady() || isSaving) return;
+    const tab = activeTab;
+    if (!tab) return;
+
+    // If document has no filename/path yet, route to Save As
+    if (!tab.path) {
+      await handleSaveAs();
+      return;
+    }
+
+    try {
+      isSaving = true;
+      const savedPath = await backend.saveFile(tab.path, tab.content);
+      if (savedPath) {
         tabs[activeTabIndex].isDirty = false;
-        const parentDir = await backend.getParentDir(path);
-        await backend.addPathToWhitelist(parentDir);
+        showToast($t('fileSaved'), 2000, 'info');
         updateNativeMenu(get(locale));
       }
-    } catch (err) { console.error("Failed to save file:", err); showToast($t('saveFailed'), 3000, 'error'); }
+    } catch (err) {
+      console.error("Failed to save file:", err);
+      showToast($t('saveFailed'), 3000, 'error');
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function handleSaveAs() {
+    if (!isReady || !checkWailsReady() || isSaving) return;
+    const tab = activeTab;
+    if (!tab) return;
+
+    try {
+      isSaving = true;
+      let defaultName = "document.md";
+      if (tab.path) {
+        defaultName = await backend.getFileTitle(tab.path);
+      } else if (tab.title && tab.title !== $t('untitled')) {
+        defaultName = tab.title.endsWith('.md') ? tab.title : `${tab.title}.md`;
+      }
+
+      const savedPath = await backend.saveFileAs(defaultName, tab.content);
+      if (savedPath) {
+        tabs[activeTabIndex].path = savedPath;
+        tabs[activeTabIndex].title = await backend.getFileTitle(savedPath);
+        tabs[activeTabIndex].isDirty = false;
+        const parentDir = await backend.getParentDir(savedPath);
+        await backend.addPathToWhitelist(parentDir);
+        showToast($t('fileSaved'), 2000, 'info');
+        updateNativeMenu(get(locale));
+      }
+    } catch (err) {
+      console.error("Failed to save file as:", err);
+      showToast($t('saveFailed'), 3000, 'error');
+    } finally {
+      isSaving = false;
+    }
   }
 
   async function handleExport() {
@@ -329,12 +391,22 @@
   async function handleOpenRecent(path: string) {
     if (!isReady || !checkWailsReady()) return;
     try {
+      const existingIndex = tabs.findIndex(t => t.path === path);
+      if (existingIndex >= 0) {
+        activeTabIndex = existingIndex;
+        return;
+      }
       const content = await backend.readFile(path);
       if (content !== undefined) {
         const title = await backend.getFileTitle(path);
         const newTab = createNewTab(title, content, path);
-        tabs = [...tabs, newTab];
-        activeTabIndex = tabs.length - 1;
+        if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
+          tabs = [newTab];
+          activeTabIndex = 0;
+        } else {
+          tabs = [...tabs, newTab];
+          activeTabIndex = tabs.length - 1;
+        }
         const parentDir = await backend.getParentDir(path);
         await backend.addPathToWhitelist(parentDir);
         updateNativeMenu(get(locale));
@@ -356,6 +428,7 @@
           EventsOn("menu-open-file", handleOpen);
           EventsOn("menu-open-recent", handleOpenRecent);
           EventsOn("menu-save-file", handleSave);
+          EventsOn("menu-save-file-as", handleSaveAs);
           EventsOn("menu-new-tab", addNewTab);
           EventsOn("format-bold", () => wrapSelection('**', '**'));
           EventsOn("format-italic", () => wrapSelection('*', '*'));
@@ -373,6 +446,11 @@
         let loadedCount = 0;
         for (const path of paths) {
         if (allowedExt.test(path)) {
+        const existingIndex = tabs.findIndex(t => t.path === path);
+        if (existingIndex >= 0) {
+          activeTabIndex = existingIndex;
+          continue;
+        }
         try {
         const content = await backend.readFile(path);
         if (content !== undefined && content !== null) {
@@ -387,8 +465,13 @@
         }
         }
         if (loadedCount > 0) {
-        tabs = [...tabs, ...newTabs];
-        activeTabIndex = tabs.length - 1 - loadedCount;
+        if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
+          tabs = newTabs;
+          activeTabIndex = 0;
+        } else {
+          tabs = [...tabs, ...newTabs];
+          activeTabIndex = tabs.length - 1;
+        }
         const parentDir = await backend.getParentDir(paths[0]);
         await backend.addPathToWhitelist(parentDir);
         showToast($t('filesLoaded', loadedCount));
@@ -425,13 +508,35 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-new-tab");
+      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab");
       EventsOff("set-locale"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
 
+  function handleKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        handleSaveAs();
+      } else {
+        handleSave();
+      }
+    }
+  }
+
   // --- Svelte 5 Runes: Effects ---
+  $effect(() => {
+    if (activeTab) {
+      const winTitle = `${activeTab.title}${activeTab.isDirty ? ' *' : ''} - MarkSafe`;
+      document.title = winTitle;
+      backend.setWindowTitle(winTitle);
+    } else {
+      document.title = 'MarkSafe';
+      backend.setWindowTitle('MarkSafe');
+    }
+  });
+
   $effect(() => {
     if ($appTheme) untrack(() => updateEffectiveTheme());
   });
@@ -456,7 +561,7 @@
 
 </script>
 
-<svelte:window onmousemove={onMouseMove} onmouseup={stopResizing} />
+<svelte:window onmousemove={onMouseMove} onmouseup={stopResizing} onkeydown={handleKeydown} />
 
 <WhitelistModal 
   show={showSecurityModal} 
@@ -472,7 +577,9 @@
     <HamburgerMenu 
       onFileNew={addNewTab}
       onFileOpenLocal={handleOpen}
-      onFileOpenRecent={handleOpenRecent}
+      onFileOpenRecent={(p) => p && handleOpenRecent(p)}
+      onFileSave={handleSave}
+      onFileSaveAs={handleSaveAs}
       onEditCopyAsMarkdown={() => handleExport()}
       onEditCopyAsHtml={() => handleExport()}
       onEditCopyAsRTF={() => handleExport()}
@@ -483,7 +590,10 @@
       onViewZoomIn={() => adjustFontSize(5)}
       onViewZoomOut={() => adjustFontSize(-5)}
       onViewResetZoom={() => fontSize = 100}
-      onHelpAbout={() => alert(`MarkSafe v${appVersion}`)}
+      onHelpAbout={() => {
+        const tMap = translations[$locale] || translations.de;
+        backend.showAbout(tMap.aboutTitle, tMap.aboutBody.replace('%s', $appVersion));
+      }}
       onOpenSettings={() => console.log('settings')}
       onAboutWails={() => alert('MarkSafe')}
       onOpenProductPage={() => window.open('https://mlcgo.eu/products/marksafe/', '_blank')}
@@ -496,8 +606,71 @@
   <div class="flex flex-1 overflow-hidden relative">
     {#if !$isEditorHidden && !$isFocusMode}
     <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
-    <div class="{EDITOR_PADDING} text-xs font-bold uppercase tracking-wider opacity-50 border-b shrink-0 {toolbarClass}">
-        {$t('editor')}
+      <div class="h-10 border-b flex items-center px-3 gap-1 shrink-0 {toolbarClass} print:hidden overflow-x-auto select-none">
+        <span class="text-xs font-bold uppercase tracking-wider opacity-50 mr-1 shrink-0">{$t('editor')}</span>
+        <div class="h-4 w-px {dividerClass} shrink-0 mx-1"></div>
+        <button 
+          onclick={() => wrapSelection('**', '**')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title="{$t('menuBold')} (Ctrl+B)"
+        >B</button>
+        <button 
+          onclick={() => wrapSelection('*', '*')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs italic font-serif hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title="{$t('menuItalic')} (Ctrl+I)"
+        >I</button>
+        <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
+        <button 
+          onclick={() => prefixSelection('# ')} 
+          class="px-1.5 h-6 flex items-center justify-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatH1')}
+        >H1</button>
+        <button 
+          onclick={() => prefixSelection('## ')} 
+          class="px-1.5 h-6 flex items-center justify-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatH2')}
+        >H2</button>
+        <button 
+          onclick={() => prefixSelection('### ')} 
+          class="px-1.5 h-6 flex items-center justify-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatH3')}
+        >H3</button>
+        <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
+        <button 
+          onclick={() => wrapSelection('\n```\n', '\n```\n')} 
+          class="px-1 h-6 flex items-center justify-center rounded text-[11px] font-mono hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title="{$t('menuCodeBlock')} (Ctrl+Shift+C)"
+        >&lt;/&gt;</button>
+        <button 
+          onclick={() => wrapSelection('`', '`')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs font-mono hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatInlineCode')}
+        >`c`</button>
+        <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
+        <button 
+          onclick={() => prefixSelection('> ')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs font-serif font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatQuote')}
+        >&ldquo;</button>
+        <button 
+          onclick={() => prefixSelection('- ')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatList')}
+        >•-</button>
+        <button 
+          onclick={() => prefixSelection('- [ ] ')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatTaskList')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        </button>
+        <button 
+          onclick={() => wrapSelection('[', '](https://)')} 
+          class="w-6 h-6 flex items-center justify-center rounded text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
+          title={$t('formatLink')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        </button>
       </div>
       {#if tabs[activeTabIndex]}
       <div class="flex-1 min-h-0 relative">

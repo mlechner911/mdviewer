@@ -24,7 +24,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "MD Viewer",
+		Title:  "MarkSafe",
 		Width:  1200,
 		Height: 800,
 		AssetServer: &assetserver.Options{

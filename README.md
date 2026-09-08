@@ -1,4 +1,4 @@
-# MarkSafe 1.3.2
+# MarkSafe 1.4.0
 
 > **[mlcgo.eu](https://mlcgo.eu)** — tools, libraries and manuals · [Product page](https://mlcgo.eu/products/marksafe/)
 
@@ -36,15 +36,15 @@ MarkSafe introduces a **Sandboxed Resource Model** to protect you from malicious
 Download the latest version for your platform from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page or local dropzone.
 
 ### Windows
-- Download `marksafe-1.3.1-windows-setup.exe` and run the installer.
+- Download `marksafe-1.4.0-windows-setup.exe` and run the installer.
 
 ### macOS
 - Download `marksafe-mac.zip`, extract, and move `MarkSafe.app` to your `/Applications` folder.
 
 ### Linux
-- Download `marksafe-1.3.1-linux-amd64`.
-- Make it executable: `chmod +x marksafe-1.3.1-linux-amd64`.
-- Run `./marksafe-1.3.1-linux-amd64` or add it to your `$PATH`.
+- Download `marksafe-1.4.0-linux-amd64`.
+- Make it executable: `chmod +x marksafe-1.4.0-linux-amd64`.
+- Run `./marksafe-1.4.0-linux-amd64` or add it to your `$PATH`.
 
 ## 📄 License
 

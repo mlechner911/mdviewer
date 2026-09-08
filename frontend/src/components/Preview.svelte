@@ -216,7 +216,7 @@
   class="preview-container flex-1 overflow-auto p-8 transition-colors duration-200 {theme.containerClass}"
 >
   <article
-    class="prose lg:prose-xl max-w-none {theme.proseClass}"
+    class="prose max-w-none {theme.proseClass}"
     style="font-size: {fontSize}%;"
   >
     {@html html}
@@ -224,11 +224,80 @@
 </div>
 
 <style>
+  /* Compact & Readable Typography for Markdown Preview */
+  :global(.prose) {
+    line-height: 1.6;
+  }
+  :global(.prose p) {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+    line-height: 1.6;
+  }
+  :global(.prose h1) {
+    font-size: 1.875rem;
+    line-height: 1.25;
+    margin-top: 1.4em;
+    margin-bottom: 0.5em;
+    font-weight: 700;
+  }
+  :global(.prose h1:first-child) {
+    margin-top: 0;
+  }
+  :global(.prose h2) {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    margin-top: 1.3em;
+    margin-bottom: 0.45em;
+    font-weight: 600;
+  }
+  :global(.prose h3) {
+    font-size: 1.25rem;
+    line-height: 1.35;
+    margin-top: 1.1em;
+    margin-bottom: 0.4em;
+    font-weight: 600;
+  }
+  :global(.prose h4, .prose h5, .prose h6) {
+    line-height: 1.4;
+    margin-top: 1em;
+    margin-bottom: 0.3em;
+    font-weight: 600;
+  }
+  :global(.prose ul, .prose ol) {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+  }
+  :global(.prose li) {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+    line-height: 1.6;
+  }
+  :global(.prose li > p) {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+  }
+  :global(.prose blockquote) {
+    margin-top: 0.85em;
+    margin-bottom: 0.85em;
+  }
+  :global(.prose hr) {
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+  }
+  :global(.prose table) {
+    margin-top: 0.85em;
+    margin-bottom: 0.85em;
+  }
+
   /* Base Markdown Styling */
   :global(.prose pre) {
     border-radius: 0.5rem;
     padding: 1rem;
     overflow-x: auto;
+    margin-top: 0.85em;
+    margin-bottom: 0.85em;
+    line-height: 1.45;
   }
 
   /* Light Mode Code Styling */
@@ -236,17 +305,14 @@
     background-color: #f8fafc !important;
     border: 1px solid #e2e8f0;
   }
-  :global(.bg-white .prose pre code) { color: #1e293b !important; }
-  :global(.bg-white .chroma .c, .bg-white .chroma .cm, .bg-white .chroma .c1) { color: #64748b !important; font-style: italic; }
-  :global(.bg-white .chroma .m, .bg-white .chroma .mb, .bg-white .chroma .mf) { color: #0f172a !important; font-weight: 600; }
-  :global(.bg-white .chroma .s, .bg-white .chroma .sa, .bg-white .chroma .sb) { color: #0f172a !important; }
+  :global(.bg-white .prose pre code) { color: #1e293b; }
 
   /* Dark Mode Code Styling */
   :global(.bg-slate-900 .prose pre) {
     background-color: #0f172a !important;
     border: 1px solid #334155;
   }
-  :global(.bg-slate-900 .prose pre code) { color: #f1f5f9 !important; }
+  :global(.bg-slate-900 .prose pre code) { color: #f1f5f9; }
 
   /* External Link Indicator */
   :global(.external-link::after) {
@@ -265,10 +331,8 @@
     margin-bottom: 0.125rem;
     vertical-align: middle;
     pointer-events: none;
-  }
-  :global(.prose-xl ul > li > input[type="checkbox"]) {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.1rem;
+    height: 1.1rem;
   }
 
   /* GitHub-style Alerts (Admonitions) */

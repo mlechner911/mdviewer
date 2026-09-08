@@ -10,7 +10,9 @@ let tFn = $derived(get(t));
 interface HamburgerMenuProps {
 	onFileNew?: () => void;
 	onFileOpenLocal?: () => void;
-	onFileOpenRecent?: () => void;
+	onFileOpenRecent?: (path?: string) => void;
+	onFileSave?: () => void;
+	onFileSaveAs?: () => void;
 	onEditCopyAsMarkdown?: () => void;
 	onEditCopyAsHtml?: () => void;
 	onEditCopyAsRTF?: () => void;
@@ -32,6 +34,8 @@ let {
 	onFileNew,
 	onFileOpenLocal,
 	onFileOpenRecent,
+	onFileSave,
+	onFileSaveAs,
 	onEditCopyAsMarkdown,
 	onEditCopyAsHtml,
 	onEditCopyAsRTF,
@@ -47,7 +51,7 @@ let {
 	onOpenSettings,
 	onAboutWails,
 	onOpenProductPage,
-} = $props();
+}: HamburgerMenuProps = $props();
 
 let isOpen = $state(false);
 
@@ -68,6 +72,12 @@ function handleMenuEvent(action: string) {
 			break;
 		case 'file-open-recent':
 			onFileOpenRecent?.();
+			break;
+		case 'file-save':
+			onFileSave?.();
+			break;
+		case 'file-save-as':
+			onFileSaveAs?.();
 			break;
 		case 'edit-copy-markdown':
 			onEditCopyAsMarkdown?.();
@@ -128,6 +138,8 @@ const menuSections = [
 			{ action: 'file-new', icon: 'file-plus', label: 'neu' },
 			{ action: 'file-open-local', icon: 'folder-open', label: 'lokale-datei-open' },
 			{ action: 'file-open-recent', icon: 'clock', label: 'zuletzt-offen' },
+			{ action: 'file-save', icon: 'save', label: 'save' },
+			{ action: 'file-save-as', icon: 'save-as', label: 'saveAs' },
 		]
 	},
 	{
@@ -178,7 +190,7 @@ const menuSections = [
 	<!-- Hamburger Button -->
 	<button
 			class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-				on:click={() => {
+				onclick={() => {
 					isOpen = !isOpen;
 					menuVisible.set(!isOpen);
 					}}
@@ -199,7 +211,7 @@ const menuSections = [
 
 			<!-- Dropdown Menu -->
 			{#if isOpen}
-	<div class="fixed inset-0 z-40" on:click={closeMenu} />
+	<div class="fixed inset-0 z-40" onclick={closeMenu} onkeydown={(e) => e.key === 'Escape' && closeMenu()} role="presentation"></div>
 	<div class="fixed top-12 left-4 right-4 md:left-auto md:right-auto md:top-12 md:min-w-[280px] z-50 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[70vh] overflow-y-auto">
 		<div class="p-2">
 			{#each menuSections as section}
@@ -211,7 +223,7 @@ const menuSections = [
 						{#each section.items as item}
 							<button
 								class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-								on:click={() => handleMenuEvent(item.action)}
+								onclick={() => handleMenuEvent(item.action)}
 							>
 								<span class="w-4 h-4 flex items-center justify-center">
 									{#if item.icon === 'file-plus'}
@@ -275,6 +287,10 @@ const menuSections = [
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 										</svg>
+									{:else if item.icon === 'save' || item.icon === 'save-as'}
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+										</svg>
 									{:else}
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -293,7 +309,7 @@ const menuSections = [
 			<div class="space-y-0.5">
 				<button
 					class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-					on:click={() => handleMenuEvent('product-page')}
+					onclick={() => handleMenuEvent('product-page')}
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
@@ -302,7 +318,7 @@ const menuSections = [
 				</button>
 				<button
 					class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-					on:click={() => handleMenuEvent('about-wails')}
+					onclick={() => handleMenuEvent('about-wails')}
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
