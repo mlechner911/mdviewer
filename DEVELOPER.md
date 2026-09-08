@@ -5,7 +5,7 @@ Technical reference for building and extending MarkSafe.
 ## 🛠 Tech Stack
 
 - **Backend**: Go 1.23+
-  - [Wails v2](https://wails.io/) - Desktop framework.
+  - [Wails v2 (and v3)](https://wails.io/) - Desktop framework.
   - [Goldmark](https://github.com/yuin/goldmark) - Extensible Markdown parser.
   - [goldmark-meta](https://github.com/yuin/goldmark-meta) - YAML Front Matter parser.
   - [Chroma](https://github.com/alecthomas/chroma) - Syntax highlighting.
@@ -16,7 +16,7 @@ Technical reference for building and extending MarkSafe.
   - [KaTeX](https://katex.org/) - Mathematical formula rendering.
   - [Mermaid.js](https://mermaid.js.org/) - Diagram and chart rendering.
 
-## 🏗 Project Structure
+##  Project Structure
 
 ```text
 /internal/markdown    -> Goldmark configuration, AST transformers & frontmatter parsing.
@@ -28,7 +28,7 @@ Technical reference for building and extending MarkSafe.
 /frontend/src/i18n.ts -> Translation dictionary and locale logic.
 ```
 
-## ⚙️ Core Logic
+##  Core Logic
 
 ### Markdown Rendering
 The rendering pipeline is split between Go and Svelte:
@@ -41,7 +41,7 @@ The rendering pipeline is split between Go and Svelte:
 ### Security Whitelisting
 All file and URL access is intercepted by `Preview.svelte`. It calls `backend.isPathAllowed` or `backend.isURLAllowed` before rendering resources. If a resource is blocked, a `security-request` event is dispatched to trigger the UI modal.
 
-## 🚀 Development & Build
+##   Development & Build
 
 ### Prerequisites
 - Go 1.23+, Node.js 20+, Wails CLI v2.12+, NSIS (`makensis`).
