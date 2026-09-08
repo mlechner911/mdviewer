@@ -33,16 +33,22 @@ MarkSafe introduces a **Sandboxed Resource Model** to protect you from malicious
 
 ## 📥 Installation
 
-Download the latest version for your platform from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page or local dropzone.
+Download the latest version for your platform from the **[Releases](https://github.com/mlechner911/mdviewer/releases)** page or directly from the official **[mlcgo.eu Download Page](https://mlcgo.eu/products/marksafe/en/download/)**.
 
-### Windows
-- Download `marksafe-1.4.0-windows-setup.exe` and run the installer.
+> [!IMPORTANT]
+> **macOS Note:** Officially code-signed and Apple-notarized packages (`.dmg` for Apple Silicon + Intel) are hosted exclusively on **[mlcgo.eu](https://mlcgo.eu/products/marksafe/en/download/)**.
+> GitHub Releases provide standard unsigned/ad-hoc builds. For a seamless macOS experience without Gatekeeper warnings, please download the notarized disk image from **[mlcgo.eu](https://mlcgo.eu/downloads/marksafe/marksafe-macos.dmg)**.
 
 ### macOS
-- Download `marksafe-mac.zip`, extract, and move `MarkSafe.app` to your `/Applications` folder.
+- **Recommended:** Download the signed & notarized Universal DMG from **[mlcgo.eu](https://mlcgo.eu/downloads/marksafe/marksafe-macos.dmg)**, open it, and drag `MarkSafe.app` into `/Applications`.
+- *Alternative:* Download `marksafe-macos-arm64.zip` from GitHub Releases.
+
+### Windows
+- Download `marksafe-windows-setup.exe` (or `marksafe-1.4.0-windows-setup.exe`) and run the installer.
+- A standalone portable executable (`marksafe-windows.exe`) is also available on **[mlcgo.eu](https://mlcgo.eu/downloads/marksafe/marksafe-windows.exe)**.
 
 ### Linux
-- Download `marksafe-1.4.0-linux-amd64`.
+- Download `marksafe-linux` (or `marksafe-1.4.0-linux-amd64`).
 - Make it executable: `chmod +x marksafe-1.4.0-linux-amd64`.
 - Run `./marksafe-1.4.0-linux-amd64` or add it to your `$PATH`.
 
