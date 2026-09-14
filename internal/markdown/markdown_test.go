@@ -37,6 +37,34 @@ This is the document content.
 	}
 }
 
+// PowerShell's lexer marks the ':' in bare URLs as Error tokens; the style CSS
+// must not render those as red boxes.
+func TestErrorTokensAreNeutralised(t *testing.T) {
+	r := NewRenderer()
+
+	out, err := r.Render("```powershell\ncurl.exe http://localhost:3128/stat\n```", "github")
+	if err != nil {
+		t.Fatalf("Render error: %v", err)
+	}
+	if !strings.Contains(out, `class="err"`) {
+		t.Fatalf("expected the PowerShell sample to produce Error tokens, got:\n%s", out)
+	}
+
+	for _, style := range []string{"github", "github-dark"} {
+		css, err := r.GetStyleCSS(style)
+		if err != nil {
+			t.Fatalf("GetStyleCSS(%q) error: %v", style, err)
+		}
+		override := strings.LastIndex(css, errorTokenOverrideCSS)
+		if override < 0 {
+			t.Fatalf("GetStyleCSS(%q) lacks the Error token override", style)
+		}
+		if styleRule := strings.LastIndex(css, "/* Error */"); styleRule > override {
+			t.Errorf("GetStyleCSS(%q): style's Error rule comes after the override", style)
+		}
+	}
+}
+
 func TestCodeBlocks(t *testing.T) {
 	r := NewRenderer()
 

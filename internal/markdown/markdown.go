@@ -204,8 +204,16 @@ func (r *Renderer) GetStyleCSS(styleName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write chroma CSS: %w", err)
 	}
+	// Error tokens mark text a lexer could not classify, not mistakes in the
+	// document (e.g. the ':' in URLs inside PowerShell blocks). Styles such as
+	// "github" paint them as red boxes; render them as plain text instead.
+	buf.WriteString(errorTokenOverrideCSS)
 	return buf.String(), nil
 }
+
+// errorTokenOverrideCSS neutralises Chroma's Error token style. It is appended
+// after the style's own rules, so it wins at equal specificity.
+const errorTokenOverrideCSS = "\n/* Error (neutralised) */ .chroma .err { color: inherit; background-color: transparent; }\n"
 
 // Render parses the input markdown and converts it to a sanitized HTML string.
 func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
