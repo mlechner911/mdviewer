@@ -2,12 +2,11 @@ package main
 
 import (
 	"embed"
+	"log"
 	"os"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
@@ -23,32 +22,51 @@ func main() {
 	}
 
 	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "MarkSafe",
-		Width:  1200,
-		Height: 800,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
+	wailsApp := application.New(application.Options{
+		Name:        "MarkSafe",
+		Description: "Markdown viewer and editor",
+		Services: []application.Service{
+			application.NewService(app),
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
 		},
-		// Enable Drag and Drop support
-		DragAndDrop: &options.DragAndDrop{
-			EnableFileDrop: true,
-		},
-		Windows: &windows.Options{
-			WebviewIsTransparent: false,
-			WindowIsTranslucent:  false,
-			DisableWindowIcon:    false,
-			// CustomTheme allows us to define Dark Mode for the title bar on Windows
-			Theme: windows.Dark,
+		FileAssociations: []string{".md", ".markdown", ".mdown"},
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 	})
 
-	if err != nil {
-		println("Error:", err.Error())
+	// macOS hands "Open with" over as an application event instead of argv.
+	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationOpenedWithFile, func(e *application.ApplicationEvent) {
+		if app.initialFile == "" {
+			app.SetInitialFile(e.Context().Filename())
+		}
+	})
+
+	app.window = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:             "main",
+		Title:            "MarkSafe",
+		Width:            1200,
+		Height:           800,
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		// Enable Drag and Drop support; only elements with data-file-drop-target accept drops
+		EnableFileDrop: true,
+		Windows: application.WindowsWindow{
+			// Dark title bar on Windows
+			Theme: application.Dark,
+		},
+		URL: "/",
+	})
+
+	// Forward dropped files to the frontend (see frontend/src/lib/wails.ts).
+	app.window.OnWindowEvent(events.Common.WindowFilesDropped, func(e *application.WindowEvent) {
+		if paths := e.Context().DroppedFiles(); len(paths) > 0 {
+			wailsApp.Event.Emit("files-dropped", paths)
+		}
+	})
+
+	if err := wailsApp.Run(); err != nil {
+		log.Fatal(err)
 	}
 }

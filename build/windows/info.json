@@ -1,15 +1,15 @@
 {
 	"fixed": {
-		"file_version": "{{.Info.ProductVersion}}"
+		"file_version": "1.5.0"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "{{.Info.ProductVersion}}",
-			"CompanyName": "{{.Info.CompanyName}}",
-			"FileDescription": "{{.Info.ProductName}}",
-			"LegalCopyright": "{{.Info.Copyright}}",
-			"ProductName": "{{.Info.ProductName}}",
-			"Comments": "{{.Info.Comments}}"
+			"ProductVersion": "1.5.0",
+			"CompanyName": "Michael Lechner",
+			"FileDescription": "Markdown viewer and editor",
+			"LegalCopyright": "Copyright © 2026 Michael Lechner",
+			"ProductName": "MarkSafe",
+			"Comments": "Ein einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor."
 		}
 	}
 }

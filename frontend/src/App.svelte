@@ -5,7 +5,7 @@
    */
   import { onMount, tick, untrack } from 'svelte';
   import { get } from 'svelte/store';
-  import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js';
+  import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from './lib/wails';
   import * as backend from './lib/backend';
   
   // Components
@@ -572,7 +572,7 @@
   onCancel={() => showSecurityModal = false}
 />
 
-<main class="flex h-screen w-full overflow-hidden flex-col select-none {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
+<main data-file-drop-target class="flex h-screen w-full overflow-hidden flex-col select-none {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
   {#if SHOW_HTML_TOOLBAR}
     <HamburgerMenu 
       onFileNew={addNewTab}

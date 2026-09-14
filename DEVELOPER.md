@@ -4,8 +4,8 @@ Technical reference for building and extending MarkSafe.
 
 ## 🛠 Tech Stack
 
-- **Backend**: Go 1.23+
-  - [Wails v2 (and v3)](https://wails.io/) - Desktop framework.
+- **Backend**: Go 1.24+
+  - [Wails v3 (v3.0.0-beta.17)](https://v3.wails.io/) - Desktop framework.
   - [Goldmark](https://github.com/yuin/goldmark) - Extensible Markdown parser.
   - [goldmark-meta](https://github.com/yuin/goldmark-meta) - YAML Front Matter parser.
   - [Chroma](https://github.com/alecthomas/chroma) - Syntax highlighting.
@@ -44,12 +44,16 @@ All file and URL access is intercepted by `Preview.svelte`. It calls `backend.is
 ##   Development & Build
 
 ### Prerequisites
-- Go 1.23+, Node.js 20+, Wails CLI v2.12+, NSIS (`makensis`).
+- Go 1.24+, Node.js 20+, Wails CLI `wails3` v3.0.0-beta.17 (`go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.17`), [Task](https://taskfile.dev/), NSIS (`makensis`).
+- Linux: GTK3 + webkit2gtk-4.1 dev packages (`libgtk-3-dev libwebkit2gtk-4.1-dev`). Builds use the `gtk3` tag, because Wails v3 beta defaults to GTK4 + WebKitGTK 6.0.
+
+Build output goes to `bin/`. Build configuration (product info, file associations) lives in `build/config.yml`; after changing it run `wails3 task common:update:build-assets`.
 
 | Task | Command | Description |
 |---|---|---|
 | Install Deps | `task install` | Install Go and NPM dependencies |
-| Dev Mode | `task dev` | Run Wails dev with live reload |
+| Dev Mode | `task dev` | Run `wails3 dev` with live reload |
+| Bindings | `task bindings` | Generate TypeScript bindings into `frontend/bindings` |
 | Build Linux | `task build` | Compile Linux AMD64 binary |
 | Build Windows | `task build:windows` | Compile Windows binary & NSIS installer |
 | Build All | `task build:all` | Build both platforms |

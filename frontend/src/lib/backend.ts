@@ -17,8 +17,9 @@ import {
   ResolveRelativePath,
   UpdateMenu,
   GetVersion,
-  ShowAbout
-} from '../../wailsjs/go/main/App.js'
+  ShowAbout,
+  SetWindowTitle
+} from '../../bindings/marksafe/app'
 import { get } from 'svelte/store';
 import { t } from '../i18n';
 
@@ -27,8 +28,14 @@ export interface FileResult {
   content: string;
 }
 
+// True when running inside the Wails webview. `window._wails` is not a usable
+// signal in v3 (the runtime creates it on import, even in a plain browser), so
+// check for the native message bridge instead: WebView2 on Windows, WebKit's
+// `external` handler on macOS/Linux.
 export function isWailsReady(): boolean {
-  return typeof window !== 'undefined' && (window as any).go && (window as any).go.main && (window as any).go.main.App;
+  if (typeof window === 'undefined') return false;
+  const w = window as any;
+  return Boolean(w.chrome?.webview?.postMessage || w.webkit?.messageHandlers?.external);
 }
 
 export async function getStyleCSS(style: string): Promise<string> {
@@ -62,7 +69,7 @@ export async function renderMarkdown(value: string, themeStyle: string): Promise
 
 export async function openFile(): Promise<FileResult | undefined> {
   if (!isWailsReady()) return undefined;
-  try { return await OpenFile(); } catch (err) { console.error('openFile failed:', err); return undefined; }
+  try { return (await OpenFile()) ?? undefined; } catch (err) { console.error('openFile failed:', err); return undefined; }
 }
 
 export async function getFileTitle(path: string): Promise<string> {
@@ -87,7 +94,7 @@ export async function exportHTML(html: string, css: string): Promise<void> {
 
 export async function getInitialContent(): Promise<FileResult | undefined> {
   if (!isWailsReady()) return undefined;
-  try { return await GetInitialContent(); } catch (err) { console.error('getInitialContent failed:', err); return undefined; }
+  try { return (await GetInitialContent()) ?? undefined; } catch (err) { console.error('getInitialContent failed:', err); return undefined; }
 }
 
 export async function readFile(path: string): Promise<string | undefined> {
@@ -156,14 +163,14 @@ export async function getVersion(): Promise<string> {
       console.error('getVersion failed:', err);
     }
   }
-  return '1.4.0';
+  return '1.5.0';
 }
 
 // Window Title Binding
 export async function setWindowTitle(title: string): Promise<void> {
-  if (isWailsReady() && (window as any).go?.main?.App?.SetWindowTitle) {
+  if (isWailsReady()) {
     try {
-      await (window as any).go.main.App.SetWindowTitle(title);
+      await SetWindowTitle(title);
     } catch (err) {
       console.error('setWindowTitle failed:', err);
     }

@@ -1,11 +1,13 @@
 import {defineConfig} from 'vite'
 import {svelte} from '@sveltejs/vite-plugin-svelte'
+import wails from '@wailsio/runtime/plugins/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), wails('./bindings')],
   server: {
-    port: 34116,
+    host: '127.0.0.1',
+    port: Number(process.env.WAILS_VITE_PORT) || 34116,
     strictPort: true,
   }
 })

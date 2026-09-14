@@ -9,7 +9,7 @@
   import katex from 'katex';
   import 'katex/dist/katex.min.css';
   import renderMathInElement from 'katex/dist/contrib/auto-render';
-  import { BrowserOpenURL } from '../../wailsjs/runtime/runtime.js';
+  import { BrowserOpenURL } from '../lib/wails';
   import * as backend from '../lib/backend';
   import type { Theme } from '../themes';
 

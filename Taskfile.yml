@@ -1,8 +1,29 @@
+# MarkSafe — Wails v3 build & release pipeline.
+#
+# The platform build/package steps come from the wails3 scaffold in build/
+# (build/Taskfile.yml + build/{linux,windows,darwin}/Taskfile.yml). This file
+# adds the MarkSafe-specific release flow (dropzone, remote macOS signing,
+# web downloads) on top.
 version: '3'
 
+includes:
+  common: ./build/Taskfile.yml
+  windows: ./build/windows/Taskfile.yml
+  darwin: ./build/darwin/Taskfile.yml
+  linux: ./build/linux/Taskfile.yml
+
 vars:
+  APP_NAME: marksafe
+  BIN_DIR: bin
+  PACKAGE_MANAGER: npm
+  VITE_PORT: '{{.WAILS_VITE_PORT | default 34116}}'
+  # Target OS for build/package/run; override with GOOS=... for cross-compilation.
+  GOOS: '{{.GOOS | default OS}}'
+  # Wails v3 beta defaults Linux to GTK4 + WebKitGTK 6.0; `gtk3` selects
+  # GTK3 + webkit2gtk-4.1, which is what our build hosts and CI provide.
+  LINUX_TAGS: gtk3
   VERSION:
-    sh: cat VERSION 2>/dev/null || echo "1.4.0"
+    sh: cat VERSION 2>/dev/null || echo "1.5.0"
   DROPZONE: /mnt/data2tb/dropzone
 
 tasks:
@@ -13,19 +34,41 @@ tasks:
     silent: true
 
   dev:
-    desc: Run wails dev with xvfb
+    desc: Run the app in development mode (wails3 dev)
     cmds:
-      - xvfb-run -a wails dev -devserver localhost:34117
+      - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   build:
-    desc: Build the application for Linux (AMD64)
+    desc: Build the application for the host OS (or GOOS=...)
     cmds:
-      - wails build -ldflags "-X main.appVersion={{.VERSION}}"
+      - task: "{{.GOOS}}:build"
+        vars:
+          DEV: '{{.DEV}}'
+          EXTRA_TAGS: '{{if eq .GOOS "linux"}}{{.LINUX_TAGS}}{{end}}'
+
+  package:
+    desc: Package a production build for the host OS (or GOOS=...)
+    cmds:
+      - task: "{{.GOOS}}:package"
+        vars:
+          EXTRA_TAGS: '{{if eq .GOOS "linux"}}{{.LINUX_TAGS}}{{end}}'
+
+  run:
+    desc: Run the built application
+    cmds:
+      - task: "{{.GOOS}}:run"
+
+  bindings:
+    desc: Generate the TypeScript bindings (frontend/bindings)
+    cmds:
+      - wails3 generate bindings -f '-tags {{.LINUX_TAGS}}' -clean=true -ts -i
 
   build:windows:
-    desc: Build the Windows executable & NSIS installer (AMD64)
+    desc: Build the Windows executable & NSIS installer (AMD64, cross-compiled)
     cmds:
-      - wails build -platform windows/amd64 -nsis -ldflags "-X main.appVersion={{.VERSION}}"
+      - task: windows:package
+        vars:
+          ARCH: amd64
 
   build:macos:remote:
     desc: "Build and sign the macOS universal .app + .dmg on macstudio via SSH → /mnt/data2tb/dropzone/marksafe-{VERSION}.dmg"
@@ -36,8 +79,8 @@ tasks:
       # 1 — sync source to macstudio
       - |
         rsync -az --delete \
-          --exclude='.git' --exclude='build/bin/' --exclude='dist/' \
-          --exclude='node_modules/' --exclude='frontend/node_modules/' --exclude='frontend/dist/' \
+          --exclude='.git' --exclude='bin/' --exclude='build/bin/' --exclude='dist/' --exclude='.task/' \
+          --exclude='node_modules/' --exclude='frontend/node_modules/' --exclude='frontend/dist/' --exclude='frontend/bindings/' \
           --exclude='mlcprodweb/' \
           . {{.MAC_HOST}}:{{.REMOTE_DIR}}/
         echo "→ Source synced to {{.MAC_HOST}}:{{.REMOTE_DIR}}"
@@ -55,21 +98,20 @@ tasks:
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
           cd ~/marksafe-build
 
-          VERSION=$(cat VERSION 2>/dev/null || echo "1.4.0")
+          VERSION=$(cat VERSION 2>/dev/null || echo "1.5.0")
           echo "→ Building MarkSafe v${VERSION} on macOS (universal)..."
-          
-          cd frontend && npm install && npm run build && cd ..
-          wails build -platform darwin/universal -ldflags "-X main.appVersion=${VERSION}"
+
+          wails3 task darwin:package:universal
 
           if [ -n "$KEYCHAIN_PASS" ]; then
-            echo "→ Unlocking keychain and signing build/bin/marksafe.app..."
+            echo "→ Unlocking keychain and signing bin/marksafe.app..."
             security unlock-keychain -p "$KEYCHAIN_PASS" ~/Library/Keychains/login.keychain-db
-            wails3 tool sign --input build/bin/marksafe.app \
+            wails3 tool sign --input bin/marksafe.app \
               --identity "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
               --entitlements build/signing/marksafe.entitlements \
               --notarize --keychain-profile mlcterm-notary
-            codesign --verify --strict --verbose=2 build/bin/marksafe.app
-            xcrun stapler validate build/bin/marksafe.app
+            codesign --verify --strict --verbose=2 bin/marksafe.app
+            xcrun stapler validate bin/marksafe.app
           else
             echo "→ Skipping codesign & notarization for .app (no KEYCHAIN_PASS provided)."
           fi
@@ -83,7 +125,7 @@ tasks:
             --icon "marksafe.app" 180 180 --hide-extension "marksafe.app" \
             --app-drop-link 480 180 \
             --no-internet-enable --skip-jenkins \
-            "build/release/marksafe-${VERSION}.dmg" "build/bin/marksafe.app"
+            "build/release/marksafe-${VERSION}.dmg" "bin/marksafe.app"
 
           if [ -n "$KEYCHAIN_PASS" ]; then
             echo "→ Signing and notarizing .dmg..."
@@ -98,28 +140,28 @@ tasks:
           echo "→ Done: build/release/marksafe-${VERSION}.dmg"
         ENDSSH
       # 3 — copy .dmg back to dropzone
-      - mkdir -p {{.DROPZONE}} build/bin
+      - mkdir -p {{.DROPZONE}} {{.BIN_DIR}}
       - scp "{{.MAC_HOST}}:{{.REMOTE_DIR}}/build/release/marksafe-{{.VERSION}}.dmg" {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg
       - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.DROPZONE}}/marksafe.dmg
-      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg build/bin/marksafe-{{.VERSION}}.dmg
+      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.BIN_DIR}}/marksafe-{{.VERSION}}.dmg
       - echo "Successfully published macOS DMG to {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg"
 
   build:all:
     desc: Build Linux binary and Windows installer
     cmds:
-      - task build
-      - task build:windows
+      - task: build
+      - task: build:windows
 
   release:
     desc: Build all platforms and copy installers to dropzone
     cmds:
-      - task build:all
+      - task: build:all
       - mkdir -p {{.DROPZONE}}
-      - cp build/bin/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows-setup.exe
-      - cp build/bin/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-amd64-installer.exe
-      - cp build/bin/marksafe.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows.exe
-      - cp build/bin/marksafe {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64
-      - cp build/bin/marksafe {{.DROPZONE}}/marksafe
+      - cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows-setup.exe
+      - cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-amd64-installer.exe
+      - cp {{.BIN_DIR}}/marksafe.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows.exe
+      - cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64
+      - cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/marksafe
       - echo "Successfully published MarkSafe {{.VERSION}} to {{.DROPZONE}}"
 
   publish:downloads:
@@ -157,8 +199,9 @@ tasks:
   check:
     desc: Run Svelte check and Go tests
     cmds:
+      - task: bindings
       - cd frontend && npm run check
-      - go test ./...
+      - go test -tags {{.LINUX_TAGS}} ./...
 
   install:
     desc: Install backend and frontend dependencies

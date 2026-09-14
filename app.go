@@ -1,19 +1,19 @@
 package main
 
 import (
-	"context"
+	_ "embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"marksafe/internal/config"
 	"marksafe/internal/filesystem"
 	"marksafe/internal/markdown"
 
-	"github.com/wailsapp/wails/v2/pkg/menu"
-	"github.com/wailsapp/wails/v2/pkg/menu/keys"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // FileResult holds the outcome of a file open operation.
@@ -22,8 +22,13 @@ type FileResult struct {
 	Content string `json:"content"`
 }
 
-// appVersion is set at build time via -ldflags "-X main.appVersion=...".
-var appVersion = "1.4.0"
+// versionFile is the repository's VERSION file, embedded so every build
+// (Taskfile, CI, remote macOS) reports the same version without -ldflags.
+//
+//go:embed VERSION
+var versionFile string
+
+var appVersion = strings.TrimSpace(versionFile)
 
 // GetVersion returns the application version to the frontend.
 func (a *App) GetVersion() string {
@@ -32,10 +37,33 @@ func (a *App) GetVersion() string {
 
 // App struct defines the main application state and dependencies.
 type App struct {
-	ctx         context.Context
+	window      *application.WebviewWindow
 	renderer    *markdown.Renderer
 	config      *config.ConfigManager
 	initialFile string
+}
+
+// emit broadcasts an event to the frontend (v2: runtime.EventsEmit).
+func emit(name string, data ...any) {
+	if app := application.Get(); app != nil {
+		app.Event.Emit(name, data...)
+	}
+}
+
+// logger returns the Wails application logger, or the default logger before startup.
+func logger() *slog.Logger {
+	if app := application.Get(); app != nil && app.Logger != nil {
+		return app.Logger
+	}
+	return slog.Default()
+}
+
+// label returns the translation for key, or fallback if it is missing.
+func label(t map[string]string, key, fallback string) string {
+	if s := t[key]; s != "" {
+		return s
+	}
+	return fallback
 }
 
 // NewApp creates a new App application struct.
@@ -56,21 +84,24 @@ func (a *App) SetInitialFile(path string) {
 	}
 }
 
-// startup is called when the app starts.
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-}
-
 // UpdateMenu dynamically updates the application menu with translated strings.
 func (a *App) UpdateMenu(t map[string]string) {
-	appMenu := menu.NewMenu()
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	appMenu := application.NewMenu()
+
+	if runtime.GOOS == "darwin" {
+		appMenu.AddRole(application.AppMenu)
+	}
 
 	// File Menu
 	fileMenu := appMenu.AddSubmenu(t["menuFile"])
-	fileMenu.AddText(t["menuNewTab"], keys.CmdOrCtrl("t"), func(_ *menu.CallbackData) {
+	fileMenu.Add(t["menuNewTab"]).SetAccelerator("CmdOrCtrl+t").OnClick(func(*application.Context) {
 		a.MenuNewTab()
 	})
-	fileMenu.AddText(t["menuOpen"], keys.CmdOrCtrl("o"), func(_ *menu.CallbackData) {
+	fileMenu.Add(t["menuOpen"]).SetAccelerator("CmdOrCtrl+o").OnClick(func(*application.Context) {
 		a.MenuOpenFile()
 	})
 
@@ -78,72 +109,72 @@ func (a *App) UpdateMenu(t map[string]string) {
 	recentMenu := fileMenu.AddSubmenu(t["menuRecentFiles"])
 	recentFiles := a.config.GetRecentFiles()
 	if len(recentFiles) == 0 {
-		recentMenu.AddText(t["menuNoRecentFiles"], nil, nil).Disable()
+		recentMenu.Add(t["menuNoRecentFiles"]).SetEnabled(false)
 	} else {
 		for _, path := range recentFiles {
 			p := path // Capture for closure
-			recentMenu.AddText(filepath.Base(p), nil, func(_ *menu.CallbackData) {
-				wailsRuntime.EventsEmit(a.ctx, "menu-open-recent", p)
+			recentMenu.Add(filepath.Base(p)).OnClick(func(*application.Context) {
+				emit("menu-open-recent", p)
 			})
 		}
 	}
 
-	fileMenu.AddText(t["menuSave"], keys.CmdOrCtrl("s"), func(_ *menu.CallbackData) {
+	fileMenu.Add(t["menuSave"]).SetAccelerator("CmdOrCtrl+s").OnClick(func(*application.Context) {
 		a.MenuSaveFile()
 	})
-	saveAsLabel := t["menuSaveAs"]
-	if saveAsLabel == "" {
-		saveAsLabel = "Save As..."
-	}
-	fileMenu.AddText(saveAsLabel, keys.Combo("s", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) {
+	fileMenu.Add(label(t, "menuSaveAs", "Save As...")).SetAccelerator("CmdOrCtrl+Shift+s").OnClick(func(*application.Context) {
 		a.MenuSaveAsFile()
 	})
 	fileMenu.AddSeparator()
-	fileMenu.AddText(t["menuAbout"], nil, func(_ *menu.CallbackData) {
+	fileMenu.Add(t["menuAbout"]).OnClick(func(*application.Context) {
 		a.ShowAbout(t["aboutTitle"], t["aboutBody"])
 	})
 
 	// Format Menu
 	formatMenu := appMenu.AddSubmenu(t["menuFormat"])
-	formatMenu.AddText(t["menuBold"], keys.CmdOrCtrl("b"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-bold") })
-	formatMenu.AddText(t["menuItalic"], keys.CmdOrCtrl("i"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-italic") })
+	formatMenu.Add(t["menuBold"]).SetAccelerator("CmdOrCtrl+b").OnClick(func(*application.Context) { emit("format-bold") })
+	formatMenu.Add(t["menuItalic"]).SetAccelerator("CmdOrCtrl+i").OnClick(func(*application.Context) { emit("format-italic") })
 	formatMenu.AddSeparator()
-	formatMenu.AddText("H1", keys.CmdOrCtrl("1"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-h1") })
-	formatMenu.AddText("H2", keys.CmdOrCtrl("2"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-h2") })
-	formatMenu.AddText("H3", keys.CmdOrCtrl("3"), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-h3") })
+	formatMenu.Add("H1").SetAccelerator("CmdOrCtrl+1").OnClick(func(*application.Context) { emit("format-h1") })
+	formatMenu.Add("H2").SetAccelerator("CmdOrCtrl+2").OnClick(func(*application.Context) { emit("format-h2") })
+	formatMenu.Add("H3").SetAccelerator("CmdOrCtrl+3").OnClick(func(*application.Context) { emit("format-h3") })
 	formatMenu.AddSeparator()
-	formatMenu.AddText(t["menuCodeBlock"], keys.Combo("c", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "format-code") })
+	formatMenu.Add(t["menuCodeBlock"]).SetAccelerator("CmdOrCtrl+Shift+c").OnClick(func(*application.Context) { emit("format-code") })
 
 	// View Menu (Language & Appearance)
 	viewMenu := appMenu.AddSubmenu(t["menuView"])
-	
+
 	// Submenu: Language
 	langMenu := viewMenu.AddSubmenu(t["menuLanguage"])
-	langMenu.AddText("English", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "en") })
-	langMenu.AddText("Deutsch", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "de") })
-	langMenu.AddText("Español", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "es") })
-	langMenu.AddText("Français", nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-locale", "fr") })
+	langMenu.Add("English").OnClick(func(*application.Context) { emit("set-locale", "en") })
+	langMenu.Add("Deutsch").OnClick(func(*application.Context) { emit("set-locale", "de") })
+	langMenu.Add("Español").OnClick(func(*application.Context) { emit("set-locale", "es") })
+	langMenu.Add("Français").OnClick(func(*application.Context) { emit("set-locale", "fr") })
 
 	// Submenu: Appearance
 	apprMenu := viewMenu.AddSubmenu(t["menuAppearance"])
-	apprMenu.AddText(t["menuThemeDark"], nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-theme", "dark") })
-	apprMenu.AddText(t["menuThemeLight"], nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-theme", "light") })
-	apprMenu.AddText(t["menuThemeAuto"], nil, func(_ *menu.CallbackData) { wailsRuntime.EventsEmit(a.ctx, "set-theme", "auto") })
+	apprMenu.Add(t["menuThemeDark"]).OnClick(func(*application.Context) { emit("set-theme", "dark") })
+	apprMenu.Add(t["menuThemeLight"]).OnClick(func(*application.Context) { emit("set-theme", "light") })
+	apprMenu.Add(t["menuThemeAuto"]).OnClick(func(*application.Context) { emit("set-theme", "auto") })
 
+	// Edit Menu: role items perform the native clipboard/undo actions on every platform.
+	editMenu := appMenu.AddSubmenu(label(t, "menuEdit", "Edit"))
+	editMenu.Append(application.NewMenuFromItems(
+		application.NewUndoMenuItem().SetLabel(label(t, "menuUndo", "Undo")),
+		application.NewRedoMenuItem().SetLabel(label(t, "menuRedo", "Redo")),
+		application.NewMenuItemSeparator(),
+		application.NewCutMenuItem().SetLabel(label(t, "menuCut", "Cut")),
+		application.NewCopyMenuItem().SetLabel(label(t, "menuCopy", "Copy")),
+		application.NewPasteMenuItem().SetLabel(label(t, "menuPaste", "Paste")),
+		application.NewSelectAllMenuItem(),
+	))
+
+	// macOS has one application menu; Windows and Linux attach menus per window.
 	if runtime.GOOS == "darwin" {
-		appMenu.Append(menu.AppMenu())
-		appMenu.Append(menu.EditMenu())
-	} else {
-		editMenu := appMenu.AddSubmenu(t["menuEdit"])
-		editMenu.AddText(t["menuUndo"], keys.CmdOrCtrl("z"), func(_ *menu.CallbackData) {})
-		editMenu.AddText(t["menuRedo"], keys.CmdOrCtrl("y"), func(_ *menu.CallbackData) {})
-		editMenu.AddSeparator()
-		editMenu.AddText(t["menuCut"], keys.CmdOrCtrl("x"), func(_ *menu.CallbackData) {})
-		editMenu.AddText(t["menuCopy"], keys.CmdOrCtrl("c"), func(_ *menu.CallbackData) {})
-		editMenu.AddText(t["menuPaste"], keys.CmdOrCtrl("v"), func(_ *menu.CallbackData) {})
+		app.Menu.Set(appMenu)
+	} else if a.window != nil {
+		a.window.SetMenu(appMenu)
 	}
-
-	wailsRuntime.MenuSetApplicationMenu(a.ctx, appMenu)
 }
 
 // ShowAbout displays a native message box with product information.
@@ -154,17 +185,16 @@ func (a *App) ShowAbout(title, message string) {
 	if message == "" {
 		message = "MarkSafe v" + a.GetVersion() + "\n\nMarkdown-Betrachter und -Editor\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT."
 	}
-	wailsRuntime.MessageDialog(a.ctx, wailsRuntime.MessageDialogOptions{
-		Type:    wailsRuntime.InfoDialog,
-		Title:   title,
-		Message: message,
-	})
+	application.Get().Dialog.Info().
+		SetTitle(title).
+		SetMessage(message).
+		Show()
 }
 
 // SetWindowTitle dynamically updates the native OS application window title.
 func (a *App) SetWindowTitle(title string) {
-	if a.ctx != nil {
-		wailsRuntime.WindowSetTitle(a.ctx, title)
+	if a.window != nil {
+		a.window.SetTitle(title)
 	}
 }
 
@@ -207,7 +237,7 @@ func (a *App) ResolveRelativePath(baseDir string, relPath string) string {
 
 // ReadFile reads the content of a file given its path.
 func (a *App) ReadFile(path string) (string, error) {
-	wailsRuntime.LogInfof(a.ctx, "ReadFile: Reading file %s", path)
+	logger().Info("ReadFile: Reading file", "path", path)
 	return filesystem.ReadFile(path)
 }
 
@@ -233,10 +263,10 @@ func (a *App) GetInitialContent() *FileResult {
 
 // RenderMarkdown converts markdown string to sanitized HTML.
 func (a *App) RenderMarkdown(input string, theme string) string {
-	wailsRuntime.LogDebugf(a.ctx, "Request: RenderMarkdown (Theme: %s)", theme)
+	logger().Debug("Request: RenderMarkdown", "theme", theme)
 	html, err := a.renderer.Render(input, theme)
 	if err != nil {
-		wailsRuntime.LogErrorf(a.ctx, "Failed to render markdown: %v", err)
+		logger().Error("Failed to render markdown", "error", err)
 		return fmt.Sprintf("<p>Error rendering markdown: %v</p>", err)
 	}
 	return html
@@ -246,7 +276,7 @@ func (a *App) RenderMarkdown(input string, theme string) string {
 func (a *App) GetStyleCSS(style string) string {
 	css, err := a.renderer.GetStyleCSS(style)
 	if err != nil {
-		wailsRuntime.LogErrorf(a.ctx, "Failed to get CSS for style %s: %v", style, err)
+		logger().Error("Failed to get CSS for style", "style", style, "error", err)
 		return ""
 	}
 	return css
@@ -254,34 +284,32 @@ func (a *App) GetStyleCSS(style string) string {
 
 // MenuOpenFile is called from the native application menu.
 func (a *App) MenuOpenFile() {
-	wailsRuntime.EventsEmit(a.ctx, "menu-open-file")
+	emit("menu-open-file")
 }
 
 // MenuSaveFile is called from the native application menu.
 func (a *App) MenuSaveFile() {
-	wailsRuntime.EventsEmit(a.ctx, "menu-save-file")
+	emit("menu-save-file")
 }
 
 // MenuSaveAsFile is called from the native application menu.
 func (a *App) MenuSaveAsFile() {
-	wailsRuntime.EventsEmit(a.ctx, "menu-save-file-as")
+	emit("menu-save-file-as")
 }
 
 // MenuNewTab is called from the native application menu.
 func (a *App) MenuNewTab() {
-	wailsRuntime.EventsEmit(a.ctx, "menu-new-tab")
+	emit("menu-new-tab")
 }
 
 // OpenFile opens a native file dialog and returns the path and content.
 func (a *App) OpenFile() (*FileResult, error) {
-	path, err := wailsRuntime.OpenFileDialog(a.ctx, wailsRuntime.OpenDialogOptions{
-		Title: "Open Markdown File",
-		Filters: []wailsRuntime.FileFilter{
-			{DisplayName: "Markdown Files (*.md)", Pattern: "*.md"},
-			{DisplayName: "Text Files (*.txt)", Pattern: "*.txt"},
-			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-		},
-	})
+	path, err := application.Get().Dialog.OpenFile().
+		SetTitle("Open Markdown File").
+		AddFilter("Markdown Files (*.md)", "*.md").
+		AddFilter("Text Files (*.txt)", "*.txt").
+		AddFilter("All Files (*.*)", "*.*").
+		PromptForSingleSelection()
 	if err != nil {
 		return nil, err
 	}
@@ -328,14 +356,12 @@ func (a *App) SaveFileAs(defaultFilename string, content string) (string, error)
 	} else {
 		defaultFilename = filepath.Base(defaultFilename)
 	}
-	selectedPath, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
-		Title:           "Save Markdown File",
-		DefaultFilename: defaultFilename,
-		Filters: []wailsRuntime.FileFilter{
-			{DisplayName: "Markdown Files (*.md)", Pattern: "*.md"},
-			{DisplayName: "All Files (*.*)", Pattern: "*.*"},
-		},
-	})
+	selectedPath, err := application.Get().Dialog.SaveFile().
+		SetMessage("Save Markdown File").
+		SetFilename(defaultFilename).
+		AddFilter("Markdown Files (*.md)", "*.md").
+		AddFilter("All Files (*.*)", "*.*").
+		PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}
@@ -352,13 +378,11 @@ func (a *App) SaveFileAs(defaultFilename string, content string) (string, error)
 
 // ExportHTML saves the rendered markdown as a standalone HTML file.
 func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) {
-	path, err := wailsRuntime.SaveFileDialog(a.ctx, wailsRuntime.SaveDialogOptions{
-		Title:           "Export to HTML",
-		DefaultFilename: "exported.html",
-		Filters: []wailsRuntime.FileFilter{
-			{DisplayName: "HTML Files (*.html)", Pattern: "*.html"},
-		},
-	})
+	path, err := application.Get().Dialog.SaveFile().
+		SetMessage("Export to HTML").
+		SetFilename("exported.html").
+		AddFilter("HTML Files (*.html)", "*.html").
+		PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}

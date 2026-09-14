@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=MarkSafe
+Comment=Markdown viewer and editor
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/marksafe %u
+Terminal=false
+Type=Application
+Icon=marksafe
+Categories=Utility;
+StartupWMClass=marksafe
+
+ 

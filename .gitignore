@@ -1,8 +1,13 @@
 # Wails
 build/bin/
-frontend/wailsjs/
+frontend/bindings/
 frontend/dist/
 wails.log
+.task/
+*.syso
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+build/linux/appimage/build/
+build/linux/marksafe.desktop
 
 # Go
 bin/
