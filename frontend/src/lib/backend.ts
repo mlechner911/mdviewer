@@ -163,7 +163,7 @@ export async function getVersion(): Promise<string> {
       console.error('getVersion failed:', err);
     }
   }
-  return '1.5.0';
+  return '1.5.1';
 }
 
 // Window Title Binding

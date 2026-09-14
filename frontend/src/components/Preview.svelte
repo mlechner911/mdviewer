@@ -147,7 +147,8 @@
           const parentDir = await backend.getParentDir(absPath);
           onsecurity_request?.({ type: 'path', resource: parentDir });
         } else {
-          img.src = "wails:///" + absPath.replace(/\\/g, '/');
+          // Served by the Go asset handler (localresource.go), which re-checks the whitelist
+          img.src = "/local-resource?path=" + encodeURIComponent(absPath);
         }
       }
     }

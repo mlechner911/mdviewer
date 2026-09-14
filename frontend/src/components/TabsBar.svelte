@@ -32,6 +32,7 @@
       role="tab"
       tabindex="0"
       aria-selected={i === activeTabIndex}
+      title={tab.path ?? tab.title}
       class="flex items-center px-4 h-9 cursor-pointer transition-colors border-r text-xs font-medium min-w-[120px] max-w-[200px] {i === activeTabIndex ? activeTabClass : inactiveTabClass} {dividerClass}"
       onclick={() => activeTabIndex = i}
       onkeydown={(e) => e.key === 'Enter' && (activeTabIndex = i)}

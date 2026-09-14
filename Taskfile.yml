@@ -23,7 +23,7 @@ vars:
   # GTK3 + webkit2gtk-4.1, which is what our build hosts and CI provide.
   LINUX_TAGS: gtk3
   VERSION:
-    sh: cat VERSION 2>/dev/null || echo "1.5.0"
+    sh: cat VERSION 2>/dev/null || echo "1.5.1"
   DROPZONE: /mnt/data2tb/dropzone
 
 tasks:
@@ -98,7 +98,7 @@ tasks:
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
           cd ~/marksafe-build
 
-          VERSION=$(cat VERSION 2>/dev/null || echo "1.5.0")
+          VERSION=$(cat VERSION 2>/dev/null || echo "1.5.1")
           echo "→ Building MarkSafe v${VERSION} on macOS (universal)..."
 
           wails3 task darwin:package:universal

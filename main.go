@@ -29,7 +29,8 @@ func main() {
 			application.NewService(app),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
+			// Embedded frontend plus whitelisted local images (see localresource.go)
+			Handler: app.assetHandler(),
 		},
 		FileAssociations: []string{".md", ".markdown", ".mdown"},
 		Mac: application.MacOptions{

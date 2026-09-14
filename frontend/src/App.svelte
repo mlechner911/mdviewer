@@ -705,13 +705,16 @@
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
       <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
         <div class="flex items-center gap-2">
-            <button 
-                onclick={() => isEditorHidden.update(v => !v)} 
+            <!-- Focus mode always hides the editor, so the editor toggle would do nothing there -->
+            {#if !$isFocusMode}
+            <button
+                onclick={() => isEditorHidden.update(v => !v)}
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isEditorHidden ? focusButtonClass : ''}"
                 title={$isEditorHidden ? $t('showEditor') : $t('hideEditor')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
             </button>
+            {/if}
             <button 
                 onclick={() => isFocusMode.update(v => !v)} 
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isFocusMode ? focusButtonClass : ''}"

@@ -10,7 +10,7 @@ info:
   description: "Markdown viewer and editor"
   copyright: "Copyright © 2026 Michael Lechner"
   comments: "Ein einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor."
-  version: "1.5.0"
+  version: "1.5.1"
 
 # Dev mode configuration (wails3 dev)
 dev_mode:

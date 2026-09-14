@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -139,11 +140,27 @@ func (m *ConfigManager) IsPathAllowed(targetPath string) bool {
 			continue
 		}
 		// Check if the target is within the whitelisted path
-		if strings.HasPrefix(absTarget, absWhitelist) {
+		if isWithin(absTarget, absWhitelist) {
 			return true
 		}
 	}
 	return false
+}
+
+// isWithin reports whether target equals dir or lies below it. Comparing on a
+// path-separator boundary keeps a whitelisted "/docs" from also allowing
+// "/docs-private". Windows paths are compared case-insensitively.
+func isWithin(target, dir string) bool {
+	if runtime.GOOS == "windows" {
+		target, dir = strings.ToLower(target), strings.ToLower(dir)
+	}
+	if target == dir {
+		return true
+	}
+	if !strings.HasSuffix(dir, string(filepath.Separator)) {
+		dir += string(filepath.Separator)
+	}
+	return strings.HasPrefix(target, dir)
 }
 
 // IsURLAllowed checks if a URL's host is whitelisted.
