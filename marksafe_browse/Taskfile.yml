@@ -8,7 +8,7 @@ tasks:
 
   dev:
     cmds:
-      - go build -o bin/marksafe_browse ./cmd/marksafe_browse && ./bin/marksafe_browse --path ./example --port 8080
+      - go build -o bin/marksafe_browse ./cmd/marksafe_browse && ./bin/marksafe_browse --path ./example --port 8312
     desc: "Build and run marksafe_browse in dev mode"
 
   build:

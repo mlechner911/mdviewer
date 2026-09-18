@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
-  import { fetchTree, getStoredTheme, getSystemTheme, applyTheme, onSystemThemeChange } from './lib/backend';
+  import { fetchTree, getStoredTheme, getSystemTheme, applyTheme } from './lib/backend';
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
@@ -9,12 +9,12 @@
   // State
   let tabs = writable([]);
   let htmlContent = writable('');
-  let isReady = writable(false);
   let pageTitle = writable('MarkSafe Browse');
   let effectiveTheme = writable('dark');
+  let isReady = writable(false);
 
   onMount(async () => {
-    // Initialize theme: check localStorage first, then system preference
+    // Initialize theme
     const stored = getStoredTheme();
     if (stored) {
       applyTheme(stored);
@@ -24,14 +24,6 @@
       applyTheme('auto');
       effectiveTheme.set(system);
     }
-
-    // Listen for system theme changes when in auto mode
-    const cleanup = onSystemThemeChange((theme) => {
-      if (!getStoredTheme()) {
-        effectiveTheme.set(theme);
-        applyTheme('auto');
-      }
-    });
 
     // Fetch TOC tree
     const tree = await fetchTree();
@@ -65,10 +57,6 @@
     const next = current === 'dark' ? 'light' : 'dark';
     applyTheme(next);
     effectiveTheme.set(next);
-  }
-
-  function handleThemeChange(theme: string) {
-    effectiveTheme.set(theme);
   }
 </script>
 
