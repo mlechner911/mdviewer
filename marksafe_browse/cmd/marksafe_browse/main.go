@@ -45,7 +45,6 @@ listed as a table of contents.`,
 }
 
 func run(cmd *cobra.Command, args []string) {
-	// Determine root path
 	root := flagPath
 	if len(args) > 0 {
 		root = args[0]
@@ -58,10 +57,9 @@ func run(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Print banner
 	fmt.Println(cfg.ConfigString())
 
-	// Verify root contains markdown files
+	// Create scanner
 	scanner, err := browse.NewScanner(cfg.Root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Scanner error: %v\n", err)
@@ -93,12 +91,20 @@ func run(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	fmt.Printf("\n✅ Ready to serve %s on %s:%d\n", cfg.Root, cfg.Bind, cfg.Port)
-	fmt.Printf("   Open http://%s:%d in your browser.\n", cfg.Bind, cfg.Port)
-	fmt.Println("   (HTTP server starting — Phase 2)")
+	// Start HTTP server
+	server, err := browse.NewServer(cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("\n✅ Server ready — open http://%s:%d\n", cfg.Bind, cfg.Port)
+	if err := server.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "Server failed: %v\n", err)
+		os.Exit(1)
+	}
 }
 
-// formatEntry recursively formats a TOC entry for display.
 func formatEntry(e browse.TOCEntry, indent int) string {
 	prefix := ""
 	for i := 0; i < indent; i++ {
