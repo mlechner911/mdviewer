@@ -44,7 +44,9 @@ func discoverAssets() (js, css string) {
 		if strings.HasPrefix(n, "index-") && strings.HasSuffix(n, ".js") {
 			js = n
 		}
-		if strings.HasSuffix(n, ".css") {
+		// NOTE: match index-*.css only — katex.min.css lives in the
+		// same dir and must not win the discovery.
+		if strings.HasPrefix(n, "index-") && strings.HasSuffix(n, ".css") {
 			css = n
 		}
 	}
