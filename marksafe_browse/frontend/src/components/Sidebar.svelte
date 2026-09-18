@@ -5,8 +5,10 @@
   
   const dispatch = createEventDispatcher();
   
-  function selectEntry(path: string) {
-    dispatch('select', { path });
+  function selectEntry(entry: any) {
+    if (!entry.isDir) {
+      dispatch('select', { path: entry.path });
+    }
   }
 </script>
 
@@ -24,7 +26,7 @@
                   {#if child.isDir}
                     <strong>{child.title}</strong>
                   {:else}
-                    <a href="javascript:void(0)" on:click={() => selectEntry(child.path)}>{child.title}</a>
+                    <button on:click={() => selectEntry(child)}>{child.title}</button>
                   {/if}
                 </li>
               {/each}
@@ -33,7 +35,7 @@
         </li>
       {:else}
         <li class="toc-entry">
-          <a href="javascript:void(0)" on:click={() => selectEntry(entry.path)}>{entry.title}</a>
+          <button on:click={() => selectEntry(entry)}>{entry.title}</button>
         </li>
       {/if}
     {/each}
@@ -57,9 +59,23 @@
     padding-left: 0;
   }
   .toc-entry { margin: 0.25rem 0; }
-  .toc-dir { font-weight: bold; color: var(--accent); }
-  .toc-entry a { color: var(--accent); text-decoration: none; cursor: pointer; }
-  .toc-entry a:hover { text-decoration: underline; }
+  .toc-dir { font-weight: bold; color: var(--accent); margin-bottom: 0.5rem; }
+  .toc-entry button {
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font-size: inherit;
+  }
+  .toc-entry button:hover {
+    text-decoration: underline;
+    background: var(--bg);
+  }
   details summary { cursor: pointer; }
   .sub { padding-left: 1rem; list-style: none; }
 </style>

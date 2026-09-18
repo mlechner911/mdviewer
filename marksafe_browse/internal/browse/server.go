@@ -15,12 +15,8 @@ import (
 	"github.com/yuin/goldmark/parser"
 )
 
-//go:embed frontend/dist
-var distFS embed.FS
-
-func init() {
-	// Create assets sub-filesystem
-}
+//go:embed assets/*
+var assetsFS embed.FS
 
 // Server holds the HTTP server configuration and state.
 type Server struct {
@@ -47,8 +43,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/tree", s.handleTree)
 	mux.HandleFunc("/render", s.handleRender)
 	mux.HandleFunc("/md/", s.handleMarkdown)
-	subFS, _ := fs.Sub(distFS, "frontend/dist/assets")
-		mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(subFS))))
+
+	// Serve static assets from embedded directory
+	// assetsFS has paths like "assets/style.css", "assets/index.js"
+	// fs.Sub creates a sub-filesystem where paths start from "assets/"
+	assetsSub, _ := fs.Sub(assetsFS, "assets")
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(assetsSub))))
 
 	fmt.Printf("  📡 MarkSafe Browse serving %s on %s:%d\n", s.cfg.Root, s.cfg.Bind, s.cfg.Port)
 	return http.ListenAndServe(addr, secureMux)

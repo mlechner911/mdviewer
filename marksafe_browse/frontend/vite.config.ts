@@ -6,6 +6,13 @@ export default defineConfig({
   build: {
     outDir: '../internal/browse/frontend/dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/index.js',
+        chunkFileNames: 'assets/chunk.js',
+        assetFileNames: 'assets/[name][extname]',
+      },
+    },
   },
   server: {
     port: 5173,

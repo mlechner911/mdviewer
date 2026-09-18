@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
-  import { fetchTree, toggleTheme, getStoredTheme } from './lib/backend';
+  import { fetchTree, getStoredTheme } from './lib/backend';
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
@@ -10,43 +10,53 @@
   let tabs = writable([]);
   let htmlContent = writable('');
   let isReady = writable(false);
-  let effectiveTheme = writable('dark');
+  let pageTitle = writable('MarkSafe Browse');
 
   onMount(async () => {
     // Initialize theme
     const theme = getStoredTheme();
     document.body.className = theme;
-    effectiveTheme.set(theme);
 
     // Fetch TOC tree
     const tree = await fetchTree();
     tabs.set(tree);
 
+    // Auto-load index.md if available
+    const rootEntry = tree.find(e => e.path === 'index.md');
+    if (rootEntry) {
+      const result = await fetch(`/render?path=index.md`).then(r => r.json());
+      htmlContent.set(result.html);
+      pageTitle.set(result.title);
+    }
+
     isReady.set(true);
   });
 
-  async function selectEntry(path: string) {
-    const res = await fetch(`/render?path=${encodeURIComponent(path)}`);
-    if (res.ok) {
-      const data = await res.json();
-      htmlContent.set(data.html);
+  async function loadMarkdown(path: string) {
+    const result = await fetch(`/render?path=${encodeURIComponent(path)}`).then(r => r.json());
+    if (result) {
+      htmlContent.set(result.html);
+      pageTitle.set(result.title);
     }
   }
 
-  function handleTheme() {
+  function handleSelectEntry(path: string) {
+    loadMarkdown(path);
+  }
+
+  function handleThemeToggle() {
     const current = document.body.className;
     const next = current === 'dark' ? 'light' : 'dark';
     document.body.className = next;
     localStorage.setItem('marksafe-theme', next);
-    effectiveTheme.set(next);
   }
 </script>
 
 <div class="app-container">
-  <Sidebar {tabs} onSelect={selectEntry} />
+  <Sidebar {tabs} onSelect={handleSelectEntry} />
   
   <main class="content">
-    <ThemeToggle on:toggle={handleTheme} />
+    <ThemeToggle on:toggle={handleThemeToggle} />
     
     {#if !$isReady}
       <div class="loading">Lade Dokumentation...</div>
