@@ -6,21 +6,16 @@ tasks:
       - task: dev
     desc: "Default: start dev mode"
 
+  # NOTE: intentionally WITHOUT sources/generates fingerprinting.
+  # A skipped frontend build embeds a stale bundle into the Go binary
+  # (exactly the class of bug we kept chasing); vite build takes ~2s.
   frontend:
     dir: frontend
     cmds:
       - npx vite build
       - cp ../internal/browse/frontend/dist/assets/index.css ../internal/browse/assets/style.css
       - cp ../internal/browse/frontend/dist/assets/index.js ../internal/browse/assets/index.js
-    desc: "Build Svelte frontend and sync into Go embedded assets"
-    sources:
-      - src/**/*
-      - index.html
-      - vite.config.ts
-      - package.json
-    generates:
-      - ../internal/browse/assets/index.js
-      - ../internal/browse/assets/style.css
+    desc: "Build Svelte frontend and sync into Go embedded assets (always)"
 
   dev:
     deps: [frontend]

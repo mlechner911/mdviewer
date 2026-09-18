@@ -44,6 +44,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/tree", s.handleTree)
 	mux.HandleFunc("/render", s.handleRender)
 	mux.HandleFunc("/md/", s.handleMarkdown)
+	mux.HandleFunc("/raw", s.handleRaw)
 
 	// Serve static assets from embedded directory
 	assetsSub, _ := fs.Sub(assetsFS, "assets")
@@ -121,6 +122,9 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 	}
 	title, _ := ExtractTitle(absPath)
 	result := renderMarkdownToHTML(content)
+	// Validate internal links/images against the root so broken targets
+	// never reach the user as a clickable 404.
+	result = s.rewriteMarkdownLinks(result, path)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

@@ -191,7 +191,7 @@ details summary:hover { background: var(--surface-hover); }
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.6;
-  max-width: 768px;
+  max-width: 896px;
   overflow-wrap: break-word;
 }
 .markdown h1, .markdown h2, .markdown h3 {
@@ -213,6 +213,19 @@ details summary:hover { background: var(--surface-hover); }
 .markdown li { margin: 0.3rem 0; }
 .markdown a { color: var(--accent); text-decoration: none; }
 .markdown a:hover { text-decoration: underline; }
+/* Pre-validated broken links: muted, dotted, non-clickable (no href) */
+.markdown a.broken-link { color: var(--muted); text-decoration: underline dotted; cursor: not-allowed; }
+.markdown a.broken-link:hover { color: var(--muted); text-decoration: underline dotted; }
+.markdown .broken-img {
+  display: block;
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
 .markdown img { max-width: 100%; border-radius: var(--radius-md); }
 
 /* Inline code + code blocks */

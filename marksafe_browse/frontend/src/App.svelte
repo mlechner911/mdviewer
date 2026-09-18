@@ -179,7 +179,7 @@
     {#if !isReady}
       <div class="loading">Lade Dokumentation...</div>
     {:else}
-      <Content {htmlContent} />
+      <Content {htmlContent} on:open={handleSelectEntry} />
     {/if}
   </main>
 </div>
