@@ -65,7 +65,7 @@
     height: 100vh;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 1.25rem 1rem;
+    padding: 0.875rem 0.75rem;
     overflow-y: auto;
   }
   .sidebar-header {

@@ -427,7 +427,7 @@
     z-index: 10;
     cursor: pointer;
     padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text);

@@ -140,7 +140,7 @@
     width: min(640px, 92vw);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 4px;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
     overflow: hidden;
   }
@@ -151,7 +151,7 @@
     margin: 0.6rem 0.6rem 0;
     padding: 0.75rem 0.9rem 0.75rem 1rem;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 4px;
     background: var(--bg);
     transition: border-color 0.15s, box-shadow 0.15s;
   }
