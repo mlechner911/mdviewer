@@ -21,6 +21,7 @@ body {
   --text: #0f172a;
   --heading: #334155;
   --muted: #64748b;
+  --text-muted: #64748b;
   --border: #e2e8f0;
   --accent: #4f46e5;           /* indigo-600 */
   --accent-strong: #4338ca;
@@ -40,6 +41,7 @@ body.dark {
   --text: #e2e8f0;
   --heading: #cbd5e1;
   --muted: #94a3b8;
+  --text-muted: #94a3b8;
   --border: #1e293b;
   --accent: #818cf8;           /* indigo-400 */
   --accent-strong: #a5b4fc;

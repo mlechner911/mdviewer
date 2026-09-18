@@ -3,6 +3,7 @@
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
+  import SearchModal from './components/SearchModal.svelte';
 
   const MIN_WIDTH = 180;
   const MAX_WIDTH = 520;
@@ -14,6 +15,7 @@
   let effectiveTheme = 'dark';
   let isReady = false;
   let currentPath: string | null = null;
+  let searchOpen = false;
 
   // Sidebar layout state (persisted)
   let sidebarWidth = 280;
@@ -115,8 +117,13 @@
     loadMarkdown(p, false);
   }
 
-  // Alt+Left / Alt+Right = back / forward (browser standard).
+  // Ctrl/Cmd+K opens the search; Alt+Left / Alt+Right = back / forward.
   function onGlobalKey(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchOpen = true;
+      return;
+    }
     if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
@@ -256,6 +263,13 @@
   <main class="content" style={sidebarHidden ? 'margin-left: 0;' : `margin-left: ${sidebarWidth + 20}px;`}>
     <div class="content-toolbar">
       <div class="nav-btns" role="group" aria-label="Navigation">
+        <button class="nav-btn" on:click={() => (searchOpen = true)} title="Suchen (Strg+K)" aria-label="Suchen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
         <button class="nav-btn" on:click={() => history.back()} title="Zurück (Alt+←)" aria-label="Zurück">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -279,6 +293,16 @@
       <div class="loading">Lade Dokumentation...</div>
     {:else}
       <Content {htmlContent} on:open={handleSelectEntry} />
+
+  {#if searchOpen}
+    <SearchModal
+      on:open={(e) => {
+        searchOpen = false;
+        handleSelectEntry(e);
+      }}
+      on:close={() => (searchOpen = false)}
+    />
+  {/if}
     {/if}
   </main>
 </div>

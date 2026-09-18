@@ -69,6 +69,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/render", s.handleRender)
 	mux.HandleFunc("/md/", s.handleMarkdown)
 	mux.HandleFunc("/raw", s.handleRaw)
+	mux.HandleFunc("/api/search", s.handleSearch)
 
 	// Serve static assets from embedded directory
 	assetsSub, _ := fs.Sub(assetsFS, "assets")
