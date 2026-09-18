@@ -142,7 +142,7 @@ main.content {
   text-align: left;
   font-family: var(--font-sans);
   font-size: 0.9rem;
-  line-height: 1.45;
+  line-height: var(--lh-body);
 }
 .toc-entry button:hover {
   background: var(--surface-hover);
@@ -162,6 +162,7 @@ details summary {
   cursor: pointer;
   list-style: none;
   list-style-type: none;
+  line-height: var(--lh-body);
   display: flex;
   align-items: center;
   gap: 0.45rem;

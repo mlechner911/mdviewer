@@ -23,6 +23,8 @@
   let infoOpen = false;
   let docSize = 0;
   let docModified = '';
+  let docWords = 0;
+  let docChars = 0;
 
   // Line density: compact (default, IDE-like), comfortable, spacious.
   const DENSITIES = [
@@ -53,15 +55,20 @@
   $: densityLabel =
     (DENSITIES.find((d) => d.id === densityId) ?? DENSITIES[0]).label;
 
-  // Plain-text stats for the info panel.
-  function docText(): string {
-    return htmlContent
+  // Plain-text stats for the info panel. NOTE: htmlContent must be
+  // referenced lexically inside the $: block — Svelte does not track
+  // reads hidden in called functions, which froze these at 0.
+  function docText(html: string): string {
+    return html
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
-  $: docWords = docText() ? docText().split(' ').length : 0;
-  $: docChars = docText().length;
+  $: {
+    const _t = docText(htmlContent);
+    docWords = _t ? _t.split(' ').length : 0;
+    docChars = _t.length;
+  }
 
   // Sidebar layout state (persisted)
   let sidebarWidth = 280;
