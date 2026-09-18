@@ -4,72 +4,61 @@ tasks:
   default:
     cmds:
       - task: dev
-    silent: true
-    desc: Default: start dev mode
+    desc: "Default: start dev mode"
 
   dev:
-    desc: Build and run marksafe_browse in dev mode
     cmds:
-      - task: build
-      - ./bin/marksafe_browse --path ./example --port 8080
-    silent: true
+      - go build -o bin/marksafe_browse ./cmd/marksafe_browse && ./bin/marksafe_browse --path ./example --port 8080
+    desc: "Build and run marksafe_browse in dev mode"
 
   build:
-    desc: Build the marksafe_browse binary into bin/
     cmds:
-      - mkdir -p bin
-      - go build -o bin/marksafe_browse ./cmd/marksafe_browse
+      - mkdir -p bin && go build -o bin/marksafe_browse ./cmd/marksafe_browse
+    desc: "Build the marksafe_browse binary into bin/"
 
   build:linux:
-    desc: Build Linux AMD64 binary
     cmds:
-      - mkdir -p bin
-      - GOOS=linux GOARCH=amd64 go build -o bin/marksafe_browse ./cmd/marksafe_browse
+      - mkdir -p bin && GOOS=linux GOARCH=amd64 go build -o bin/marksafe_browse ./cmd/marksafe_browse
+    desc: "Build Linux AMD64 binary"
 
   build:windows:
-    desc: Build Windows binary
     cmds:
-      - mkdir -p bin
-      - GOOS=windows GOARCH=amd64 go build -o bin/marksafe_browse.exe ./cmd/marksafe_browse
+      - mkdir -p bin && GOOS=windows GOARCH=amd64 go build -o bin/marksafe_browse.exe ./cmd/marksafe_browse
+    desc: "Build Windows binary"
 
   build:all:
-    desc: Build for all platforms
     cmds:
       - task: build:linux
       - task: build:windows
-    silent: true
+    desc: "Build for all platforms"
 
   release:
-    desc: Build all platforms and copy to /mnt/data2tb/dropzone/
     cmds:
       - task: build:linux
       - task: build:windows
       - mkdir -p /mnt/data2tb/dropzone
       - cp bin/marksafe_browse /mnt/data2tb/dropzone/marksafe_browse-linux-amd64
       - cp bin/marksafe_browse.exe /mnt/data2tb/dropzone/marksafe_browse-windows-amd64.exe
-    silent: true
+    desc: "Build all platforms and copy to /mnt/data2tb/dropzone/"
 
   tidy:
-    desc: Tidy go modules
     cmds:
       - go mod tidy
+    desc: "Tidy go modules"
 
   check:
-    desc: Run go vet and tests
     cmds:
       - go vet ./...
       - go test ./...
-    silent: true
+    desc: "Run go vet and tests"
 
   install:
-    desc: Build and install to /usr/local/bin
     cmds:
       - task: build
       - cp bin/marksafe_browse /usr/local/bin/marksafe_browse
-    silent: true
+    desc: "Build and install to /usr/local/bin"
 
   clean:
-    desc: Remove built binary
     cmds:
       - rm -rf bin
-    silent: true
+    desc: "Remove built binary"
