@@ -4,3 +4,5 @@ bin/
 node_modules/
 frontend/dist/
 frontend/node_modules/
+# Local test fixtures (copied doc folders for manual testing)
+example/docs/
