@@ -34,6 +34,7 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 // Start begins the HTTP server.
+// Start begins the HTTP server.
 func (s *Server) Start() error {
 	addr := fmt.Sprintf("%s:%d", s.cfg.Bind, s.cfg.Port)
 	mux := http.NewServeMux()
@@ -45,10 +46,18 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/md/", s.handleMarkdown)
 
 	// Serve static assets from embedded directory
-	// assetsFS has paths like "assets/style.css", "assets/index.js"
-	// fs.Sub creates a sub-filesystem where paths start from "assets/"
 	assetsSub, _ := fs.Sub(assetsFS, "assets")
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(assetsSub))))
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		data, err := readFile("internal/browse/assets/favicon.ico")
+		if err != nil {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "image/x-icon")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(data))
+	})
 
 	fmt.Printf("  📡 MarkSafe Browse serving %s on %s:%d\n", s.cfg.Root, s.cfg.Bind, s.cfg.Port)
 	return http.ListenAndServe(addr, secureMux)
