@@ -10,28 +10,43 @@ tasks:
   dev:
     desc: Build and run marksafe_browse in dev mode
     cmds:
-      - go build -o marksafe_browse ./cmd/marksafe_browse && ./marksafe_browse --path ./example
+      - task: build
+      - ./bin/marksafe_browse --path ./example --port 8080
+    silent: true
 
   build:
-    desc: Build the marksafe_browse binary
+    desc: Build the marksafe_browse binary into bin/
     cmds:
-      - go build -o marksafe_browse ./cmd/marksafe_browse
+      - mkdir -p bin
+      - go build -o bin/marksafe_browse ./cmd/marksafe_browse
 
   build:linux:
     desc: Build Linux AMD64 binary
     cmds:
-      - GOOS=linux GOARCH=amd64 go build -o marksafe_browse ./cmd/marksafe_browse
+      - mkdir -p bin
+      - GOOS=linux GOARCH=amd64 go build -o bin/marksafe_browse ./cmd/marksafe_browse
 
   build:windows:
     desc: Build Windows binary
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -o marksafe_browse.exe ./cmd/marksafe_browse
+      - mkdir -p bin
+      - GOOS=windows GOARCH=amd64 go build -o bin/marksafe_browse.exe ./cmd/marksafe_browse
 
   build:all:
     desc: Build for all platforms
     cmds:
       - task: build:linux
       - task: build:windows
+    silent: true
+
+  release:
+    desc: Build all platforms and copy to /mnt/data2tb/dropzone/
+    cmds:
+      - task: build:linux
+      - task: build:windows
+      - mkdir -p /mnt/data2tb/dropzone
+      - cp bin/marksafe_browse /mnt/data2tb/dropzone/marksafe_browse-linux-amd64
+      - cp bin/marksafe_browse.exe /mnt/data2tb/dropzone/marksafe_browse-windows-amd64.exe
     silent: true
 
   tidy:
@@ -47,7 +62,14 @@ tasks:
     silent: true
 
   install:
-    desc: Build and install to $PATH
+    desc: Build and install to /usr/local/bin
     cmds:
-      - go build -o $(which marksafe_browse 2>/dev/null || echo /usr/local/bin/marksafe_browse) ./cmd/marksafe_browse
+      - task: build
+      - cp bin/marksafe_browse /usr/local/bin/marksafe_browse
+    silent: true
+
+  clean:
+    desc: Remove built binary
+    cmds:
+      - rm -rf bin
     silent: true
