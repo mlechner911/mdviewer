@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
   import TocNode from './TocNode.svelte';
 
   export let tabs: any[] = [];
@@ -12,9 +12,21 @@
   function forward(e: CustomEvent<{ path: string }>) {
     dispatch('select', e.detail);
   }
+
+  let nav: HTMLElement | null = null;
+
+  // Scroll the marked entry into view inside the sidebar whenever
+  // navigation lands on another page (content links included).
+  async function revealActive() {
+    await tick();
+    nav
+      ?.querySelector(':scope .toc-entry button.active')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  $: if (activePath && tabs.length) void revealActive();
 </script>
 
-<nav class="sidebar" style="width: {width}px" aria-label="Inhaltsverzeichnis">
+<nav class="sidebar" style="width: {width}px" aria-label="Inhaltsverzeichnis" bind:this={nav}>
   <div class="sidebar-header">
     <h2>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

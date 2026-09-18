@@ -10,6 +10,26 @@
 
   const dispatch = createEventDispatcher();
 
+  // A section opens automatically when it holds the active page, so
+  // following a content link always reveals (and marks) its target.
+  // Manual toggles win until navigation moves into this subtree again.
+  // (Depth 0 stays open as before.)
+  let userOpen: boolean | null = null;
+
+  function subtreeHas(e: any, p: string | null): boolean {
+    if (!p) return false;
+    if (e.path === p) return true;
+    return (e.children ?? []).some((c: any) => subtreeHas(c, p));
+  }
+
+  $: autoOpen = depth < 1 || subtreeHas(entry, activePath);
+  $: if (autoOpen) userOpen = null;
+  $: isOpen = userOpen ?? autoOpen;
+
+  function onToggle(e: Event) {
+    userOpen = (e.currentTarget as HTMLDetailsElement).open;
+  }
+
   function select(e: any) {
     if (!e.isDir && e.path) dispatch('select', { path: e.path });
   }
@@ -22,7 +42,7 @@
 
 {#if entry.isDir}
   <li class="toc-dir">
-    <details open={depth < 1}>
+    <details open={isOpen} on:toggle={onToggle}>
       <summary>{entry.title}</summary>
       <ul class="toc sub">
         {#each entry.children ?? [] as child}
