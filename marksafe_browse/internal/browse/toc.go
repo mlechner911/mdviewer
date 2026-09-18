@@ -1,0 +1,137 @@
+package browse
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+)
+
+// TOCEntry represents a single entry in the table of contents.
+type TOCEntry struct {
+	Path     string      // relative to root
+	Title    string      // from frontmatter or first H1
+	Children []TOCEntry  // sub-entries (for directory nesting)
+	IsDir    bool
+}
+
+// PageData holds the data for rendering a single page.
+type PageData struct {
+	Path     string // relative to root
+	Title    string
+	Content  string // raw markdown content
+	FullPath string // absolute path
+}
+
+// ExtractTitle reads a markdown file and extracts its title.
+// Priority: YAML frontmatter "title:" > first H1 heading > filename (without extension).
+func ExtractTitle(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineCount := 0
+	inFrontmatter := false
+	frontmatterTitle := ""
+
+	titleRegex := regexp.MustCompile(`^#\s+(.+)$`)
+	fmTitleRegex := regexp.MustCompile(`^title:\s*(.+)$`)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		lineCount++
+
+		// Track frontmatter
+		if line == "---" {
+			if !inFrontmatter && lineCount == 1 {
+				inFrontmatter = true
+				continue
+			}
+			if inFrontmatter && lineCount > 1 {
+				inFrontmatter = false
+				continue
+			}
+		}
+
+		// Inside frontmatter, look for title
+		if inFrontmatter {
+			matches := fmTitleRegex.FindStringSubmatch(line)
+			if len(matches) == 2 {
+				frontmatterTitle = strings.TrimSpace(matches[1])
+				continue
+			}
+		}
+
+		// First H1 after frontmatter
+		matches := titleRegex.FindStringSubmatch(line)
+		if len(matches) == 2 {
+			return strings.TrimSpace(matches[1]), nil
+		}
+
+		// Stop after first 30 lines if no H1 found and we have a frontmatter title
+		if lineCount > 30 && frontmatterTitle != "" {
+			return frontmatterTitle, nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	if frontmatterTitle != "" {
+		return frontmatterTitle, nil
+	}
+
+	// Fallback: use filename
+	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	return strings.ReplaceAll(name, "-", " "), nil
+}
+
+// FormatTitle converts a filename or heading into a display title.
+func FormatTitle(title string) string {
+	title = strings.ReplaceAll(title, "-", " ")
+	words := strings.Fields(title)
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
+}
+
+// formatSlug creates a URL-safe slug from a title.
+func formatSlug(title string) string {
+	slug := strings.ToLower(strings.TrimSpace(title))
+	slug = regexp.MustCompile(`[^a-z0-9\s-]`).ReplaceAllString(slug, "")
+	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
+	slug = regexp.MustCompile(`-+`).ReplaceAllString(slug, "-")
+	return strings.Trim(slug, "-")
+}
+
+// SanitizeFilename creates a safe filename from a title.
+func SanitizeFilename(title string) string {
+	return formatSlug(title) + ".md"
+}
+
+// RelativePath returns a path relative to root.
+func RelativePath(root, fullPath string) (string, error) {
+	rel, err := filepath.Rel(root, fullPath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(rel), nil
+}
+
+// String returns a human-readable path representation.
+func (e *TOCEntry) String() string {
+	prefix := ""
+	if e.IsDir {
+		prefix = "📁 "
+	}
+	return fmt.Sprintf("%s%s (%s)", prefix, e.Title, e.Path)
+}
