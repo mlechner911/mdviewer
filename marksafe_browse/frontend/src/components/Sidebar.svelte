@@ -3,6 +3,7 @@
 
   export let tabs: any[] = [];
   export let width: number = 280;
+  export let activePath: string | null = null;
 
   const dispatch = createEventDispatcher();
 
@@ -47,7 +48,11 @@
                   {#if child.isDir}
                     <strong>{child.title}</strong>
                   {:else}
-                    <button on:click={() => selectEntry(child)}>{child.title}</button>
+                    <button
+                      class:active={child.path === activePath}
+                      on:click={() => selectEntry(child)}
+                      aria-current={child.path === activePath ? 'page' : undefined}
+                    >{child.title}</button>
                   {/if}
                 </li>
               {/each}
@@ -56,7 +61,11 @@
         </li>
       {:else}
         <li class="toc-entry">
-          <button on:click={() => selectEntry(entry)}>{entry.title}</button>
+          <button
+            class:active={entry.path === activePath}
+            on:click={() => selectEntry(entry)}
+            aria-current={entry.path === activePath ? 'page' : undefined}
+          >{entry.title}</button>
         </li>
       {/if}
     {/each}
@@ -88,15 +97,15 @@
     gap: 0.5rem;
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--muted);
   }
   .sidebar-header h2 svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     color: var(--accent);
   }
   .collapse-btn {
@@ -141,9 +150,18 @@
     line-height: 1.45;
   }
   .toc-entry button:hover { background: var(--surface-hover); color: var(--accent-strong); }
+  /* Active page: accent text + tinted bg + fine vertical bar */
+  .toc-entry button.active {
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  details { list-style: none; }
   details summary {
     cursor: pointer;
     list-style: none;
+    list-style-type: none;
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -152,7 +170,7 @@
     user-select: none;
   }
   details summary::-webkit-details-marker { display: none; }
-  details summary::marker { content: ''; }
+  details summary::marker { content: ''; font-size: 0; }
   details summary::before {
     content: '';
     flex: none;

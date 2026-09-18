@@ -38,9 +38,6 @@
 
 <style>
   .theme-toggle {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;

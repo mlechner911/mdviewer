@@ -93,9 +93,6 @@ body, .sidebar, .content, .theme-toggle, .toc-entry button,
 }
 
 .theme-toggle {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -143,11 +140,19 @@ body, .sidebar, .content, .theme-toggle, .toc-entry button,
   color: var(--accent-strong);
   text-decoration: none;
 }
+.toc-entry button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
 
 /* CSS-only disclosure triangle (no UTF-8 glyphs) */
+details { list-style: none; }
 details summary {
   cursor: pointer;
   list-style: none;
+  list-style-type: none;
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -156,7 +161,7 @@ details summary {
   user-select: none;
 }
 details summary::-webkit-details-marker { display: none; }
-details summary::marker { content: ''; }
+details summary::marker { content: ''; font-size: 0; }
 details summary::before {
   content: '';
   flex: none;

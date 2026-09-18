@@ -13,6 +13,7 @@
   let pageTitle = 'MarkSafe Browse';
   let effectiveTheme = 'dark';
   let isReady = false;
+  let currentPath: string | null = null;
 
   // Sidebar layout state (persisted)
   let sidebarWidth = 280;
@@ -96,6 +97,7 @@
       if (data) {
         htmlContent = data.html;
         pageTitle = data.title;
+        currentPath = 'index.md';
       }
     } catch (e) {
       console.error('Failed to load index.md:', e);
@@ -111,6 +113,7 @@
       if (data) {
         htmlContent = data.html;
         pageTitle = data.title;
+        currentPath = path;
       }
     } catch (e) {
       console.error('Failed to load markdown:', e);
@@ -151,6 +154,7 @@
     <Sidebar
       {tabs}
       width={sidebarWidth}
+      activePath={currentPath}
       on:select={handleSelectEntry}
       on:collapse={toggleSidebar}
     />
@@ -165,10 +169,12 @@
   {/if}
 
   <main class="content" style={sidebarHidden ? 'margin-left: 0;' : `margin-left: ${sidebarWidth + 20}px;`}>
-    <ThemeToggle
-      on:toggle={handleThemeToggle}
-      theme={effectiveTheme}
-    />
+    <div class="content-toolbar">
+      <ThemeToggle
+        on:toggle={handleThemeToggle}
+        theme={effectiveTheme}
+      />
+    </div>
 
     {#if !isReady}
       <div class="loading">Lade Dokumentation...</div>
@@ -235,5 +241,18 @@
     font-size: 1rem;
   }
   .expand-btn:hover { background: var(--surface-hover); color: var(--accent); border-color: var(--accent); }
+  /* Sticky toolbar: theme toggle lives here, never overlapping text */
+  .content-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .content-toolbar .theme-toggle { position: static; }
   .expand-btn svg { width: 16px; height: 16px; }
 </style>
