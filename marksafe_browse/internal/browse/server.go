@@ -160,18 +160,35 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing path parameter", http.StatusBadRequest)
 		return
 	}
-	if _, err := s.root.Resolve(path); err != nil {
+	absPath, err := s.root.Resolve(path)
+	if err != nil {
 		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
 		return
 	}
-	if !strings.HasSuffix(path, ".md") {
-		http.Error(w, "Not a markdown file", http.StatusBadRequest)
+	info, err := os.Stat(absPath)
+	if err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
-	title, result, err := s.root.RenderDoc(path, chromaStyle(r.URL.Query().Get("theme")))
-	if err != nil {
-		http.Error(w, "Error reading file", http.StatusInternalServerError)
-		return
+	// Directories render their index.md or a virtual listing (same
+	// contract as in-content directory links via data-md).
+	var title, result string
+	if info.IsDir() {
+		title, result, err = s.root.RenderDir(path, chromaStyle(r.URL.Query().Get("theme")))
+		if err != nil {
+			http.Error(w, "Error reading directory", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if !strings.HasSuffix(path, ".md") {
+			http.Error(w, "Not a markdown file", http.StatusBadRequest)
+			return
+		}
+		title, result, err = s.root.RenderDoc(path, chromaStyle(r.URL.Query().Get("theme")))
+		if err != nil {
+			http.Error(w, "Error reading file", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -183,6 +183,23 @@ details[open] > summary::before { transform: rotate(90deg); }
 details summary:hover { background: var(--surface-hover); }
 .sub { padding-left: 1.1rem; list-style: none; }
 
+/* Virtual directory index (/render on a directory): same language as
+   the sidebar tree, driven by server-rendered data-md links. */
+.vdir { list-style: none; padding-left: 0; margin: 1rem 0; }
+.vdir .vdir { margin: 0.25rem 0 0.25rem 1.1rem; }
+.vdir-dir > details > summary { list-style: none; }
+.vdir-dir > details > summary::-webkit-details-marker { display: none; }
+.vdir-dir > details > summary::marker { content: ''; font-size: 0; }
+.vdir a {
+  color: var(--text);
+  text-decoration: none;
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+.vdir a:hover { background: var(--surface-hover); color: var(--accent-strong); }
+.vdir-dir > details > summary > a { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; color: var(--muted); }
+
 /* Subtle scrollbars */
 .sidebar::-webkit-scrollbar { width: 8px; }
 .sidebar::-webkit-scrollbar-thumb {

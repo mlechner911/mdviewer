@@ -75,28 +75,19 @@ func resolveDocTarget(docRelPath, target string) string {
 	return resolved
 }
 
-// validateTarget checks existence within the root.
-// Directories resolve to their index.md. Returns root-relative path + ok.
-func (r *Root) validateTarget(resolved string) (string, bool) {
+// validateTarget checks existence within the root and reports whether
+// the target is a directory. Directories stay directories: /render
+// serves their index.md or a virtual listing, so no silent remapping.
+func (r *Root) validateTarget(resolved string) (target string, isDir bool, ok bool) {
 	abs, err := r.Resolve(resolved)
 	if err != nil {
-		return "", false
+		return "", false, false
 	}
 	info, err := os.Stat(abs)
 	if err != nil {
-		return "", false
+		return "", false, false
 	}
-	if info.IsDir() {
-		resolved = path.Join(resolved, "index.md")
-		abs, err = r.Resolve(resolved)
-		if err != nil {
-			return "", false
-		}
-		if _, err := os.Stat(abs); err != nil {
-			return "", false
-		}
-	}
-	return resolved, true
+	return resolved, info.IsDir(), true
 }
 
 // stripAttr removes an attribute (e.g. href) from a raw attribute string.
@@ -134,12 +125,13 @@ func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 		if resolved == "" {
 			return brokenLinkTag(attrs, href, "Ziel außerhalb des Verzeichnisses")
 		}
-		resolved, ok := r.validateTarget(resolved)
+		resolved, isDir, ok := r.validateTarget(resolved)
 		if !ok {
 			return brokenLinkTag(attrs, href, "Datei nicht gefunden: "+target)
 		}
-		if strings.EqualFold(path.Ext(resolved), ".md") {
-			// In-app navigation: client intercepts a[data-md] via /render.
+		if isDir || strings.EqualFold(path.Ext(resolved), ".md") {
+			// In-app navigation: client intercepts a[data-md] via /render,
+			// which serves index.md or a virtual listing for directories.
 			return `<a` + attrs + ` data-md="` + escapeHTML(resolved) + `">`
 		}
 		// Existing non-markdown file: serve via /raw (works with/without JS).
@@ -162,8 +154,8 @@ func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 		if resolved == "" {
 			return brokenImgTag(attrs, src, "Bild außerhalb des Verzeichnisses")
 		}
-		resolved, ok := r.validateTarget(resolved)
-		if !ok {
+		resolved, isDir, ok := r.validateTarget(resolved)
+		if !ok || isDir {
 			return brokenImgTag(attrs, src, "Bild nicht gefunden: "+target)
 		}
 		newAttrs := srcRe.ReplaceAllString(attrs, `src="/raw?path=`+url.QueryEscape(resolved)+`"`)

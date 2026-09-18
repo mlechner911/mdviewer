@@ -129,6 +129,53 @@ func TestSnippetWindowNeverInverts(t *testing.T) {
 	}
 }
 
+func TestRenderDirIndexAndVirtual(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "withidx/index.md", "# Hallo Index\n\nIntro.\n")
+	writeFixture(t, dir, "withidx/a.md", "# A\n")
+	writeFixture(t, dir, "plain/b.md", "# B\n\nSiehe [a](../withidx/a.md).\n")
+	writeFixture(t, dir, "plain/sub/c.md", "# C\n")
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Directory with index.md renders the index page.
+	title, html, err := root.RenderDir("withidx", "github-dark")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if title != "Hallo Index" || !strings.Contains(html, "Intro.") {
+		t.Errorf("index not rendered: %q %q", title, html)
+	}
+
+	// Directory without index.md renders a virtual listing.
+	title, html, err = root.RenderDir("plain", "github-dark")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if title != "Plain" {
+		t.Errorf("title = %q", title)
+	}
+	for _, want := range []string{`data-md="plain/b.md"`, `data-md="plain/sub"`, ">B<", ">Sub<"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("listing lacks %q: %s", want, html)
+		}
+	}
+
+	// Missing and escaping directories fail.
+	if _, _, err := root.RenderDir("nope", "github-dark"); err == nil {
+		t.Error("missing dir accepted")
+	}
+	if _, _, err := root.RenderDir("../..", "github-dark"); err == nil {
+		t.Error("escape accepted")
+	}
+	// Files are not directories.
+	if _, _, err := root.RenderDir("plain/b.md", "github-dark"); err == nil {
+		t.Error("file accepted as dir")
+	}
+}
+
 func TestTOCEntryJSONKeys(t *testing.T) {
 	raw, _ := json.Marshal(TOCEntry{Path: "a/b.md", Title: "B", IsDir: false})
 	s := string(raw)
