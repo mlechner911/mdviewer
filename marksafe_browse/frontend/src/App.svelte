@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
-  import { fetchTree, getStoredTheme } from './lib/backend';
+  import { fetchTree, getStoredTheme, getSystemTheme, applyTheme, onSystemThemeChange } from './lib/backend';
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
@@ -11,11 +11,27 @@
   let htmlContent = writable('');
   let isReady = writable(false);
   let pageTitle = writable('MarkSafe Browse');
+  let effectiveTheme = writable('dark');
 
   onMount(async () => {
-    // Initialize theme
-    const theme = getStoredTheme();
-    document.body.className = theme;
+    // Initialize theme: check localStorage first, then system preference
+    const stored = getStoredTheme();
+    if (stored) {
+      applyTheme(stored);
+      effectiveTheme.set(stored);
+    } else {
+      const system = getSystemTheme();
+      applyTheme('auto');
+      effectiveTheme.set(system);
+    }
+
+    // Listen for system theme changes when in auto mode
+    const cleanup = onSystemThemeChange((theme) => {
+      if (!getStoredTheme()) {
+        effectiveTheme.set(theme);
+        applyTheme('auto');
+      }
+    });
 
     // Fetch TOC tree
     const tree = await fetchTree();
@@ -47,8 +63,12 @@
   function handleThemeToggle() {
     const current = document.body.className;
     const next = current === 'dark' ? 'light' : 'dark';
-    document.body.className = next;
-    localStorage.setItem('marksafe-theme', next);
+    applyTheme(next);
+    effectiveTheme.set(next);
+  }
+
+  function handleThemeChange(theme: string) {
+    effectiveTheme.set(theme);
   }
 </script>
 
@@ -56,7 +76,10 @@
   <Sidebar {tabs} onSelect={handleSelectEntry} />
   
   <main class="content">
-    <ThemeToggle on:toggle={handleThemeToggle} />
+    <ThemeToggle 
+      on:toggle={handleThemeToggle}
+      theme={$effectiveTheme}
+    />
     
     {#if !$isReady}
       <div class="loading">Lade Dokumentation...</div>

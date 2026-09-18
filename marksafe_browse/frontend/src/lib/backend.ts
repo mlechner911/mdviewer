@@ -52,6 +52,10 @@ export function isBackendReady(): boolean {
   return Boolean(w.chrome?.webview?.postMessage || w.webkit?.messageHandlers?.external);
 }
 
+/**
+ * Toggle between dark and light theme.
+ * Stores preference in localStorage.
+ */
 export function toggleTheme(): void {
   const body = document.body;
   const current = body.className;
@@ -60,14 +64,46 @@ export function toggleTheme(): void {
   localStorage.setItem('marksafe-theme', next);
 }
 
-export function getStoredTheme(): string {
-  const stored = localStorage.getItem('marksafe-theme');
-  if (stored) return stored;
+/**
+ * Get stored theme from localStorage. Returns null if not set.
+ */
+export function getStoredTheme(): string | null {
+  return localStorage.getItem('marksafe-theme');
+}
+
+/**
+ * Get system theme preference from prefers-color-scheme.
+ */
+export function getSystemTheme(): string {
+  if (typeof window === 'undefined') return 'light';
   if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
   return 'light';
 }
 
+/**
+ * Apply a theme to the document body.
+ * If theme is 'auto', detects system preference.
+ */
 export function applyTheme(theme: string): void {
-  document.body.className = theme;
-  localStorage.setItem('marksafe-theme', theme);
+  const resolved = theme === 'auto' ? getSystemTheme() : theme;
+  document.body.className = resolved;
+  if (theme !== 'auto') {
+    localStorage.setItem('marksafe-theme', theme);
+  } else {
+    localStorage.removeItem('marksafe-theme');
+  }
+}
+
+/**
+ * Listen for system theme changes (auto mode).
+ * Returns a cleanup function.
+ */
+export function onSystemThemeChange(callback: (theme: string) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const handler = (e: MediaQueryListEvent) => {
+    callback(e.matches ? 'dark' : 'light');
+  };
+  mediaQuery.addEventListener('change', handler);
+  return () => mediaQuery.removeEventListener('change', handler);
 }
