@@ -1,3 +1,5 @@
+import renderMathInElement from 'katex/dist/contrib/auto-render';
+
 // API client for the marksafe_browse Go backend
 
 interface TOCEntry {
@@ -106,4 +108,51 @@ export function onSystemThemeChange(callback: (theme: string) => void): () => vo
   };
   mediaQuery.addEventListener('change', handler);
   return () => mediaQuery.removeEventListener('change', handler);
+}
+
+/**
+ * Post-process rendered document HTML, mirroring the Wails preview:
+ * mermaid fences become diagrams, TeX becomes KaTeX. Single
+ * implementation of the *behavior*; markup comes from the shared Go
+ * renderer (internal/markdown), so both frontends stay in sync.
+ */
+export async function enhanceContent(root: HTMLElement, dark: boolean): Promise<void> {
+  // Mermaid (~3MB): loaded on demand, only for pages that need it.
+  // The static import would make every page pay the parse cost.
+  const fences = root.querySelectorAll('pre code.language-mermaid');
+  if (fences.length > 0) {
+    fences.forEach((el) => {
+      const parent = el.parentElement;
+      if (!parent || parent.tagName !== 'PRE') return;
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = el.textContent || '';
+      parent.replaceWith(div);
+    });
+    try {
+      const { default: mermaid } = await import('mermaid');
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: dark ? 'dark' : 'default',
+        fontFamily: 'inherit',
+      });
+      await mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
+    } catch (err) {
+      console.error('Mermaid render failed:', err);
+    }
+  }
+  // KaTeX: inline $…$, display $$…$$, \(…\) and \[…\].
+  try {
+    renderMathInElement(root, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', inline: true },
+        { left: '\\(', right: '\\)', inline: true },
+        { left: '\\[', right: '\\]', display: true },
+      ],
+      throwOnError: false,
+    });
+  } catch (err) {
+    console.error('KaTeX render failed:', err);
+  }
 }

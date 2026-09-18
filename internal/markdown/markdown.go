@@ -40,6 +40,8 @@ func NewRenderer() *Renderer {
 	p.AllowAttrs("class").OnElements("span", "code", "pre", "div", "blockquote", "p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "ul", "ol", "table", "tbody", "thead", "tr", "th", "td", "details", "summary", "aside")
 	p.AllowAttrs("style").OnElements("span", "code", "pre", "div")
 	p.AllowAttrs("id").OnElements("div")
+	// Allow heading anchors (in-page #links, document outlines)
+	p.AllowAttrs("id").OnElements("h1", "h2", "h3", "h4", "h5", "h6")
 	p.AllowAttrs("open").OnElements("details")
 
 	// Allow Task Lists (Checkboxes)
@@ -239,6 +241,7 @@ func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
 			),
 		),
 		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
 			parser.WithASTTransformers(
 				util.Prioritized(&GitHubAlertTransformer{}, 100),
 			),

@@ -62,6 +62,28 @@ func TestTruncateTitle(t *testing.T) {
 	}
 }
 
+func TestRenderMathMermaidAnchors(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "index.md", "# Hello World\n\nInline $E=mc^2$ and:\n\n$$\n\\int_0^1 x dx\n$$\n\n```mermaid\ngraph TD; A-->B;\n```\n")
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, html, err := root.RenderDoc("index.md", "github-dark")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(html, `id="hello-world"`) {
+		t.Errorf("heading anchor missing: %s", html)
+	}
+	if !strings.Contains(html, "language-mermaid") {
+		t.Errorf("mermaid fence not preserved: %s", html)
+	}
+	if !strings.Contains(html, "math") {
+		t.Errorf("math markup missing: %s", html)
+	}
+}
+
 func TestTOCEntryJSONKeys(t *testing.T) {
 	raw, _ := json.Marshal(TOCEntry{Path: "a/b.md", Title: "B", IsDir: false})
 	s := string(raw)
@@ -104,7 +126,7 @@ func TestRewriteAndSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	title, html, err := root.RenderDoc("index.md")
+	title, html, err := root.RenderDoc("index.md", "github-dark")
 	if err != nil {
 		t.Fatal(err)
 	}

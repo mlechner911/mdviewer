@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
+  import { enhanceContent } from './lib/backend';
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
@@ -157,33 +158,41 @@
       console.error('Failed to fetch tree:', e);
     }
 
+    setChroma(effectiveTheme);
+
     // Startup document: deep-link (?path=…) or index.md fallback
-    const startPath = urlPath() ?? 'index.md';
-    try {
-      const resp = await fetch(`/render?path=${encodeURIComponent(startPath)}`);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      if (data) {
-        htmlContent = data.html;
-        pageTitle = data.title;
-        currentPath = startPath;
-      }
-    } catch (e) {
-      console.error(`Failed to load ${startPath}:`, e);
-    }
+    await loadMarkdown(urlPath() ?? 'index.md', false);
 
     isReady = true;
   });
 
+  function setChroma(theme: string) {
+    const link = document.getElementById('chroma-css') as HTMLLinkElement | null;
+    if (link) {
+      link.href = theme === 'light' ? '/assets/chroma-light.css' : '/assets/chroma-dark.css';
+    }
+  }
+
+  // Re-run KaTeX + Mermaid on the rendered document (same behavior as
+  // the Wails preview; markup comes from the shared Go renderer).
+  async function refreshEnhancements() {
+    await tick();
+    const el = document.querySelector('#app .doc') as HTMLElement | null;
+    if (el) await enhanceContent(el, effectiveTheme === 'dark');
+  }
+
   async function loadMarkdown(path: string, push = true) {
     try {
-      const resp = await fetch(`/render?path=${encodeURIComponent(path)}`);
+      const resp = await fetch(
+        `/render?path=${encodeURIComponent(path)}&theme=${effectiveTheme}`,
+      );
       const data = await resp.json();
       if (data) {
         htmlContent = data.html;
         pageTitle = data.title;
         currentPath = path;
         if (push) pushUrl(path);
+        await refreshEnhancements();
       }
     } catch (e) {
       console.error('Failed to load markdown:', e);
@@ -207,11 +216,14 @@
   }
   $: pageDescription = excerpt(htmlContent);
 
-  function handleThemeToggle() {
+  async function handleThemeToggle() {
     const next = effectiveTheme === 'dark' ? 'light' : 'dark';
     document.body.className = next;
     localStorage.setItem('marksafe-theme', next);
     effectiveTheme = next;
+    setChroma(next);
+    // Re-render so code colors match the theme, then enhance diagrams/math.
+    if (currentPath) await loadMarkdown(currentPath, false);
   }
 </script>
 

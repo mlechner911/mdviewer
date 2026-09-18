@@ -16,6 +16,9 @@ tasks:
       - rm -f ../internal/browse/assets/index-*.js ../internal/browse/assets/chunk-*.js ../internal/browse/assets/index-*.css ../internal/browse/assets/style-*.css
       - cp ../internal/browse/frontend/dist/assets/*.js ../internal/browse/assets/
       - cp ../internal/browse/frontend/dist/assets/*.css ../internal/browse/assets/
+      - mkdir -p ../internal/browse/assets/fonts
+      - cp node_modules/katex/dist/katex.min.css ../internal/browse/assets/
+      - cp node_modules/katex/dist/fonts/*.woff2 ../internal/browse/assets/fonts/
     desc: "Build Svelte frontend and sync into Go embedded assets (always)"
 
   dev:

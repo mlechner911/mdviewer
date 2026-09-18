@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"marksafe/internal/markdown"
 	"marksafe/internal/mdbrowse"
 )
 
@@ -22,7 +23,11 @@ type Server struct {
 	cfg      *Config
 	root     *mdbrowse.Root
 	jsAsset  string // discovered hashed bundle, e.g. "index-a1b2c3.js"
-	cssAsset string // discovered hashed stylesheet, e.g. "style-d4e5f6.css"
+	cssAsset string // discovered hashed stylesheet, e.g. "index-d4e5f6.css"
+	// Chroma code colors per UI theme, generated once at startup from the
+	// shared renderer (same implementation as the Wails preview).
+	chromaDark  string
+	chromaLight string
 }
 
 // discoverAssets finds the current hashed bundle names in the embedded
@@ -53,7 +58,10 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	js, css := discoverAssets()
-	return &Server{cfg: cfg, root: root, jsAsset: js, cssAsset: css}, nil
+	chroma := markdown.NewRenderer()
+	darkCSS, _ := chroma.GetStyleCSS("github-dark")
+	lightCSS, _ := chroma.GetStyleCSS("github")
+	return &Server{cfg: cfg, root: root, jsAsset: js, cssAsset: css, chromaDark: darkCSS, chromaLight: lightCSS}, nil
 }
 
 // Start begins the HTTP server.
@@ -69,6 +77,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/md/", s.handleMarkdown)
 	mux.HandleFunc("/raw", s.handleRaw)
 	mux.HandleFunc("/api/search", s.handleSearch)
+	mux.HandleFunc("/assets/chroma-dark.css", s.serveText("text/css; charset=utf-8", s.chromaDark))
+	mux.HandleFunc("/assets/chroma-light.css", s.serveText("text/css; charset=utf-8", s.chromaLight))
 
 	// Serve static assets from embedded directory
 	assetsSub, _ := fs.Sub(assetsFS, "assets")
@@ -86,6 +96,23 @@ func (s *Server) Start() error {
 
 	fmt.Printf("  📡 MarkSafe Browse serving %s on %s:%d\n", s.cfg.Root, s.cfg.Bind, s.cfg.Port)
 	return http.ListenAndServe(addr, secureMux)
+}
+
+// serveText serves a fixed in-memory text asset.
+func (s *Server) serveText(contentType, body string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(body))
+	}
+}
+
+// chromaStyle maps the UI theme to code colors (mirrors the Wails preview).
+func chromaStyle(theme string) string {
+	if theme == "light" {
+		return "github"
+	}
+	return "github-dark"
 }
 
 // securityMiddleware validates that every request stays within root.
@@ -139,7 +166,7 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not a markdown file", http.StatusBadRequest)
 		return
 	}
-	title, result, err := s.root.RenderDoc(path)
+	title, result, err := s.root.RenderDoc(path, chromaStyle(r.URL.Query().Get("theme")))
 	if err != nil {
 		http.Error(w, "Error reading file", http.StatusInternalServerError)
 		return
@@ -230,6 +257,8 @@ func (s *Server) pageShell(title, appHTML string) string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>%s</title>
 <link rel="stylesheet" href="/assets/%s">
+<link rel="stylesheet" href="/assets/katex.min.css">
+<link id="chroma-css" rel="stylesheet" href="/assets/chroma-dark.css">
 </head>
 <body class="dark">
 <div id="app">%s</div>

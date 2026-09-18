@@ -291,8 +291,18 @@ details summary:hover { background: var(--surface-hover); }
 /* KaTeX */
 .katex { font-size: 1.1em; }
 
-/* Mermaid */
-.mermaid { text-align: center; }
+/* Mermaid diagrams (rendered client-side, theme synced in backend.ts) */
+.markdown .mermaid {
+  text-align: center;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow-x: auto;
+}
+.markdown .mermaid svg { max-width: 100%; height: auto; }
+.markdown .mermaid .edgeLabel rect { fill: transparent !important; }
 
 /* Loading */
 .loading {
