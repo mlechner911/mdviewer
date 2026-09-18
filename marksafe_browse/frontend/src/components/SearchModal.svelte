@@ -121,7 +121,7 @@
         {/each}
       {/if}
     </div>
-    <div class="search-footer">Pfeiltasten navigieren · Enter öffnen · Esc schließen</div>
+    <div class="search-footer"><kbd>Pfeiltasten</kbd> navigieren · <kbd>Enter</kbd> öffnen · <kbd>Esc</kbd> schließen</div>
   </div>
 </div>
 
@@ -147,9 +147,17 @@
   .search-box {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.8rem 1rem;
-    border-bottom: 1px solid var(--border);
+    gap: 0.75rem;
+    margin: 0.6rem 0.6rem 0;
+    padding: 0.75rem 0.9rem 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
   }
   .search-box svg {
     width: 18px;
@@ -168,6 +176,8 @@
     font-size: 1.05rem;
   }
   .search-box input::placeholder { color: var(--muted); }
+  /* No fat browser outline: the field ring above signals focus. */
+  .search-box input:focus-visible { outline: none; }
   kbd {
     font-family: var(--font-mono);
     font-size: 0.7rem;
@@ -181,6 +191,14 @@
     max-height: 50vh;
     overflow-y: auto;
     padding: 0.4rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .search-results::-webkit-scrollbar { width: 6px; }
+  .search-results::-webkit-scrollbar-track { background: transparent; }
+  .search-results::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
   }
   .search-state {
     padding: 1.5rem 1rem;
@@ -231,7 +249,8 @@
   .search-footer {
     padding: 0.6rem 1rem;
     border-top: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.78rem;
+    background: var(--code-bg);
+    color: var(--text-muted);
+    font-size: 0.75rem;
   }
 </style>
