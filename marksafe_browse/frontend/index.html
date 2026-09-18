@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkSafe Browse</title>
+  <script>
+    // Theme persistence
+    const stored = localStorage.getItem('marksafe-theme');
+    if (stored) document.documentElement.className = stored;
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.className = 'dark';
+    else document.documentElement.className = 'light';
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
