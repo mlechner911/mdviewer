@@ -12,9 +12,10 @@
 
   // A section opens automatically when it holds the active page, so
   // following a content link always reveals (and marks) its target.
-  // Manual toggles win until navigation moves into this subtree again.
+  // bind:open keeps manual toggles in sync; navigation only ever forces
+  // closed sections open, never closes anything behind the user's back.
   // (Depth 0 stays open as before.)
-  let userOpen: boolean | null = null;
+  let open = depth < 1;
 
   function subtreeHas(e: any, p: string | null): boolean {
     if (!p) return false;
@@ -22,13 +23,8 @@
     return (e.children ?? []).some((c: any) => subtreeHas(c, p));
   }
 
-  $: autoOpen = depth < 1 || subtreeHas(entry, activePath);
-  $: if (autoOpen) userOpen = null;
-  $: isOpen = userOpen ?? autoOpen;
-
-  function onToggle(e: Event) {
-    userOpen = (e.currentTarget as HTMLDetailsElement).open;
-  }
+  $: wantOpen = depth < 1 || subtreeHas(entry, activePath);
+  $: if (wantOpen) open = true;
 
   function select(e: any) {
     if (!e.isDir && e.path) dispatch('select', { path: e.path });
@@ -42,7 +38,7 @@
 
 {#if entry.isDir}
   <li class="toc-dir">
-    <details open={isOpen} on:toggle={onToggle}>
+    <details bind:open>
       <summary>{entry.title}</summary>
       <ul class="toc sub">
         {#each entry.children ?? [] as child}
