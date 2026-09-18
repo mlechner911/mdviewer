@@ -176,6 +176,34 @@ func TestRenderDirIndexAndVirtual(t *testing.T) {
 	}
 }
 
+func TestExternalLinksMarkedAndTabbed(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "index.md", "# S\n\n[web](https://example.com/x) and [mail](mailto:a@b.c) and [local](good.md).\n")
+	writeFixture(t, dir, "good.md", "# G\n")
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, html, err := root.RenderDoc("index.md", "github-dark")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// External: marked, new window, opener severed.
+	for _, want := range []string{`class="external-link"`, `target="_blank"`, `noopener`, `noreferrer`, `href="https://example.com/x"`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("external link lacks %q: %s", want, html)
+		}
+	}
+	// mailto keeps native behavior (no new window, no confirm hook).
+	if strings.Contains(html, "mailto") && strings.Contains(html, "external-link mailto") {
+		t.Errorf("mailto misclassified: %s", html)
+	}
+	// Internal link still navigates in-app.
+	if !strings.Contains(html, `data-md="good.md"`) {
+		t.Errorf("internal link lost data-md: %s", html)
+	}
+}
+
 func TestTOCEntryJSONKeys(t *testing.T) {
 	raw, _ := json.Marshal(TOCEntry{Path: "a/b.md", Title: "B", IsDir: false})
 	s := string(raw)

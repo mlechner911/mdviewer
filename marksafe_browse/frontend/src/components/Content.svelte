@@ -25,6 +25,15 @@
   // carry no href at all, external links behave natively.
   function onClick(e: MouseEvent) {
     const target = e.target as HTMLElement | null;
+    // External links always confirm first (see ExternalLinkModal).
+    const ext = target?.closest?.(
+      'a.external-link[href],a[href^="http://"],a[href^="https://"]',
+    ) as HTMLAnchorElement | null;
+    if (ext && ext.href) {
+      e.preventDefault();
+      dispatch('external', { url: ext.href });
+      return;
+    }
     const anchor = target?.closest?.('a[data-md]') as HTMLAnchorElement | null;
     if (!anchor) return;
     e.preventDefault();

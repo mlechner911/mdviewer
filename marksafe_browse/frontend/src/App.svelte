@@ -5,6 +5,7 @@
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
   import SearchModal from './components/SearchModal.svelte';
+  import ExternalLinkModal from './components/ExternalLinkModal.svelte';
 
   const MIN_WIDTH = 180;
   const MAX_WIDTH = 520;
@@ -17,6 +18,7 @@
   let isReady = false;
   let currentPath: string | null = null;
   let searchOpen = false;
+  let externalUrl: string | null = null;
 
   // Sidebar layout state (persisted)
   let sidebarWidth = 280;
@@ -231,6 +233,22 @@
     loadMarkdown(event.detail.path);
   }
 
+  function handleExternal(event: CustomEvent<{ url: string }>) {
+    externalUrl = event.detail.url;
+  }
+
+  function confirmExternal(event: CustomEvent<{ url: string; reuse: boolean }>) {
+    const { url, reuse } = event.detail;
+    externalUrl = null;
+    try {
+      // Named window reuses one tab; _blank opens a fresh one. Opener is
+      // always severed (backend also sets rel=noopener).
+      window.open(url, reuse ? 'marksafe-external' : '_blank', 'noopener');
+    } catch (e) {
+      console.error(`Failed to open ${url}:`, e);
+    }
+  }
+
   // SEO: description follows the open document (first ~160 chars of
   // visible text). Svelte updates the <meta> tag reactively, so the
   // Lighthouse "meta description" audit passes on every page.
@@ -339,8 +357,16 @@
       </div>
     {:else}
       {#key currentPath}
-        <Content {htmlContent} on:open={handleSelectEntry} />
+        <Content {htmlContent} on:open={handleSelectEntry} on:external={handleExternal} />
       {/key}
+
+  {#if externalUrl}
+    <ExternalLinkModal
+      url={externalUrl}
+      on:confirm={confirmExternal}
+      on:cancel={() => (externalUrl = null)}
+    />
+  {/if}
 
   {#if searchOpen}
     <SearchModal

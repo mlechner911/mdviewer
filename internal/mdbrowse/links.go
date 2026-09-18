@@ -29,6 +29,16 @@ var (
 	schemeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 )
 
+// isWebExternal reports http(s) links (and protocol-relative ones).
+// mailto:, tel:, data: and friends keep native behavior and need no
+// confirmation or new window.
+func isWebExternal(href string) bool {
+	lh := strings.ToLower(href)
+	return strings.HasPrefix(lh, "http://") ||
+		strings.HasPrefix(lh, "https://") ||
+		strings.HasPrefix(lh, "//")
+}
+
 // linkKind classifies an href/src value.
 type linkKind int
 
@@ -90,6 +100,28 @@ func (r *Root) validateTarget(resolved string) (target string, isDir bool, ok bo
 	return resolved, info.IsDir(), true
 }
 
+// ensureRelTokens adds tokens to the rel attribute, creating it if absent.
+func ensureRelTokens(attrs string, tokens ...string) string {
+	m := regexp.MustCompile(`rel="([^"]*)"`).FindStringSubmatch(attrs)
+	if m == nil {
+		return attrs + ` rel="` + strings.Join(tokens, " ") + `"`
+	}
+	have := strings.Fields(m[1])
+	for _, tok := range tokens {
+		found := false
+		for _, h := range have {
+			if h == tok {
+				found = true
+				break
+			}
+		}
+		if !found {
+			have = append(have, tok)
+		}
+	}
+	return strings.Replace(attrs, m[0], `rel="`+strings.Join(have, " ")+`"`, 1)
+}
+
 // stripAttr removes an attribute (e.g. href) from a raw attribute string.
 func stripAttr(attrs, name string) string {
 	re := regexp.MustCompile(`\s*` + name + `="[^"]*"`)
@@ -117,6 +149,21 @@ func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 			return tag // no href — leave alone
 		}
 		href := m[1]
+		if isWebExternal(href) {
+			// External links: always recognizable, always a new window.
+			// The client additionally asks for confirmation (see
+			// ExternalLinkModal); the markup alone already does the
+			// safe thing without JS.
+			attrs = addClass(attrs, "external-link")
+			if !strings.Contains(attrs, "target=") {
+				attrs += ` target="_blank"`
+			}
+			// Target _blank without noopener hands window.opener to the
+			// foreign page (reverse tabnabbing). Goldmark already emits
+			// rel="nofollow", so merge instead of duplicating the attr.
+			attrs = ensureRelTokens(attrs, "noopener", "noreferrer")
+			return `<a` + attrs + `>`
+		}
 		kind, target := classifyTarget(href)
 		if kind == linkKeep {
 			return tag
