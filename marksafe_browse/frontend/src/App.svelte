@@ -4,12 +4,69 @@
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
 
+  const MIN_WIDTH = 180;
+  const MAX_WIDTH = 520;
+
   // State — plain variables, no stores needed
   let tabs: any[] = [];
   let htmlContent = '';
   let pageTitle = 'MarkSafe Browse';
   let effectiveTheme = 'dark';
   let isReady = false;
+
+  // Sidebar layout state (persisted)
+  let sidebarWidth = 280;
+  let sidebarHidden = false;
+  let dragging = false;
+
+  try {
+    const w = parseInt(localStorage.getItem('marksafe-sidebar-width') || '', 10);
+    if (Number.isFinite(w)) sidebarWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, w));
+    sidebarHidden = localStorage.getItem('marksafe-sidebar-hidden') === '1';
+  } catch {
+    // localStorage unavailable — fall back to defaults
+  }
+
+  function startResize(e: PointerEvent) {
+    dragging = true;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    if (!dragging) return;
+    sidebarWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+  }
+
+  function stopResize() {
+    if (!dragging) return;
+    dragging = false;
+    try {
+      localStorage.setItem('marksafe-sidebar-width', String(sidebarWidth));
+    } catch {
+      // ignore
+    }
+  }
+
+  function toggleSidebar() {
+    sidebarHidden = !sidebarHidden;
+    try {
+      localStorage.setItem('marksafe-sidebar-hidden', sidebarHidden ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', stopResize);
+    window.addEventListener('pointercancel', stopResize);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', stopResize);
+      window.removeEventListener('pointercancel', stopResize);
+    };
+  });
 
   onMount(async () => {
     // Initialize theme from localStorage or system
@@ -77,9 +134,28 @@
 </svelte:head>
 
 <div class="app-container">
-  <Sidebar {tabs} on:select={handleSelectEntry} />
+  {#if sidebarHidden}
+    <button class="expand-btn" on:click={toggleSidebar} title="Verzeichnis einblenden">
+      » 📚
+    </button>
+  {:else}
+    <Sidebar
+      {tabs}
+      width={sidebarWidth}
+      on:select={handleSelectEntry}
+      on:collapse={toggleSidebar}
+    />
+    <div
+      class="resizer"
+      class:active={dragging}
+      style="left: {sidebarWidth}px"
+      on:pointerdown={startResize}
+      on:dblclick={toggleSidebar}
+      title="Ziehen zum Anpassen · Doppelklick zum Ausblenden"
+    ></div>
+  {/if}
 
-  <main class="content">
+  <main class="content" style={sidebarHidden ? 'margin-left: 0;' : `margin-left: ${sidebarWidth + 20}px;`}>
     <ThemeToggle
       on:toggle={handleThemeToggle}
       theme={effectiveTheme}
@@ -104,4 +180,35 @@
     font-size: 1.25rem;
     opacity: 0.6;
   }
+  .resizer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    margin-left: -4px;
+    cursor: col-resize;
+    z-index: 10;
+    touch-action: none;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .resizer:hover,
+  .resizer.active {
+    background: var(--accent, #60a5fa);
+    opacity: 0.5;
+  }
+  .expand-btn {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 10;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .expand-btn:hover { background: var(--bg); }
 </style>

@@ -1,10 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  
+
   export let tabs: any[] = [];
-  
+  export let width: number = 280;
+
   const dispatch = createEventDispatcher();
-  
+
   function selectEntry(entry: any) {
     if (!entry.isDir) {
       dispatch('select', { path: entry.path });
@@ -12,8 +13,15 @@
   }
 </script>
 
-<nav class="sidebar">
-  <h2>📚 Inhaltsverzeichnis</h2>
+<nav class="sidebar" style="width: {width}px">
+  <div class="sidebar-header">
+    <h2>📚 Inhaltsverzeichnis</h2>
+    <button
+      class="collapse-btn"
+      on:click={() => dispatch('collapse')}
+      title="Verzeichnis ausblenden"
+    >«</button>
+  </div>
   <ul class="toc">
     {#each tabs as entry}
       {#if entry.isDir}
@@ -47,13 +55,35 @@
     position: fixed;
     left: 0;
     top: 0;
-    width: 280px;
     height: 100vh;
     background: inherit;
     border-right: 1px solid var(--border);
     padding: 1.5rem;
     overflow-y: auto;
   }
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .sidebar-header h2 {
+    font-size: 1.2rem;
+    color: var(--accent);
+    margin: 0;
+  }
+  .collapse-btn {
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    border-radius: 0.375rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .collapse-btn:hover { background: var(--bg); }
   .toc {
     list-style: none;
     padding-left: 0;
