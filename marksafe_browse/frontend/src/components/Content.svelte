@@ -15,8 +15,8 @@
   /* NOTE: class intentionally NOT named "content" — that name carries a
      margin-left rule for the fixed sidebar; nesting it doubled the offset. */
   .doc {
-    padding: 2rem;
+    width: 100%;
     max-width: 768px;
-    flex: 1;
+    padding: 2rem;
   }
 </style>

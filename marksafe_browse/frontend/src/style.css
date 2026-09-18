@@ -87,9 +87,12 @@ body, .sidebar, .content, .theme-toggle, .toc-entry button,
   overflow-y: auto;
 }
 
-.content {
-  margin-left: 300px;
-  padding: 2rem;
+/* main is the flex item next to the fixed sidebar: take all remaining
+   row space (margin-left is set inline from the sidebar width) */
+main.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
 }
 
 .theme-toggle {
