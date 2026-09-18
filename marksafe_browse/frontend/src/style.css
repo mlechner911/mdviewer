@@ -19,6 +19,7 @@ body {
   --surface: #f8fafc;          /* sidebar */
   --surface-hover: rgba(99, 102, 241, 0.08);
   --text: #0f172a;
+  --heading: #334155;
   --muted: #64748b;
   --border: #e2e8f0;
   --accent: #4f46e5;           /* indigo-600 */
@@ -37,6 +38,7 @@ body.dark {
   --surface: #0b1226;
   --surface-hover: rgba(129, 140, 248, 0.12);
   --text: #e2e8f0;
+  --heading: #cbd5e1;
   --muted: #94a3b8;
   --border: #1e293b;
   --accent: #818cf8;           /* indigo-400 */
@@ -206,8 +208,8 @@ details summary:hover { background: var(--surface-hover); }
   border-bottom: 2px solid var(--border);
   padding-bottom: 0.5rem;
 }
-.markdown h2 { font-size: 1.35rem; margin: 1.75rem 0 0.6rem; color: var(--accent-strong); }
-.markdown h3 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
+.markdown h2 { font-size: 1.35rem; margin: 1.75rem 0 0.6rem; color: var(--heading); }
+.markdown h3 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; color: var(--heading); }
 .markdown p { margin: 1rem 0; }
 .markdown ul, .markdown ol { margin: 1rem 0; padding-left: 1.75rem; }
 .markdown li { margin: 0.3rem 0; }

@@ -20,8 +20,31 @@ var assetsFS embed.FS
 
 // Server holds the HTTP server configuration and state.
 type Server struct {
-	cfg     *Config
-	scanner *Scanner
+	cfg      *Config
+	scanner  *Scanner
+	jsAsset  string // discovered hashed bundle, e.g. "index-a1b2c3.js"
+	cssAsset string // discovered hashed stylesheet, e.g. "style-d4e5f6.css"
+}
+
+// discoverAssets finds the current hashed bundle names in the embedded
+// assets dir (vite emits content hashes so browsers never cache stale
+// builds). Falls back to legacy fixed names if discovery fails.
+func discoverAssets() (js, css string) {
+	js, css = "index.js", "style.css"
+	entries, err := fs.ReadDir(assetsFS, "assets")
+	if err != nil {
+		return js, css
+	}
+	for _, e := range entries {
+		n := e.Name()
+		if strings.HasPrefix(n, "index-") && strings.HasSuffix(n, ".js") {
+			js = n
+		}
+		if strings.HasSuffix(n, ".css") {
+			css = n
+		}
+	}
+	return js, css
 }
 
 // NewServer creates a new Server instance.
@@ -30,7 +53,8 @@ func NewServer(cfg *Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Server{cfg: cfg, scanner: scanner}, nil
+	js, css := discoverAssets()
+	return &Server{cfg: cfg, scanner: scanner, jsAsset: js, cssAsset: css}, nil
 }
 
 // Start begins the HTTP server.
@@ -151,49 +175,42 @@ func (s *Server) handleMarkdown(w http.ResponseWriter, r *http.Request) {
 }
 
 // renderTOCPage generates the HTML table of contents.
-func (s *Server) renderTOCPage(w http.ResponseWriter, entries []TOCEntry) {
-	var page strings.Builder
-	page.WriteString(`<!DOCTYPE html>
+// pageShell wraps the Svelte app shell around a title and #app content.
+// Asset filenames carry content hashes (see discoverAssets); the shell
+// always references the current build, so browsers cache safely.
+func (s *Server) pageShell(title, appHTML string) string {
+	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MarkSafe Browse</title>
-<link rel="stylesheet" href="/assets/style.css">
+<title>%s</title>
+<link rel="stylesheet" href="/assets/%s">
 </head>
 <body class="dark">
-<div id="app"></div>
-<script defer src="/assets/index.js"></script>
+<div id="app">%s</div>
+<script defer src="/assets/%s"></script>
 </body>
-</html>`)
+</html>`, title, s.cssAsset, appHTML, s.jsAsset)
+}
+
+// renderTOCPage generates the HTML table of contents.
+func (s *Server) renderTOCPage(w http.ResponseWriter, entries []TOCEntry) {
+	page := s.pageShell("MarkSafe Browse", "")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(page.String()))
+	w.Write([]byte(page))
 }
 
 // renderMarkdownPage renders a markdown file as a full HTML page.
 func (s *Server) renderMarkdownPage(w http.ResponseWriter, title, markdownContent string) {
 	result := renderMarkdownToHTML(markdownContent)
-
-	var page strings.Builder
-	page.WriteString(`<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>` + escapeHTML(title) + ` — MarkSafe Browse</title>
-<link rel="stylesheet" href="/assets/style.css">
-</head>
-<body class="dark">
-<div id="app">` + result + `</div>
-<script defer src="/assets/index.js"></script>
-</body>
-</html>`)
+	page := s.pageShell(escapeHTML(title)+" — MarkSafe Browse", result)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(page.String()))
+	w.Write([]byte(page))
 }
 
 // readFile reads a file's content.

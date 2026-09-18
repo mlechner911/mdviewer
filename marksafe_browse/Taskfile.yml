@@ -13,8 +13,9 @@ tasks:
     dir: frontend
     cmds:
       - npx vite build
-      - cp ../internal/browse/frontend/dist/assets/index.css ../internal/browse/assets/style.css
-      - cp ../internal/browse/frontend/dist/assets/index.js ../internal/browse/assets/index.js
+      - rm -f ../internal/browse/assets/index-*.js ../internal/browse/assets/chunk-*.js ../internal/browse/assets/style-*.css
+      - cp ../internal/browse/frontend/dist/assets/*.js ../internal/browse/assets/
+      - cp ../internal/browse/frontend/dist/assets/*.css ../internal/browse/assets/
     desc: "Build Svelte frontend and sync into Go embedded assets (always)"
 
   dev:

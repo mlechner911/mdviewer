@@ -21,10 +21,13 @@ export default defineConfig({
     outDir: '../internal/browse/frontend/dist',
     emptyOutDir: true,
     rollupOptions: {
+      // Content hashes: every build gets unique filenames, so browsers
+      // never serve a stale bundle from cache. The Go server discovers
+      // the current names from the embedded assets dir at startup.
       output: {
-        entryFileNames: 'assets/index.js',
-        chunkFileNames: 'assets/chunk.js',
-        assetFileNames: 'assets/[name][extname]',
+        entryFileNames: 'assets/index-[hash].js',
+        chunkFileNames: 'assets/chunk-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
   },

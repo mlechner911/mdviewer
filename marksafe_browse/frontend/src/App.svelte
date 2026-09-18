@@ -187,6 +187,19 @@
     loadMarkdown(event.detail.path);
   }
 
+  // SEO: description follows the open document (first ~160 chars of
+  // visible text). Svelte updates the <meta> tag reactively, so the
+  // Lighthouse "meta description" audit passes on every page.
+  function excerpt(html: string): string {
+    const text = html
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) return 'MarkSafe Browse – Markdown-Verzeichnis im Browser lesen.';
+    return text.length > 160 ? text.slice(0, 157).trimEnd() + '…' : text;
+  }
+  $: pageDescription = excerpt(htmlContent);
+
   function handleThemeToggle() {
     const next = effectiveTheme === 'dark' ? 'light' : 'dark';
     document.body.className = next;
@@ -197,6 +210,7 @@
 
 <svelte:head>
   <title>{pageTitle} — MarkSafe Browse</title>
+  <meta name="description" content={pageDescription} />
 </svelte:head>
 
 <div class="app-container">
