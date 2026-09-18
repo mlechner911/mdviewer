@@ -181,12 +181,29 @@
     if (el) await enhanceContent(el, effectiveTheme === 'dark');
   }
 
+  // Sequenced loader: overlapping navigations are normal (fast clicks,
+  // back/forward, search). Only the latest request may touch state —
+  // stale responses are dropped silently instead of blanking the view.
+  // Failures become a visible retry panel, never a silent blank page.
+  let loadSeq = 0;
+  let loadAbort: AbortController | null = null;
+  let loadError: string | null = null;
+
   async function loadMarkdown(path: string, push = true) {
+    const seq = ++loadSeq;
+    loadAbort?.abort();
+    const ctrl = new AbortController();
+    loadAbort = ctrl;
+    loadError = null;
     try {
       const resp = await fetch(
         `/render?path=${encodeURIComponent(path)}&theme=${effectiveTheme}`,
+        { signal: ctrl.signal },
       );
+      if (seq !== loadSeq) return; // superseded
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
+      if (seq !== loadSeq) return; // superseded
       if (data) {
         htmlContent = data.html;
         pageTitle = data.title;
@@ -195,8 +212,16 @@
         await refreshEnhancements();
       }
     } catch (e) {
-      console.error('Failed to load markdown:', e);
+      const aborted = e instanceof DOMException && e.name === 'AbortError';
+      if (aborted || seq !== loadSeq) return; // superseded, silent
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`Failed to load ${path}:`, e);
+      loadError = `"${path}" konnte nicht geladen werden (${msg}).`;
     }
+  }
+
+  function retryLoad() {
+    loadMarkdown(currentPath ?? 'index.md', false);
   }
 
   function handleSelectEntry(event: CustomEvent<{ path: string }>) {
@@ -303,6 +328,12 @@
 
     {#if !isReady}
       <div class="loading">Lade Dokumentation...</div>
+    {:else if loadError}
+      <div class="load-error" role="alert">
+        <strong>Dokument konnte nicht geladen werden.</strong>
+        <p>{loadError}</p>
+        <button class="retry-btn" on:click={retryLoad}>Erneut versuchen</button>
+      </div>
     {:else}
       <Content {htmlContent} on:open={handleSelectEntry} />
 
@@ -330,6 +361,28 @@
     font-size: 1.25rem;
     opacity: 0.6;
   }
+  .load-error {
+    max-width: 560px;
+    margin: 3rem auto;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+  }
+  .load-error p { margin: 0.5rem 0 1rem; color: var(--muted); }
+  .retry-btn {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .retry-btn:hover { background: var(--accent); color: #fff; }
   .resizer {
     position: fixed;
     top: 0;
