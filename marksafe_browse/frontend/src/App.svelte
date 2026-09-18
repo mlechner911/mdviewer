@@ -209,6 +209,9 @@
         pageTitle = data.title;
         currentPath = path;
         if (push) pushUrl(path);
+        console.debug(
+          `[browse] rendered ${path} (${data.html.length} chars, seq ${seq})`,
+        );
         await refreshEnhancements();
       }
     } catch (e) {
@@ -335,7 +338,9 @@
         <button class="retry-btn" on:click={retryLoad}>Erneut versuchen</button>
       </div>
     {:else}
-      <Content {htmlContent} on:open={handleSelectEntry} />
+      {#key currentPath}
+        <Content {htmlContent} on:open={handleSelectEntry} />
+      {/key}
 
   {#if searchOpen}
     <SearchModal

@@ -6,6 +6,20 @@
   const dispatch = createEventDispatcher();
   let docEl: HTMLElement | null = null;
 
+  // Visible-text check: an "empty" render (frontmatter-only file,
+  // tag-only fragment) shows the friendly placeholder instead of a
+  // blank section that looks like a broken renderer.
+  function hasVisibleText(html: string): boolean {
+    if (!html) return false;
+    return (
+      html
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim().length > 0
+    );
+  }
+  $: showDoc = hasVisibleText(htmlContent);
+
   // In-app navigation: links the server validated (a[data-md]) open via
   // /render instead of a full page load (which would 404). Broken links
   // carry no href at all, external links behave natively.
@@ -28,7 +42,7 @@
 </script>
 
 <section class="doc" bind:this={docEl}>
-  {#if htmlContent}
+  {#if showDoc}
     {@html htmlContent}
   {:else}
     <h1>MarkSafe Browse</h1>
