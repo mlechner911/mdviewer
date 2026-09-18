@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"marksafe/internal/markdown"
 	"marksafe/internal/mdbrowse"
@@ -170,6 +171,14 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
+	// File metadata for the document info panel (size, last modified).
+	// Directories report zeros; the client only shows meta for files.
+	var fsize int64
+	var fmod string
+	if !info.IsDir() {
+		fsize = info.Size()
+		fmod = info.ModTime().UTC().Format(time.RFC3339)
+	}
 	// Directories render their index.md or a virtual listing (same
 	// contract as in-content directory links via data-md).
 	var title, result string
@@ -192,8 +201,9 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	json.NewEncoder(w).Encode(map[string]any{
 		"title": title, "html": result, "path": path,
+		"size": fsize, "modified": fmod,
 	})
 }
 

@@ -6,6 +6,7 @@
   import ThemeToggle from './components/ThemeToggle.svelte';
   import SearchModal from './components/SearchModal.svelte';
   import ExternalLinkModal from './components/ExternalLinkModal.svelte';
+  import DocInfoModal from './components/DocInfoModal.svelte';
 
   const MIN_WIDTH = 180;
   const MAX_WIDTH = 520;
@@ -19,6 +20,48 @@
   let currentPath: string | null = null;
   let searchOpen = false;
   let externalUrl: string | null = null;
+  let infoOpen = false;
+  let docSize = 0;
+  let docModified = '';
+
+  // Line density: compact (default, IDE-like), comfortable, spacious.
+  const DENSITIES = [
+    { id: 'compact', label: 'Kompakt', body: '1.42', code: '1.3' },
+    { id: 'comfortable', label: 'Komfort', body: '1.6', code: '1.5' },
+    { id: 'spacious', label: 'Weit', body: '1.85', code: '1.7' },
+  ];
+  let densityId = 'compact';
+
+  function applyDensity(id: string) {
+    const mode = DENSITIES.find((d) => d.id === id) ?? DENSITIES[0];
+    densityId = mode.id;
+    try {
+      const root = document.documentElement;
+      root.style.setProperty('--lh-body', mode.body);
+      root.style.setProperty('--lh-code', mode.code);
+      localStorage.setItem('marksafe-line-height', mode.id);
+    } catch {
+      // ignore
+    }
+  }
+
+  function cycleDensity() {
+    const i = DENSITIES.findIndex((d) => d.id === densityId);
+    applyDensity(DENSITIES[(i + 1) % DENSITIES.length].id);
+  }
+
+  $: densityLabel =
+    (DENSITIES.find((d) => d.id === densityId) ?? DENSITIES[0]).label;
+
+  // Plain-text stats for the info panel.
+  function docText(): string {
+    return htmlContent
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  $: docWords = docText() ? docText().split(' ').length : 0;
+  $: docChars = docText().length;
 
   // Sidebar layout state (persisted)
   let sidebarWidth = 280;
@@ -162,6 +205,13 @@
 
     setChroma(effectiveTheme);
 
+    try {
+      const stored = localStorage.getItem('marksafe-line-height');
+      if (stored) applyDensity(stored);
+    } catch {
+      // ignore
+    }
+
     // Startup document: deep-link (?path=…) or index.md fallback
     await loadMarkdown(urlPath() ?? 'index.md', false);
 
@@ -210,6 +260,8 @@
         htmlContent = data.html;
         pageTitle = data.title;
         currentPath = path;
+        docSize = typeof data.size === 'number' ? data.size : 0;
+        docModified = typeof data.modified === 'string' ? data.modified : '';
         if (push) pushUrl(path);
         console.debug(
           `[browse] rendered ${path} (${data.html.length} chars, seq ${seq})`,
@@ -341,10 +393,39 @@
           </svg>
         </button>
       </div>
-      <ThemeToggle
-        on:toggle={handleThemeToggle}
-        theme={effectiveTheme}
-      />
+      <div class="toolbar-right">
+        <button
+          class="nav-btn"
+          on:click={cycleDensity}
+          title="Zeilenabstand: {densityLabel} (klicken zum Wechseln)"
+          aria-label="Zeilenabstand wechseln, aktuell {densityLabel}"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="15" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="15" y2="18" />
+          </svg>
+          <span class="nav-label">{densityLabel}</span>
+        </button>
+        <button
+          class="nav-btn"
+          on:click={() => (infoOpen = true)}
+          title="Dokumentinfo anzeigen"
+          aria-label="Dokumentinfo anzeigen"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
+        <ThemeToggle
+          on:toggle={handleThemeToggle}
+          theme={effectiveTheme}
+        />
+      </div>
     </div>
 
     {#if !isReady}
@@ -365,6 +446,18 @@
       url={externalUrl}
       on:confirm={confirmExternal}
       on:cancel={() => (externalUrl = null)}
+    />
+  {/if}
+
+  {#if infoOpen}
+    <DocInfoModal
+      title={pageTitle}
+      path={currentPath ?? ''}
+      size={docSize}
+      modified={docModified}
+      words={docWords}
+      chars={docChars}
+      on:close={() => (infoOpen = false)}
     />
   {/if}
 
@@ -473,6 +566,8 @@
     border-bottom: 1px solid var(--border);
   }
   .nav-btns { display: flex; gap: 0.5rem; }
+  .toolbar-right { display: flex; align-items: center; gap: 0.5rem; }
+  .nav-btn .nav-label { font-size: 0.78rem; }
   .nav-btn {
     display: inline-flex;
     align-items: center;

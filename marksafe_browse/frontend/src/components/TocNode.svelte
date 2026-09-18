@@ -39,7 +39,7 @@
 {#if entry.isDir}
   <li class="toc-dir">
     <details bind:open>
-      <summary>{entry.title}</summary>
+      <summary title={entry.path}>{entry.title}</summary>
       <ul class="toc sub">
         {#each entry.children ?? [] as child}
           <svelte:self entry={child} {activePath} depth={depth + 1} on:select={forward} />
@@ -51,6 +51,7 @@
   <li class="toc-entry">
     <button
       class:active={entry.path === activePath}
+      title={entry.path}
       on:click={() => select(entry)}
       aria-current={entry.path === activePath ? 'page' : undefined}
     >{entry.title}</button>
