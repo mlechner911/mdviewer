@@ -84,6 +84,51 @@ func TestRenderMathMermaidAnchors(t *testing.T) {
 	}
 }
 
+// U+0130 lowercases to two runes (three bytes): byte indices from a
+// case-folded copy do not line up with the original. This used to slice
+// mid-rune (mojibake) or panic outright, killing the whole /api/search
+// handler — every query after that showed "Keine Treffer".
+func TestHighlightMarkUnicodeExpansion(t *testing.T) {
+	text := escapeHTML("xİroll and more text here to fill the snippet window nicely")
+	out := highlightMark(text, escapeHTML("roll"))
+	if !strings.Contains(out, "<mark>roll</mark>") {
+		t.Errorf("mark missing or misaligned: %q", out)
+	}
+	if strings.Contains(out, "\ufffd") {
+		t.Errorf("replacement char leaked: %q", out)
+	}
+}
+
+func TestFormatTitleUmlaut(t *testing.T) {
+	if got := FormatTitle("Übersicht"); got != "Übersicht" {
+		t.Errorf("umlaut initial corrupted: %q", got)
+	}
+}
+
+// A match glued to a long spaceless run once overshot the window trim
+// (slice bounds [5416:5295]) and panicked the whole /api/search handler:
+// every later query died, the UI showed "Keine Treffer" for everything.
+func TestSnippetWindowNeverInverts(t *testing.T) {
+	body := "prefix text here roll" + strings.Repeat("x", 200) + " tail end words here"
+	snip := snippetExact(body+" ", "roll")
+	if !strings.Contains(snip, "<mark>roll</mark>") {
+		t.Errorf("mark missing: %q", snip)
+	}
+	dir := t.TempDir()
+	writeFixture(t, dir, "long.md", "# Lang\n\nText "+strings.Repeat("y", 300)+" roll Ende.\n")
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hits, err := root.Search("roll")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 1 {
+		t.Fatalf("want 1 hit, got %+v", hits)
+	}
+}
+
 func TestTOCEntryJSONKeys(t *testing.T) {
 	raw, _ := json.Marshal(TOCEntry{Path: "a/b.md", Title: "B", IsDir: false})
 	s := string(raw)

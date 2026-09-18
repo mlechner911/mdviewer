@@ -122,8 +122,7 @@ func searchFiles(rootDir string, files []string, q string) []SearchResult {
 			}
 			score += float64(add)
 			matched = true
-			ri := len([]rune(nbody[:strings.Index(lb, lq)]))
-			snippet = snippetExact(nbody, ri, len([]rune(lq)), q)
+			snippet = snippetExact(nbody, q)
 		} else if wi, wl, wq := bestFuzzyWord(nbody, lq); wq > 0 {
 			score += 8 + 12*wq
 			matched = true
@@ -222,49 +221,48 @@ func bestFuzzyWord(nbody, pattern string) (off, ln int, qual float64) {
 	return off, ln, qual
 }
 
-// windowAround cuts ~100 runes around [c0:c1), trimmed to word boundaries,
-// and returns escaped (pre, marked, post) parts for <mark> assembly.
-func windowAround(nbody string, c0, c1 int) (pre, marked, post string) {
+// cutWindow cuts a ~100-rune window around [c0:c1), trimmed to word
+// boundaries. Trimming never passes the mark and never inverts the
+// window (an overshooting trim once panicked the whole /api/search
+// handler with slice bounds [5416:5295]). Returns the window text
+// (with … affixes) plus mark offsets relative to it.
+func cutWindow(nbody string, c0, c1 int) (window string, m0, m1 int) {
 	r := []rune(nbody)
 	if c0 < 0 {
 		c0 = 0
 	}
+	if c1 < c0 {
+		c1 = c0
+	}
 	if c1 > len(r) {
 		c1 = len(r)
 	}
-	lo := c0 - 45
+	lo, hi := c0-45, c1+55
 	if lo < 0 {
 		lo = 0
 	}
-	hi := c1 + 55
 	if hi > len(r) {
 		hi = len(r)
 	}
-	prefix, suffix := "", ""
+	pre, post := "", ""
 	if lo > 0 {
-		for lo < hi && r[lo] != ' ' {
-			lo++
+		pre = "\u2026 "
+		if k := strings.IndexByte(string(r[lo:c0]), ' '); k >= 0 {
+			lo += k + 1
 		}
-		if lo < hi {
-			lo++
-		}
-		prefix = "… "
 	}
 	if hi < len(r) {
-		for hi > lo && r[hi-1] != ' ' {
-			hi--
+		post = " \u2026"
+		if k := strings.LastIndexByte(string(r[c1:hi]), ' '); k >= 0 {
+			hi = c1 + k
 		}
-		suffix = " …"
 	}
-	pre = prefix + escapeHTML(string(r[lo:c0]))
-	marked = escapeHTML(string(r[c0:c1]))
-	post = escapeHTML(string(r[c1:hi])) + suffix
-	return pre, marked, post
+	inner := string(r[lo:hi])
+	return pre + inner + post, len([]rune(pre)) + (c0 - lo), len([]rune(pre)) + (c1 - lo)
 }
 
 // snippetExact marks every exact occurrence of q inside the window.
-func snippetExact(nbody string, _, _ int, q string) string {
-	r := []rune(nbody)
+func snippetExact(nbody, q string) string {
 	ri := -1
 	if i := strings.Index(strings.ToLower(nbody), strings.ToLower(q)); i >= 0 {
 		ri = len([]rune(nbody[:i]))
@@ -272,37 +270,15 @@ func snippetExact(nbody string, _, _ int, q string) string {
 	if ri < 0 {
 		return leadingExcerpt(nbody)
 	}
-	lo := ri - 45
-	if lo < 0 {
-		lo = 0
-	}
-	hi := ri + len([]rune(q)) + 55
-	if hi > len(r) {
-		hi = len(r)
-	}
-	for lo > 0 && r[lo] != ' ' {
-		lo++
-	}
-	if lo > 0 {
-		lo++
-	}
-	for hi < len(r) && r[hi-1] != ' ' {
-		hi--
-	}
-	window := strings.TrimSpace(string(r[lo:hi]))
-	if lo > 0 {
-		window = "… " + window
-	}
-	if hi < len(r) {
-		window = window + " …"
-	}
+	window, _, _ := cutWindow(nbody, ri, ri+len([]rune(q)))
 	return highlightMark(escapeHTML(window), escapeHTML(q))
 }
 
 // snippetMarked marks one specific word range (fuzzy hits).
 func snippetMarked(nbody string, c0, c1 int) string {
-	pre, marked, post := windowAround(nbody, c0, c1)
-	return pre + "<mark>" + marked + "</mark>" + post
+	window, m0, m1 := cutWindow(nbody, c0, c1)
+	wr := []rune(window)
+	return escapeHTML(string(wr[:m0])) + "<mark>" + escapeHTML(string(wr[m0:m1])) + "</mark>" + escapeHTML(string(wr[m1:]))
 }
 
 // leadingExcerpt returns the first ~100 runes for title-only hits.
@@ -322,26 +298,28 @@ func leadingExcerpt(nbody string) string {
 }
 
 // highlightMark wraps every case-insensitive occurrence of needle in <mark>.
+// Rune-based with EqualFold: byte indices from case-folded copies do NOT
+// line up when folding changes byte length (e.g. U+0130 İ lowercases to
+// two runes), which sliced mid-rune or panicked outright.
 // Both inputs must already be HTML-escaped.
 func highlightMark(text, needle string) string {
 	if needle == "" {
 		return text
 	}
-	lower, ln := strings.ToLower(text), strings.ToLower(needle)
+	tr := []rune(text)
+	nr := len([]rune(needle))
 	var b strings.Builder
-	pos := 0
-	for {
-		i := strings.Index(lower[pos:], ln)
-		if i < 0 {
-			break
+	i := 0
+	for i < len(tr) {
+		if i+nr <= len(tr) && strings.EqualFold(string(tr[i:i+nr]), needle) {
+			b.WriteString("<mark>")
+			b.WriteString(string(tr[i : i+nr]))
+			b.WriteString("</mark>")
+			i += nr
+		} else {
+			b.WriteRune(tr[i])
+			i++
 		}
-		i += pos
-		b.WriteString(text[pos:i])
-		b.WriteString("<mark>")
-		b.WriteString(text[i : i+len(needle)])
-		b.WriteString("</mark>")
-		pos = i + len(needle)
 	}
-	b.WriteString(text[pos:])
 	return b.String()
 }

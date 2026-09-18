@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // TOCEntry represents a single entry in the table of contents.
@@ -120,9 +121,13 @@ func FormatTitle(title string) string {
 	title = strings.ReplaceAll(title, "-", " ")
 	words := strings.Fields(title)
 	for i, w := range words {
-		if len(w) > 0 {
-			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		if w == "" {
+			continue
 		}
+		// Rune-aware: w[:1] would split multi-byte initials (Übersicht).
+		r := []rune(w)
+		r[0] = unicode.ToUpper(r[0])
+		words[i] = string(r)
 	}
 	return strings.Join(words, " ")
 }
