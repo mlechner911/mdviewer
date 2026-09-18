@@ -16,7 +16,7 @@
      margin-left rule for the fixed sidebar; nesting it doubled the offset. */
   .doc {
     padding: 2rem;
-    max-width: 900px;
+    max-width: 768px;
     flex: 1;
   }
 </style>

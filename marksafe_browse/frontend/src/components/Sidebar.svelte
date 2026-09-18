@@ -13,14 +13,27 @@
   }
 </script>
 
-<nav class="sidebar" style="width: {width}px">
+<nav class="sidebar" style="width: {width}px" aria-label="Inhaltsverzeichnis">
   <div class="sidebar-header">
-    <h2>📚 Inhaltsverzeichnis</h2>
+    <h2>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <line x1="9" y1="3" x2="9" y2="21" />
+      </svg>
+      <span>Inhalt</span>
+    </h2>
     <button
       class="collapse-btn"
       on:click={() => dispatch('collapse')}
       title="Verzeichnis ausblenden"
-    >«</button>
+      aria-label="Verzeichnis ausblenden"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </button>
   </div>
   <ul class="toc">
     {#each tabs as entry}
@@ -56,9 +69,9 @@
     left: 0;
     top: 0;
     height: 100vh;
-    background: inherit;
+    background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 1.5rem;
+    padding: 1.25rem 1rem;
     overflow-y: auto;
   }
   .sidebar-header {
@@ -66,46 +79,93 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 0 0.25rem;
   }
   .sidebar-header h2 {
-    font-size: 1.2rem;
-    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sidebar-header h2 svg {
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
   }
   .collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--text);
-    border-radius: 0.375rem;
-    padding: 0.1rem 0.5rem;
-    font-size: 1rem;
-    line-height: 1.4;
+    color: var(--muted);
+    padding: 0.25rem;
   }
-  .collapse-btn:hover { background: var(--bg); }
+  .collapse-btn:hover { background: var(--surface-hover); color: var(--accent); border-color: var(--accent); }
+  .collapse-btn svg { width: 14px; height: 14px; }
   .toc {
     list-style: none;
     padding-left: 0;
   }
-  .toc-entry { margin: 0.25rem 0; }
-  .toc-dir { font-weight: bold; color: var(--accent); margin-bottom: 0.5rem; }
+  .toc-entry { margin: 1px 0; }
+  .toc-dir {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0.75rem 0 0.25rem;
+  }
   .toc-entry button {
-    color: var(--accent);
-    text-decoration: none;
+    color: var(--text);
     cursor: pointer;
     display: block;
     width: 100%;
-    padding: 0.25rem 0.5rem;
+    padding: 0.4rem 0.6rem;
     border: none;
+    border-radius: var(--radius-sm);
     background: transparent;
     text-align: left;
-    font-size: inherit;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    line-height: 1.45;
   }
-  .toc-entry button:hover {
-    text-decoration: underline;
-    background: var(--bg);
+  .toc-entry button:hover { background: var(--surface-hover); color: var(--accent-strong); }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.4rem;
+    border-radius: var(--radius-sm);
+    user-select: none;
   }
-  details summary { cursor: pointer; }
-  .sub { padding-left: 1rem; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { content: ''; }
+  details summary::before {
+    content: '';
+    flex: none;
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid var(--muted);
+    transition: transform 0.15s ease;
+  }
+  details[open] > summary::before { transform: rotate(90deg); }
+  details summary:hover { background: var(--surface-hover); }
+  .sub { padding-left: 1.1rem; list-style: none; }
+  .sidebar::-webkit-scrollbar { width: 8px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 </style>
