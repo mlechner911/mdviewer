@@ -10,11 +10,13 @@ import (
 )
 
 // TOCEntry represents a single entry in the table of contents.
+// JSON tags are lowercase to match the Svelte frontend contract
+// (Sidebar.svelte, App.svelte, lib/backend.ts).
 type TOCEntry struct {
-	Path     string      // relative to root
-	Title    string      // from frontmatter or first H1
-	Children []TOCEntry  // sub-entries (for directory nesting)
-	IsDir    bool
+	Path     string     `json:"path"`     // relative to root
+	Title    string     `json:"title"`    // from frontmatter or first H1
+	Children []TOCEntry `json:"children"` // sub-entries (for directory nesting)
+	IsDir    bool       `json:"isDir"`
 }
 
 // PageData holds the data for rendering a single page.
