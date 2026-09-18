@@ -262,7 +262,7 @@ func (s *Server) pageShell(title, appHTML string) string {
 </head>
 <body class="dark">
 <div id="app">%s</div>
-<script defer src="/assets/%s"></script>
+<script type="module" src="/assets/%s"></script>
 </body>
 </html>`, title, s.cssAsset, appHTML, s.jsAsset)
 }
