@@ -184,18 +184,33 @@
     position: fixed;
     top: 0;
     bottom: 0;
-    width: 8px;
-    margin-left: -4px;
+    width: 10px;
+    margin-left: -5px;
     cursor: col-resize;
     z-index: 10;
     touch-action: none;
     background: transparent;
-    transition: background 0.15s;
   }
-  .resizer:hover,
-  .resizer.active {
+  /* Always-visible grip line so the zone is discoverable */
+  .resizer::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 2px;
+    background: var(--border, #334155);
+    opacity: 0.8;
+    transition: background 0.15s, width 0.15s;
+  }
+  .resizer:hover::after,
+  .resizer.active::after {
     background: var(--accent, #60a5fa);
-    opacity: 0.5;
+    opacity: 1;
+    width: 4px;
+    margin-left: -2px;
   }
   .expand-btn {
     position: fixed;

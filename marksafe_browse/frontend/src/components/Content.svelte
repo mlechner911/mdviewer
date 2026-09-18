@@ -2,7 +2,7 @@
   export let htmlContent: string = '';
 </script>
 
-<section class="content">
+<section class="doc">
   {#if htmlContent}
     {@html htmlContent}
   {:else}
@@ -12,8 +12,9 @@
 </section>
 
 <style>
-  .content {
-    margin-left: 300px;
+  /* NOTE: class intentionally NOT named "content" — that name carries a
+     margin-left rule for the fixed sidebar; nesting it doubled the offset. */
+  .doc {
     padding: 2rem;
     max-width: 900px;
     flex: 1;
