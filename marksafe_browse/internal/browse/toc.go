@@ -72,12 +72,12 @@ func ExtractTitle(path string) (string, error) {
 		// First H1 after frontmatter
 		matches := titleRegex.FindStringSubmatch(line)
 		if len(matches) == 2 {
-			return strings.TrimSpace(matches[1]), nil
+			return truncateTitle(matches[1]), nil
 		}
 
 		// Stop after first 30 lines if no H1 found and we have a frontmatter title
 		if lineCount > 30 && frontmatterTitle != "" {
-			return frontmatterTitle, nil
+			return truncateTitle(frontmatterTitle), nil
 		}
 	}
 
@@ -86,12 +86,33 @@ func ExtractTitle(path string) (string, error) {
 	}
 
 	if frontmatterTitle != "" {
-		return frontmatterTitle, nil
+		return truncateTitle(frontmatterTitle), nil
 	}
 
 	// Fallback: use filename
 	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	return strings.ReplaceAll(name, "-", " "), nil
+	return truncateTitle(strings.ReplaceAll(name, "-", " ")), nil
+}
+
+// maxTitleRunes caps sidebar titles: a source line that glues whole
+// paragraphs into one "heading" must not blow up the TOC.
+const maxTitleRunes = 120
+
+// truncateTitle shortens overlong titles rune-aware, appending "…".
+func truncateTitle(s string) string {
+	// A glued "## subheading" inside one source line never belongs to
+	// the title ("Backups## 1. ..."): cut it before truncating.
+	if i := strings.Index(s, "##"); i != -1 {
+		s = s[:i]
+	}
+	r := []rune(strings.TrimSpace(s))
+	if len(r) == 0 {
+		return strings.TrimSpace(s)
+	}
+	if len(r) <= maxTitleRunes {
+		return string(r)
+	}
+	return string(r[:maxTitleRunes]) + "\u2026"
 }
 
 // FormatTitle converts a filename or heading into a display title.

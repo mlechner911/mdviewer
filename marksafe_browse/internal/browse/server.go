@@ -218,6 +218,9 @@ func stripFrontmatter(content string) string {
 // renderMarkdownToHTML converts markdown to HTML using goldmark.
 func renderMarkdownToHTML(content string) string {
 	content = stripFrontmatter(content)
+	// Repair glued block markers from pasted/AI-generated sources
+	// (normalize.go); well-formed documents pass through unchanged.
+	content = normalizePastedMarkdown(content)
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Table, extension.Strikethrough, extension.TaskList),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
