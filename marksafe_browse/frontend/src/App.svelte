@@ -1,50 +1,63 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { writable } from 'svelte/store';
-  import { fetchTree, getStoredTheme, getSystemTheme, applyTheme } from './lib/backend';
+  import { fetchTree } from './lib/backend';
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
 
-  // State
-  let tabs = writable([]);
-  let htmlContent = writable('');
-  let pageTitle = writable('MarkSafe Browse');
-  let effectiveTheme = writable('dark');
-  let isReady = writable(false);
+  // State — plain variables, no stores needed
+  let tabs: any[] = [];
+  let htmlContent = '';
+  let pageTitle = 'MarkSafe Browse';
+  let effectiveTheme = 'dark';
+  let isReady = false;
 
   onMount(async () => {
-    // Initialize theme
-    const stored = getStoredTheme();
+    // Initialize theme from localStorage or system
+    const stored = localStorage.getItem('marksafe-theme');
     if (stored) {
-      applyTheme(stored);
-      effectiveTheme.set(stored);
+      document.body.className = stored;
+      effectiveTheme = stored;
     } else {
-      const system = getSystemTheme();
-      applyTheme('auto');
-      effectiveTheme.set(system);
+      const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.body.className = system;
+      effectiveTheme = system;
     }
 
     // Fetch TOC tree
-    const tree = await fetchTree();
-    tabs.set(tree);
-
-    // Auto-load index.md if available
-    const rootEntry = tree.find(e => e.path === 'index.md');
-    if (rootEntry) {
-      const result = await fetch(`/render?path=index.md`).then(r => r.json());
-      htmlContent.set(result.html);
-      pageTitle.set(result.title);
+    try {
+      const resp = await fetch('/tree');
+      const data = await resp.json();
+      tabs = data;
+    } catch (e) {
+      console.error('Failed to fetch tree:', e);
     }
 
-    isReady.set(true);
+    // Auto-load index.md if available
+    try {
+      const resp = await fetch('/render?path=index.md');
+      const data = await resp.json();
+      if (data) {
+        htmlContent = data.html;
+        pageTitle = data.title;
+      }
+    } catch (e) {
+      console.error('Failed to load index.md:', e);
+    }
+
+    isReady = true;
   });
 
   async function loadMarkdown(path: string) {
-    const result = await fetch(`/render?path=${encodeURIComponent(path)}`).then(r => r.json());
-    if (result) {
-      htmlContent.set(result.html);
-      pageTitle.set(result.title);
+    try {
+      const resp = await fetch(`/render?path=${encodeURIComponent(path)}`);
+      const data = await resp.json();
+      if (data) {
+        htmlContent = data.html;
+        pageTitle = data.title;
+      }
+    } catch (e) {
+      console.error('Failed to load markdown:', e);
     }
   }
 
@@ -53,23 +66,23 @@
   }
 
   function handleThemeToggle() {
-    const current = document.body.className;
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    effectiveTheme.set(next);
+    const next = effectiveTheme === 'dark' ? 'light' : 'dark';
+    document.body.className = next;
+    localStorage.setItem('marksafe-theme', next);
+    effectiveTheme = next;
   }
 </script>
 
 <div class="app-container">
-  <Sidebar {tabs} onSelect={handleSelectEntry} />
+  <Sidebar />
   
   <main class="content">
     <ThemeToggle 
       on:toggle={handleThemeToggle}
-      theme={$effectiveTheme}
+      theme={effectiveTheme}
     />
     
-    {#if !$isReady}
+    {#if !isReady}
       <div class="loading">Lade Dokumentation...</div>
     {:else}
       <Content {htmlContent} />

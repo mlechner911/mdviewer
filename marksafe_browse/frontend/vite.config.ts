@@ -8,7 +8,9 @@ export default defineConfig({
     },
   })],
   define: {
-    'process.env.NODE_ENV': '"production"',
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'global.process': 'undefined',
+    'globalThis.process': 'undefined',
   },
   resolve: {
     conditions: ['browser'],
