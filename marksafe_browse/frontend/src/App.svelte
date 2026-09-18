@@ -82,12 +82,52 @@
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', stopResize);
     window.addEventListener('pointercancel', stopResize);
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('keydown', onGlobalKey);
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', stopResize);
       window.removeEventListener('pointercancel', stopResize);
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('keydown', onGlobalKey);
     };
   });
+
+  function urlPath(): string | null {
+    try {
+      return new URLSearchParams(window.location.search).get('path');
+    } catch {
+      return null;
+    }
+  }
+
+  function pushUrl(path: string) {
+    try {
+      history.pushState({ path }, '', '?path=' + encodeURIComponent(path));
+    } catch {
+      // ignore (e.g. file:// or sandboxed iframe)
+    }
+  }
+
+  // Browser back/forward buttons: reload the historic document.
+  function onPopState(e: PopStateEvent) {
+    const p = (e.state as { path?: string } | null)?.path ?? urlPath() ?? 'index.md';
+    loadMarkdown(p, false);
+  }
+
+  // Alt+Left / Alt+Right = back / forward (browser standard).
+  function onGlobalKey(e: KeyboardEvent) {
+    if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const t = e.target as HTMLElement | null;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      history.back();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      history.forward();
+    }
+  }
 
   onMount(async () => {
     // Initialize theme from localStorage or system
@@ -110,23 +150,25 @@
       console.error('Failed to fetch tree:', e);
     }
 
-    // Auto-load index.md if available
+    // Startup document: deep-link (?path=…) or index.md fallback
+    const startPath = urlPath() ?? 'index.md';
     try {
-      const resp = await fetch('/render?path=index.md');
+      const resp = await fetch(`/render?path=${encodeURIComponent(startPath)}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (data) {
         htmlContent = data.html;
         pageTitle = data.title;
-        currentPath = 'index.md';
+        currentPath = startPath;
       }
     } catch (e) {
-      console.error('Failed to load index.md:', e);
+      console.error(`Failed to load ${startPath}:`, e);
     }
 
     isReady = true;
   });
 
-  async function loadMarkdown(path: string) {
+  async function loadMarkdown(path: string, push = true) {
     try {
       const resp = await fetch(`/render?path=${encodeURIComponent(path)}`);
       const data = await resp.json();
@@ -134,6 +176,7 @@
         htmlContent = data.html;
         pageTitle = data.title;
         currentPath = path;
+        if (push) pushUrl(path);
       }
     } catch (e) {
       console.error('Failed to load markdown:', e);
@@ -198,6 +241,20 @@
 
   <main class="content" style={sidebarHidden ? 'margin-left: 0;' : `margin-left: ${sidebarWidth + 20}px;`}>
     <div class="content-toolbar">
+      <div class="nav-btns" role="group" aria-label="Navigation">
+        <button class="nav-btn" on:click={() => history.back()} title="Zurück (Alt+←)" aria-label="Zurück">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <button class="nav-btn" on:click={() => history.forward()} title="Vor (Alt+→)" aria-label="Vor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
       <ThemeToggle
         on:toggle={handleThemeToggle}
         theme={effectiveTheme}
@@ -275,12 +332,26 @@
     top: 0;
     z-index: 5;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1.5rem;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
   }
+  .nav-btns { display: flex; gap: 0.5rem; }
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0.45rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn svg { width: 16px; height: 16px; }
 
   .expand-btn svg { width: 16px; height: 16px; }
 </style>

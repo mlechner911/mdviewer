@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import TocNode from './TocNode.svelte';
 
   export let tabs: any[] = [];
   export let width: number = 280;
@@ -7,10 +8,9 @@
 
   const dispatch = createEventDispatcher();
 
-  function selectEntry(entry: any) {
-    if (!entry.isDir) {
-      dispatch('select', { path: entry.path });
-    }
+  // Re-emit node selections so they bubble to App.
+  function forward(e: CustomEvent<{ path: string }>) {
+    dispatch('select', e.detail);
   }
 </script>
 
@@ -38,41 +38,14 @@
   </div>
   <ul class="toc">
     {#each tabs as entry}
-      {#if entry.isDir}
-        <li class="toc-dir">
-          <details open>
-            <summary>{entry.title}</summary>
-            <ul class="toc sub">
-              {#each entry.children as child}
-                <li class="toc-entry">
-                  {#if child.isDir}
-                    <strong>{child.title}</strong>
-                  {:else}
-                    <button
-                      class:active={child.path === activePath}
-                      on:click={() => selectEntry(child)}
-                      aria-current={child.path === activePath ? 'page' : undefined}
-                    >{child.title}</button>
-                  {/if}
-                </li>
-              {/each}
-            </ul>
-          </details>
-        </li>
-      {:else}
-        <li class="toc-entry">
-          <button
-            class:active={entry.path === activePath}
-            on:click={() => selectEntry(entry)}
-            aria-current={entry.path === activePath ? 'page' : undefined}
-          >{entry.title}</button>
-        </li>
-      {/if}
+      <TocNode {entry} {activePath} depth={0} on:select={forward} />
     {/each}
   </ul>
 </nav>
 
 <style>
+  /* Tree styling (.toc, buttons, details triangle) lives in the global
+     stylesheet so recursive TocNode levels share one definition. */
   .sidebar {
     position: fixed;
     left: 0;
@@ -121,69 +94,6 @@
   }
   .collapse-btn:hover { background: var(--surface-hover); color: var(--accent); border-color: var(--accent); }
   .collapse-btn svg { width: 14px; height: 14px; }
-  .toc {
-    list-style: none;
-    padding-left: 0;
-  }
-  .toc-entry { margin: 1px 0; }
-  .toc-dir {
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0.75rem 0 0.25rem;
-  }
-  .toc-entry button {
-    color: var(--text);
-    cursor: pointer;
-    display: block;
-    width: 100%;
-    padding: 0.4rem 0.6rem;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    text-align: left;
-    font-family: var(--font-sans);
-    font-size: 0.9rem;
-    line-height: 1.45;
-  }
-  .toc-entry button:hover { background: var(--surface-hover); color: var(--accent-strong); }
-  /* Active page: accent text + tinted bg + fine vertical bar */
-  .toc-entry button.active {
-    background: var(--accent-soft);
-    color: var(--accent-strong);
-    font-weight: 600;
-    box-shadow: inset 2px 0 0 var(--accent);
-  }
-  details { list-style: none; }
-  details summary {
-    cursor: pointer;
-    list-style: none;
-    list-style-type: none;
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.3rem 0.4rem;
-    border-radius: var(--radius-sm);
-    user-select: none;
-  }
-  details summary::-webkit-details-marker { display: none; }
-  details summary::marker { content: ''; font-size: 0; }
-  details summary::before {
-    content: '';
-    flex: none;
-    width: 0;
-    height: 0;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    border-left: 6px solid var(--muted);
-    transition: transform 0.15s ease;
-  }
-  details[open] > summary::before { transform: rotate(90deg); }
-  details summary:hover { background: var(--surface-hover); }
-  .sub { padding-left: 1.1rem; list-style: none; }
   .sidebar::-webkit-scrollbar { width: 8px; }
   .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 </style>
