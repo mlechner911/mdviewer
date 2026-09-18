@@ -2,18 +2,18 @@
   import { createEventDispatcher } from 'svelte';
   export let theme: string = 'dark';
   const dispatch = createEventDispatcher();
-  
+
   function handleClick() {
     dispatch('toggle');
   }
 </script>
 
-<button 
-  class="theme-toggle" 
+<button
+  class="theme-toggle"
   on:click={handleClick}
-  title="Theme: {$theme}"
+  title="Theme: {theme}"
 >
-  {#if $theme === 'dark'}🌙 Dark{:else if $theme === 'light'}☀️ Light{:else}🌓 Auto{/if}
+  {#if theme === 'dark'}🌙 Dark{:else if theme === 'light'}☀️ Light{:else}🌓 Auto{/if}
 </button>
 
 <style>

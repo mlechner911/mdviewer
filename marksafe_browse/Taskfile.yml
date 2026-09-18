@@ -6,22 +6,42 @@ tasks:
       - task: dev
     desc: "Default: start dev mode"
 
+  frontend:
+    dir: frontend
+    cmds:
+      - npx vite build
+      - cp ../internal/browse/frontend/dist/assets/index.css ../internal/browse/assets/style.css
+      - cp ../internal/browse/frontend/dist/assets/index.js ../internal/browse/assets/index.js
+    desc: "Build Svelte frontend and sync into Go embedded assets"
+    sources:
+      - src/**/*
+      - index.html
+      - vite.config.ts
+      - package.json
+    generates:
+      - ../internal/browse/assets/index.js
+      - ../internal/browse/assets/style.css
+
   dev:
+    deps: [frontend]
     cmds:
       - go build -o bin/marksafe_browse ./cmd/marksafe_browse && ./bin/marksafe_browse --path ./example --port 8312
-    desc: "Build and run marksafe_browse in dev mode"
+    desc: "Build frontend + backend and run marksafe_browse in dev mode"
 
   build:
+    deps: [frontend]
     cmds:
       - mkdir -p bin && go build -o bin/marksafe_browse ./cmd/marksafe_browse
     desc: "Build the marksafe_browse binary into bin/"
 
   build:linux:
+    deps: [frontend]
     cmds:
       - mkdir -p bin && GOOS=linux GOARCH=amd64 go build -o bin/marksafe_browse ./cmd/marksafe_browse
     desc: "Build Linux AMD64 binary"
 
   build:windows:
+    deps: [frontend]
     cmds:
       - mkdir -p bin && GOOS=windows GOARCH=amd64 go build -o bin/marksafe_browse.exe ./cmd/marksafe_browse
     desc: "Build Windows binary"
@@ -61,4 +81,5 @@ tasks:
   clean:
     cmds:
       - rm -rf bin
-    desc: "Remove built binary"
+      - rm -rf internal/browse/frontend/dist
+    desc: "Remove built binary and frontend dist"

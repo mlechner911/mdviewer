@@ -49,14 +49,14 @@ func (s *Server) Start() error {
 	assetsSub, _ := fs.Sub(assetsFS, "assets")
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.FS(assetsSub))))
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		data, err := readFile("internal/browse/assets/favicon.ico")
+		data, err := assetsFS.ReadFile("assets/favicon.ico")
 		if err != nil {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
 		w.Header().Set("Content-Type", "image/x-icon")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(data))
+		w.Write(data)
 	})
 
 	fmt.Printf("  📡 MarkSafe Browse serving %s on %s:%d\n", s.cfg.Root, s.cfg.Bind, s.cfg.Port)
@@ -81,23 +81,10 @@ func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if indexPath, found := s.scanner.FindIndex(); found {
-		content, err := readFile(indexPath)
-		if err != nil {
-			http.Error(w, "Error reading index.md", http.StatusInternalServerError)
-			return
-		}
-		title, _ := ExtractTitle(indexPath)
-		s.renderMarkdownPage(w, title, content)
-		return
-	}
-
-	entries, err := s.scanner.Scan()
-	if err != nil {
-		http.Error(w, "Error scanning directory", http.StatusInternalServerError)
-		return
-	}
-	s.renderTOCPage(w, entries)
+	// Always serve the empty app shell — the Svelte client fetches
+	// index.md itself via /render. Pre-filling #app with goldmark HTML
+	// would mismatch the client render and break mount/hydrate.
+	s.renderTOCPage(w, nil)
 }
 
 // handleTree returns the directory structure as JSON.

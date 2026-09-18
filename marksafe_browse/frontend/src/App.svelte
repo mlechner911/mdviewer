@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fetchTree } from './lib/backend';
   import Sidebar from './components/Sidebar.svelte';
   import Content from './components/Content.svelte';
   import ThemeToggle from './components/ThemeToggle.svelte';
@@ -61,8 +60,8 @@
     }
   }
 
-  function handleSelectEntry(path: string) {
-    loadMarkdown(path);
+  function handleSelectEntry(event: CustomEvent<{ path: string }>) {
+    loadMarkdown(event.detail.path);
   }
 
   function handleThemeToggle() {
@@ -73,15 +72,19 @@
   }
 </script>
 
+<svelte:head>
+  <title>{pageTitle} — MarkSafe Browse</title>
+</svelte:head>
+
 <div class="app-container">
-  <Sidebar />
-  
+  <Sidebar {tabs} on:select={handleSelectEntry} />
+
   <main class="content">
-    <ThemeToggle 
+    <ThemeToggle
       on:toggle={handleThemeToggle}
       theme={effectiveTheme}
     />
-    
+
     {#if !isReady}
       <div class="loading">Lade Dokumentation...</div>
     {:else}
