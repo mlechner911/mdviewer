@@ -36,12 +36,12 @@ export interface Tab {
 }
 
 // Derived: word count from active tab
-export const wordCount = derived(tabs, ($tabs) => {
+export const wordCount = derived([tabs, activeTabIndex], ([$tabs, $activeTabIndex]) => {
   const active = $tabs[$activeTabIndex] || null;
   return active ? (active.content?.trim().split(/\s+/).filter(Boolean).length || 0) : 0;
 });
 
-export const charCount = derived(tabs, ($tabs) => {
+export const charCount = derived([tabs, activeTabIndex], ([$tabs, $activeTabIndex]) => {
   const active = $tabs[$activeTabIndex] || null;
   return active ? (active.content?.length || 0) : 0;
 });

@@ -2,7 +2,9 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [svelte({
+  // NOTE: spread the array svelte() returns — svelte-check only finds the
+  // plugin by name in a flat plugins list, otherwise all diagnostics break.
+  plugins: [...svelte({
     compilerOptions: {
       generate: 'dom',
     },

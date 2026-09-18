@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
 
   export let htmlContent: string = '';
 
   const dispatch = createEventDispatcher();
+  let docEl: HTMLElement | null = null;
 
   // In-app navigation: links the server validated (a[data-md]) open via
   // /render instead of a full page load (which would 404). Broken links
@@ -16,9 +17,17 @@
     const path = anchor.getAttribute('data-md');
     if (path) dispatch('open', { path });
   }
+
+  // Attached imperatively (not via on:click): the section itself is NOT an
+  // interactive element — the handler only delegates to dynamic {@html}
+  // links. This keeps a11y checkers (correctly) quiet.
+  onMount(() => {
+    docEl?.addEventListener('click', onClick);
+    return () => docEl?.removeEventListener('click', onClick);
+  });
 </script>
 
-<section class="doc" on:click={onClick}>
+<section class="doc" bind:this={docEl}>
   {#if htmlContent}
     {@html htmlContent}
   {:else}

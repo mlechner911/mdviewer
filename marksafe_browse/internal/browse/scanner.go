@@ -79,11 +79,12 @@ func (s *Scanner) scanDir(dir string) ([]TOCEntry, error) {
 			return nil, err
 		}
 		if len(subEntries) > 0 {
-			// Get directory name as title
-			dirName := filepath.Base(subdir)
+			// Root-relative path (matters for nested dirs: "docs/api",
+			// not just "api"); title from the plain directory name.
+			relDir, _ := RelativePath(s.Root, subdir)
 			entries = append(entries, TOCEntry{
-				Path:     dirName,
-				Title:    FormatTitle(dirName),
+				Path:     relDir,
+				Title:    FormatTitle(filepath.Base(subdir)),
 				Children: subEntries,
 				IsDir:    true,
 			})

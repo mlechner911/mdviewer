@@ -8,8 +8,7 @@
     "paths": {
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"]
-    },
-    "svelteStrict": true
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"]
 }

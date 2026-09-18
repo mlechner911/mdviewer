@@ -39,14 +39,34 @@
     sidebarWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
   }
 
-  function stopResize() {
-    if (!dragging) return;
-    dragging = false;
+  function persistWidth() {
     try {
       localStorage.setItem('marksafe-sidebar-width', String(sidebarWidth));
     } catch {
       // ignore
     }
+  }
+
+  function setWidth(w: number) {
+    sidebarWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, w));
+    persistWidth();
+  }
+
+  function stopResize() {
+    if (!dragging) return;
+    dragging = false;
+    persistWidth();
+  }
+
+  // Keyboard resizing for the separator (Arrow keys, Home/End).
+  function onResizerKey(e: KeyboardEvent) {
+    const step = e.shiftKey ? 50 : 10;
+    if (e.key === 'ArrowLeft') setWidth(sidebarWidth - step);
+    else if (e.key === 'ArrowRight') setWidth(sidebarWidth + step);
+    else if (e.key === 'Home') setWidth(MIN_WIDTH);
+    else if (e.key === 'End') setWidth(MAX_WIDTH);
+    else return;
+    e.preventDefault();
   }
 
   function toggleSidebar() {
@@ -162,9 +182,17 @@
       class="resizer"
       class:active={dragging}
       style="left: {sidebarWidth}px"
+      role="slider"
+      aria-orientation="vertical"
+      aria-label="Seitenleistenbreite"
+      aria-valuemin={MIN_WIDTH}
+      aria-valuemax={MAX_WIDTH}
+      aria-valuenow={sidebarWidth}
+      tabindex="0"
       on:pointerdown={startResize}
       on:dblclick={toggleSidebar}
-      title="Ziehen zum Anpassen · Doppelklick zum Ausblenden"
+      on:keydown={onResizerKey}
+      title="Ziehen oder Pfeiltasten zum Anpassen · Doppelklick zum Ausblenden"
     ></div>
   {/if}
 
@@ -253,6 +281,6 @@
     background: var(--bg);
     border-bottom: 1px solid var(--border);
   }
-  .content-toolbar .theme-toggle { position: static; }
+
   .expand-btn svg { width: 16px; height: 16px; }
 </style>
