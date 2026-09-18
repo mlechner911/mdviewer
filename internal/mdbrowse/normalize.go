@@ -1,4 +1,4 @@
-package browse
+package mdbrowse
 
 import (
 	"regexp"
@@ -119,7 +119,7 @@ func normalizeProseLine(line string) string {
 	parts := strings.Split(line, "\n")
 	for i, p := range parts {
 		p = gluedHashes.ReplaceAllString(p, "$1\n$2$3")
-		p = spacedHashes.ReplaceAllString(p, "$1\n$2$3")
+		p = spacedHashes.ReplaceAllString(p, "\n$2$3")
 		parts[i] = p
 	}
 	line = strings.Join(parts, "\n")

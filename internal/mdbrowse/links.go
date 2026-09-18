@@ -1,9 +1,6 @@
-package browse
+package mdbrowse
 
 import (
-	"fmt"
-	"mime"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -80,8 +77,8 @@ func resolveDocTarget(docRelPath, target string) string {
 
 // validateTarget checks existence within the root.
 // Directories resolve to their index.md. Returns root-relative path + ok.
-func (s *Server) validateTarget(resolved string) (string, bool) {
-	abs, err := s.cfg.ResolvePath(resolved)
+func (r *Root) validateTarget(resolved string) (string, bool) {
+	abs, err := r.Resolve(resolved)
 	if err != nil {
 		return "", false
 	}
@@ -91,7 +88,7 @@ func (s *Server) validateTarget(resolved string) (string, bool) {
 	}
 	if info.IsDir() {
 		resolved = path.Join(resolved, "index.md")
-		abs, err = s.cfg.ResolvePath(resolved)
+		abs, err = r.Resolve(resolved)
 		if err != nil {
 			return "", false
 		}
@@ -119,7 +116,7 @@ func addClass(attrs, class string) string {
 
 // rewriteMarkdownLinks validates + rewrites <a href> and <img src> in
 // rendered HTML. docRelPath is the root-relative path of the document.
-func (s *Server) rewriteMarkdownLinks(html, docRelPath string) string {
+func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 	docRelPath = filepath.ToSlash(docRelPath)
 
 	html = aTagRe.ReplaceAllStringFunc(html, func(tag string) string {
@@ -137,7 +134,7 @@ func (s *Server) rewriteMarkdownLinks(html, docRelPath string) string {
 		if resolved == "" {
 			return brokenLinkTag(attrs, href, "Ziel außerhalb des Verzeichnisses")
 		}
-		resolved, ok := s.validateTarget(resolved)
+		resolved, ok := r.validateTarget(resolved)
 		if !ok {
 			return brokenLinkTag(attrs, href, "Datei nicht gefunden: "+target)
 		}
@@ -165,7 +162,7 @@ func (s *Server) rewriteMarkdownLinks(html, docRelPath string) string {
 		if resolved == "" {
 			return brokenImgTag(attrs, src, "Bild außerhalb des Verzeichnisses")
 		}
-		resolved, ok := s.validateTarget(resolved)
+		resolved, ok := r.validateTarget(resolved)
 		if !ok {
 			return brokenImgTag(attrs, src, "Bild nicht gefunden: "+target)
 		}
@@ -190,37 +187,4 @@ func brokenImgTag(attrs, src, reason string) string {
 		alt = m[1]
 	}
 	return `<span class="broken-img" title="` + escapeHTML(reason) + `">Bild nicht gefunden: ` + escapeHTML(alt) + `</span>`
-}
-
-// handleRaw serves any file within the root with its proper content type
-// (images, PDFs, …). Missing files → 404, escapes → 403 via ResolvePath.
-func (s *Server) handleRaw(w http.ResponseWriter, r *http.Request) {
-	relPath := r.URL.Query().Get("path")
-	if relPath == "" {
-		http.Error(w, "Missing path parameter", http.StatusBadRequest)
-		return
-	}
-	absPath, err := s.cfg.ResolvePath(relPath)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
-		return
-	}
-	info, err := os.Stat(absPath)
-	if err != nil || info.IsDir() {
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
-	f, err := os.Open(absPath)
-	if err != nil {
-		http.Error(w, "Error reading file", http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-
-	ctype := mime.TypeByExtension(strings.ToLower(filepath.Ext(absPath)))
-	if ctype == "" {
-		ctype = "application/octet-stream"
-	}
-	w.Header().Set("Content-Type", ctype)
-	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 }

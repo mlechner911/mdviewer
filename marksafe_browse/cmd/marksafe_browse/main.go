@@ -6,7 +6,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"marksafe_browse/internal/browse"
+	"marksafe/internal/mdbrowse"
+	"marksafe/marksafe_browse/internal/browse"
 )
 
 var (
@@ -27,7 +28,7 @@ The provided directory acts as a "hard boundary" — nothing outside it can be a
 If an index.md exists, it serves as the landing page. Otherwise, all .md files are
 listed as a table of contents.`,
 		Args: cobra.MaximumNArgs(1),
-		Run: run,
+		Run:  run,
 	}
 
 	rootCmd.Flags().StringVarP(&flagPath, "path", "p", "", "Root directory or index.md file")
@@ -59,29 +60,29 @@ func run(cmd *cobra.Command, args []string) {
 
 	fmt.Println(cfg.ConfigString())
 
-	// Create scanner
-	scanner, err := browse.NewScanner(cfg.Root)
+	// Create document root (shared mdbrowse library)
+	docRoot, err := mdbrowse.NewRoot(cfg.Root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Scanner error: %v\n", err)
 		os.Exit(1)
 	}
 
-	count, err := scanner.CountMarkdownFiles()
+	count, err := docRoot.CountMarkdownFiles()
 	if err != nil {
 		log.Printf("Warning: could not count markdown files: %v", err)
 	} else {
 		log.Printf("Found %d markdown files", count)
 	}
 
-	if indexPath, found := scanner.FindIndex(); found {
-		title, _ := browse.ExtractTitle(indexPath)
+	if indexPath, found := docRoot.FindIndex(); found {
+		title, _ := mdbrowse.ExtractTitle(indexPath)
 		log.Printf("Index page: index.md (title: %q)", title)
 	} else {
 		log.Printf("No index.md found — TOC page will list all .md files")
 	}
 
 	// Print TOC structure
-	entries, err := scanner.Scan()
+	entries, err := docRoot.Scan()
 	if err != nil {
 		log.Printf("Warning: could not scan directory: %v", err)
 	} else {
@@ -105,7 +106,7 @@ func run(cmd *cobra.Command, args []string) {
 	}
 }
 
-func formatEntry(e browse.TOCEntry, indent int) string {
+func formatEntry(e mdbrowse.TOCEntry, indent int) string {
 	prefix := ""
 	for i := 0; i < indent; i++ {
 		prefix += "  "

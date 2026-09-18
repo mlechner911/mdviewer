@@ -1,9 +1,8 @@
-package browse
+package mdbrowse
 
 import (
-	"encoding/json"
 	"math"
-	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -40,31 +39,25 @@ const (
 	fuzzyThreshold   = 0.5
 )
 
-// handleSearch answers GET /api/search?q=... with ranked JSON hits.
-func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
-	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	if q == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte("[]"))
-		return
+// by score (best first, capped at maxSearchResults).
+func (r *Root) Search(q string) ([]SearchResult, error) {
+	if strings.TrimSpace(q) == "" {
+		return []SearchResult{}, nil
 	}
-	files, err := s.scanner.GetMarkdownFiles()
+	files, err := r.GetMarkdownFiles()
 	if err != nil {
-		http.Error(w, "Error scanning directory", http.StatusInternalServerError)
-		return
+		return nil, err
 	}
-	results := s.searchDocs(files, q)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	return searchFiles(r.Dir, files, q), nil
 }
 
-// searchDocs scores every file against q and returns hits sorted by score.
-func (s *Server) searchDocs(files []string, q string) []SearchResult {
+// searchFiles scores files against q and returns hits sorted by score.
+func searchFiles(rootDir string, files []string, q string) []SearchResult {
 	lq := strings.ToLower(q)
 	results := make([]SearchResult, 0, len(files))
 
 	for _, absPath := range files {
-		relPath, err := RelativePath(s.cfg.Root, absPath)
+		relPath, err := RelativePath(rootDir, absPath)
 		if err != nil {
 			continue
 		}
@@ -72,10 +65,11 @@ func (s *Server) searchDocs(files []string, q string) []SearchResult {
 		if err != nil || title == "" {
 			title = FormatTitle(strings.TrimSuffix(filepath.Base(absPath), ".md"))
 		}
-		content, err := readFile(absPath)
+		raw, err := os.ReadFile(absPath)
 		if err != nil {
 			continue
 		}
+		content := string(raw)
 		// Whitespace-normalized once: all offsets below are rune offsets
 		// into nbody, so snippets line up exactly.
 		nbody := normSpace(stripFrontmatter(content))

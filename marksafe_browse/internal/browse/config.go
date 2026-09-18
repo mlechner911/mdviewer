@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -51,49 +50,6 @@ func ValidateConfig(root string, port int, bind string, theme string, showTree b
 		Theme:    theme,
 		ShowTree: showTree,
 	}, nil
-}
-
-// ResolvePath validates that the requested path is within the root directory.
-// This is the "harte Grenze" (hard boundary) security check.
-func (c *Config) ResolvePath(requestedPath string) (string, error) {
-	absRequested, err := filepath.Abs(filepath.Join(c.Root, requestedPath))
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve path: %w", err)
-	}
-
-	// Ensure the resolved path is within root
-	rel, err := filepath.Rel(c.Root, absRequested)
-	if err != nil {
-		return "", fmt.Errorf("path escape detected: %s is outside %s", requestedPath, c.Root)
-	}
-	if strings.HasPrefix(rel, "..") {
-		return "", fmt.Errorf("security violation: %s escapes root %s", requestedPath, c.Root)
-	}
-
-	// On Windows, do case-insensitive comparison
-	if runtime.GOOS == "windows" {
-		absRequested = strings.ToLower(absRequested)
-		c.Root = strings.ToLower(c.Root)
-	}
-
-	if !strings.HasPrefix(absRequested, c.Root) {
-		return "", fmt.Errorf("security violation: %s is outside root %s", requestedPath, c.Root)
-	}
-
-	return absRequested, nil
-}
-
-// IsWithinRoot checks if the given absolute path is within the root directory.
-func (c *Config) IsWithinRoot(absPath string) bool {
-	rel, err := filepath.Rel(c.Root, absPath)
-	if err != nil {
-		return false
-	}
-	if runtime.GOOS == "windows" {
-		rel = strings.ToLower(rel)
-		c.Root = strings.ToLower(c.Root)
-	}
-	return !strings.HasPrefix(rel, "..")
 }
 
 // ConfigString returns a human-readable config summary.

@@ -1,18 +1,17 @@
 package browse
 
 import (
-	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
+	"marksafe/internal/mdbrowse"
 )
 
 //go:embed assets/*
@@ -21,7 +20,7 @@ var assetsFS embed.FS
 // Server holds the HTTP server configuration and state.
 type Server struct {
 	cfg      *Config
-	scanner  *Scanner
+	root     *mdbrowse.Root
 	jsAsset  string // discovered hashed bundle, e.g. "index-a1b2c3.js"
 	cssAsset string // discovered hashed stylesheet, e.g. "style-d4e5f6.css"
 }
@@ -49,12 +48,12 @@ func discoverAssets() (js, css string) {
 
 // NewServer creates a new Server instance.
 func NewServer(cfg *Config) (*Server, error) {
-	scanner, err := NewScanner(cfg.Root)
+	root, err := mdbrowse.NewRoot(cfg.Root)
 	if err != nil {
 		return nil, err
 	}
 	js, css := discoverAssets()
-	return &Server{cfg: cfg, scanner: scanner, jsAsset: js, cssAsset: css}, nil
+	return &Server{cfg: cfg, root: root, jsAsset: js, cssAsset: css}, nil
 }
 
 // Start begins the HTTP server.
@@ -110,12 +109,12 @@ func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 	// Always serve the empty app shell — the Svelte client fetches
 	// index.md itself via /render. Pre-filling #app with goldmark HTML
 	// would mismatch the client render and break mount/hydrate.
-	s.renderTOCPage(w, nil)
+	s.renderTOCPage(w)
 }
 
 // handleTree returns the directory structure as JSON.
 func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
-	entries, err := s.scanner.Scan()
+	entries, err := s.root.Scan()
 	if err != nil {
 		http.Error(w, "Error scanning directory", http.StatusInternalServerError)
 		return
@@ -124,32 +123,27 @@ func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(entries)
 }
 
-// handleRender converts markdown to HTML via goldmark.
+// handleRender converts markdown to HTML via the shared mdbrowse pipeline
+// (frontmatter stripped, pasted-markdown repaired, links validated).
 func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 	if path == "" {
 		http.Error(w, "Missing path parameter", http.StatusBadRequest)
 		return
 	}
-	absPath, err := s.cfg.ResolvePath(path)
-	if err != nil {
+	if _, err := s.root.Resolve(path); err != nil {
 		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
 		return
 	}
-	if !strings.HasSuffix(absPath, ".md") {
+	if !strings.HasSuffix(path, ".md") {
 		http.Error(w, "Not a markdown file", http.StatusBadRequest)
 		return
 	}
-	content, err := readFile(absPath)
+	title, result, err := s.root.RenderDoc(path)
 	if err != nil {
 		http.Error(w, "Error reading file", http.StatusInternalServerError)
 		return
 	}
-	title, _ := ExtractTitle(absPath)
-	result := renderMarkdownToHTML(content)
-	// Validate internal links/images against the root so broken targets
-	// never reach the user as a clickable 404.
-	result = s.rewriteMarkdownLinks(result, path)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -160,22 +154,71 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 // handleMarkdown serves a raw markdown file.
 func (s *Server) handleMarkdown(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/md/")
-	absPath, err := s.cfg.ResolvePath(path)
+	absPath, err := s.root.Resolve(path)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
 		return
 	}
-	content, err := readFile(absPath)
+	content, err := os.ReadFile(absPath)
 	if err != nil {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
-	title, _ := ExtractTitle(absPath)
+	title, _ := mdbrowse.ExtractTitle(absPath)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintf(w, "# %s\n\n%s", title, content)
 }
 
-// renderTOCPage generates the HTML table of contents.
+// handleRaw serves any file within the root with its proper content type
+// (images, PDFs, …). Missing files → 404, escapes → 403 via Resolve.
+func (s *Server) handleRaw(w http.ResponseWriter, r *http.Request) {
+	relPath := r.URL.Query().Get("path")
+	if relPath == "" {
+		http.Error(w, "Missing path parameter", http.StatusBadRequest)
+		return
+	}
+	absPath, err := s.root.Resolve(relPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
+		return
+	}
+	info, err := os.Stat(absPath)
+	if err != nil || info.IsDir() {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+	f, err := os.Open(absPath)
+	if err != nil {
+		http.Error(w, "Error reading file", http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	ctype := mime.TypeByExtension(strings.ToLower(filepath.Ext(absPath)))
+	if ctype == "" {
+		ctype = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", ctype)
+	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
+}
+
+// handleSearch answers GET /api/search?q=... with ranked JSON hits.
+func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+	results, err := s.root.Search(q)
+	if err != nil {
+		http.Error(w, "Error scanning directory", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
 // pageShell wraps the Svelte app shell around a title and #app content.
 // Asset filenames carry content hashes (see discoverAssets); the shell
 // always references the current build, so browsers cache safely.
@@ -195,67 +238,13 @@ func (s *Server) pageShell(title, appHTML string) string {
 </html>`, title, s.cssAsset, appHTML, s.jsAsset)
 }
 
-// renderTOCPage generates the HTML table of contents.
-func (s *Server) renderTOCPage(w http.ResponseWriter, entries []TOCEntry) {
+// renderTOCPage serves the empty app shell. The Svelte client fetches
+// index.md itself via /render; pre-filling #app with server HTML would
+// mismatch the client render and break mount/hydrate.
+func (s *Server) renderTOCPage(w http.ResponseWriter) {
 	page := s.pageShell("MarkSafe Browse", "")
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(page))
-}
-
-// renderMarkdownPage renders a markdown file as a full HTML page.
-func (s *Server) renderMarkdownPage(w http.ResponseWriter, title, markdownContent string) {
-	result := renderMarkdownToHTML(markdownContent)
-	page := s.pageShell(escapeHTML(title)+" — MarkSafe Browse", result)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(page))
-}
-
-// readFile reads a file's content.
-func readFile(path string) (string, error) {
-	data, err := os.ReadFile(path)
-	return string(data), err
-}
-
-// stripFrontmatter removes YAML frontmatter delimiters from markdown content.
-func stripFrontmatter(content string) string {
-	if !strings.HasPrefix(content, "---") {
-		return content
-	}
-	endIdx := strings.Index(content[3:], "---")
-	if endIdx == -1 {
-		return content
-	}
-	rest := content[3+endIdx+3:]
-	return strings.TrimLeft(rest, "\n")
-}
-
-// renderMarkdownToHTML converts markdown to HTML using goldmark.
-func renderMarkdownToHTML(content string) string {
-	content = stripFrontmatter(content)
-	// Repair glued block markers from pasted/AI-generated sources
-	// (normalize.go); well-formed documents pass through unchanged.
-	content = normalizePastedMarkdown(content)
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Table, extension.Strikethrough, extension.TaskList),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-	)
-	var buf bytes.Buffer
-	if err := md.Convert([]byte(content), &buf); err != nil {
-		return "<div class=\"markdown\"><p>Error: " + escapeHTML(err.Error()) + "</p></div>"
-	}
-	return "<div class=\"markdown\">" + buf.String() + "</div>"
-}
-
-// escapeHTML provides basic HTML escaping.
-func escapeHTML(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, `"`, "&quot;")
-	s = strings.ReplaceAll(s, "'", "&#39;")
-	return s
 }
