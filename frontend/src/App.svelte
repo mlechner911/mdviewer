@@ -11,7 +11,7 @@
   // Components
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
-  import BrowseView from '../../libs/browse/BrowseView.svelte';
+  import BrowseView from './shared/browse/BrowseView.svelte';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import AboutModal from './components/AboutModal.svelte';

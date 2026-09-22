@@ -80,16 +80,11 @@ tasks:
     run: once
     dir: frontend
     sources:
+      # Shared browse UI lives in frontend/src/shared (inside the root
+      # on purpose: task fingerprints cannot see outside files, and a
+      # blind spot once shipped a stale bundle, see 63f3dfc).
       - "**/*"
       - exclude: node_modules/**/*
-      # Shared browse UI lives outside the project root; without this
-      # entry lib changes silently ship the previous bundle (stale JS).
-      - ../../libs/browse/**/*
-      - exclude: ../../libs/browse/node_modules/**/*
-      - exclude: ../../libs/browse/dist/**/*
-      - exclude: ../../libs/browse/.svelte-kit/**/*
-      - exclude: ../../libs/browse/build/**/*
-      - exclude: ../../libs/browse/coverage/**
     generates:
       - dist/**/*
     deps:

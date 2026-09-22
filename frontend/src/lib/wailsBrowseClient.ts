@@ -9,7 +9,7 @@ import type {
   BrowseHit,
   BrowseTheme,
   TocEntry,
-} from '../../../libs/browse/browseClient';
+} from '../shared/browse/browseClient';
 
 function joinAbs(rootDir: string, rel: string): string {
   const root = rootDir.replace(/\\/g, '/').replace(/\/+$/, '');

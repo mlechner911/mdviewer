@@ -14,9 +14,7 @@
     "src/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.js",
-    "src/**/*.svelte",
-    "../../libs/browse/**/*.ts",
-    "../../libs/browse/**/*.svelte"
+    "src/**/*.svelte"
   ],
   "references": [
     {
