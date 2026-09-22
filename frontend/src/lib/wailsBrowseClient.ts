@@ -2,8 +2,7 @@
 // hit the Go service from Phase 1 directly. Rendered HTML rewrites
 // /raw?path= targets to the /local-resource asset handler (absolute
 // paths, whitelist-checked like the main preview).
-import { BrowseTree, BrowseRender, BrowseSearch } from '../../bindings/marksafe/app';
-import { isWailsReady } from './backend';
+import { BrowseTree, BrowseRender, BrowseSearch, GetVersion } from '../../bindings/marksafe/app';
 import type {
   BrowseClient,
   BrowseDoc,
@@ -26,17 +25,19 @@ export function toBrowseRel(rootDir: string, absPath: string): string | null {
 }
 
 // The browse window boots faster than the main view and fires its first
-// binding call before the native bridge is attached. The main app guards
-// everything behind a readiness retry loop; without it here the tree fetch
-// dies silently (empty sidebar, working document) on cold start.
+// binding call before the native bridge is attached. Checking for the
+// webview object is NOT enough (it exists before the runtime answers),
+// so we retry a real binding call exactly like the main app init does.
+// Otherwise the tree fetch dies silently (empty sidebar, working
+// document) on cold start.
 async function ensureReady(): Promise<void> {
   for (let i = 0; i < 100; i++) {
     try {
-      if (isWailsReady()) return;
+      await GetVersion();
+      return;
     } catch {
-      // ignore and retry
+      await new Promise((r) => setTimeout(r, 50));
     }
-    await new Promise((r) => setTimeout(r, 50));
   }
 }
 

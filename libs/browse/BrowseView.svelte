@@ -205,6 +205,7 @@
   onMount(async () => {
     // Theme arrives via prop (host-owned). Sidebar/tree first.
     tabs = await client.getTree();
+    console.debug(`[browse] tree entries: ${tabs.length}`);
 
     setChroma(theme);
 
