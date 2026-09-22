@@ -16,6 +16,9 @@ export default defineConfig({
   },
   resolve: {
     conditions: ['browser'],
+    // Single svelte runtime: libs/browse resolves its own node_modules,
+    // dedupe keeps component state consistent across the bundle.
+    dedupe: ['svelte'],
   },
   build: {
     outDir: '../internal/browse/frontend/dist',
@@ -33,5 +36,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Shared UI lives in ../../libs (outside the project root):
+    // allow the dev server to serve it. Builds are unaffected.
+    fs: {
+      allow: ['../..'],
+    },
   },
 });
