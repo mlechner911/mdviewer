@@ -1,4 +1,4 @@
-# MarkSafe 1.5.1
+# MarkSafe 1.6.1
 
 > **[mlcgo.eu](https://mlcgo.eu)** — tools, libraries and manuals · [Product page](https://mlcgo.eu/products/marksafe/)
 
@@ -20,8 +20,9 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
 - ** Synchronized Dark / Light Mode**: Unified theme system across editor, preview, syntax highlighting, and UI frames (with automatic OS preference detection).
 - ** High-Contrast Print & PDF**: Dedicated print stylesheet (`@media print`) that removes UI chrome, sets clean page margins, prevents bad page breaks, and optimizes colors for paper.
 - ** Export to HTML**: Export standalone HTML documents with embedded CSS and styles.
-- ** Multilingual**: Support for English, German, Spanish, and French.
+** Multilingual**: Support for English, German, Spanish, and French.
 - ** Real-time Rendering**: Instant preview as you type.
+- ** Browser Mode**: Open the current document's directory in a standalone window — recursive tree, fuzzy full-text search (`Ctrl+K`), validated intra-doc links, directory indexes, and the same theme as the main window.
 
 ## 🛡️ Security First
 
@@ -44,11 +45,11 @@ Download the latest version for your platform from the **[Releases](https://gith
 - *Alternative:* Download `marksafe-macos-arm64.zip` from GitHub Releases.
 
 ### Windows
-- Download `marksafe-windows-setup.exe` (or `marksafe-1.5.1-windows-setup.exe`) and run the installer.
+- Download `marksafe-windows-setup.exe` (or `marksafe-1.6.1-windows-setup.exe`) and run the installer.
 - A standalone portable executable (`marksafe-windows.exe`) is also available on **[mlcgo.eu](https://mlcgo.eu/downloads/marksafe/marksafe-windows.exe)**.
 
 ### Linux
-- Download `marksafe-linux` (or `marksafe-1.5.1-linux-amd64`).
+- Download `marksafe-linux` (or `marksafe-1.6.1-linux-amd64`).
 - Make it executable: `chmod +x marksafe-1.5.1-linux-amd64`.
 - Run `./marksafe-1.5.1-linux-amd64` or add it to your `$PATH`.
 
@@ -57,4 +58,4 @@ Download the latest version for your platform from the **[Releases](https://gith
 MIT License - Copyright (c) 2026 Michael Lechner
 
 ---
-*For technical details and build instructions, see **[DEVELOPER.md](./DEVELOPER.md)** and **[THEMING.md](./THEMING.md)**.*
+*For technical details and build instructions, see **[DEVELOPER.md](./DEVELOPER.md)** and **[THEMING.md](./THEMING.md)**. Changes per release: **[CHANGELOG.md](./CHANGELOG.md)**. The standalone directory browser: **[marksafe_browse](./marksafe_browse/README.md)**.*

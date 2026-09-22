@@ -17,6 +17,12 @@ Themes are located in `frontend/src/themes/`:
 
 Theme merging is handled in `frontend/src/themes.ts` via `getTheme('dark' | 'light')`.
 
+The preview pane itself no longer uses Tailwind `prose`: it renders the
+shared browse token system (`.markdown-body`, same variables as
+`frontend/src/shared/browse/browse.css` — Inter/JetBrains Mono, slate +
+indigo, 3/4px radii), keyed on the theme container classes
+(`.bg-white` / `.bg-slate-900`) with dark fallbacks.
+
 ## 2. Dynamic Syntax Highlighting & Diagram Sync
 
 When the active theme transitions:

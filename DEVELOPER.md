@@ -20,6 +20,15 @@ Technical reference for building and extending MarkSafe.
 
 ```text
 /internal/markdown    -> Goldmark configuration, AST transformers & frontmatter parsing.
+internal/mdbrowse    -> Shared browsing library: rooted access (Root API),
+                        TOC scanning, titles, fuzzy search, link validation,
+                        render pipeline. Used by the app and marksafe_browse.
+/browse.go             -> Wails bindings for browser mode (BrowseTree,
+                        BrowseRender, BrowseSearch, OpenBrowseWindow).
+/frontend/src/shared/browse -> Shared Svelte UI (BrowseView, tree, search,
+                        modals, design tokens) for both frontends.
+/marksafe_browse       -> Standalone CLI tool (own module history merged):
+                        HTTP server + thin host shell around the shared UI.
 /internal/config      -> JSON configuration & whitelist management.
 /internal/filesystem  -> Safe file I/O wrappers.
 /frontend/src/components -> Svelte 5 components (Editor, Preview, TabsBar, Toolbar, etc.).
@@ -37,6 +46,15 @@ The rendering pipeline is split between Go and Svelte:
 
 ### CodeMirror 6 Editor
 `components/Editor.svelte` wraps CodeMirror 6 using Svelte 5 Runes. Themes are dynamically reconfigured via CodeMirror `Compartment` without unmounting or losing document/cursor state.
+
+### Browser Mode
+View menu (or `Ctrl/Cmd+Shift+B`, or the preview toolbar button) opens the
+active document's directory in a singleton `MarkSafe Browse` window backed
+by `internal/mdbrowse` — no HTTP server involved. The window boots the same
+`App.svelte` with `?browse=<root>&path=<rel>` and mounts the shared
+`BrowseView` (`syncUrl={false}`). Images resolve via `/local-resource`
+(whitelist enforced); external links reuse the confirmation flow and open
+like regular product links.
 
 ### Security Whitelisting
 All file and URL access is intercepted by `Preview.svelte`. It calls `backend.isPathAllowed` or `backend.isURLAllowed` before rendering resources. If a resource is blocked, a `security-request` event is dispatched to trigger the UI modal.
