@@ -217,7 +217,7 @@
   class="preview-container flex-1 overflow-auto p-8 transition-colors duration-200 {theme.containerClass}"
 >
   <article
-    class="prose max-w-none {theme.proseClass}"
+    class="markdown-body"
     style="font-size: {fontSize}%;"
   >
     {@html html}
@@ -225,109 +225,162 @@
 </div>
 
 <style>
-  /* Compact & Readable Typography for Markdown Preview */
-  :global(.prose) {
-    line-height: 1.6;
+  /* Browse design system (ported from marksafe_browse): monochrome
+     IDE look. Tokens keyed on the theme container classes, same pattern
+     as the rules below. */
+  :global(.bg-white .markdown-body) {
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --lh-body: 1.42;
+    --lh-code: 1.3;
+    --bg: #ffffff;
+    --surface: #f8fafc;
+    --surface-hover: rgba(99, 102, 241, 0.08);
+    --text: #0f172a;
+    --heading: #334155;
+    --muted: #64748b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #4f46e5;
+    --accent-strong: #4338ca;
+    --accent-soft: rgba(99, 102, 241, 0.1);
+    --code-bg: #f1f5f9;
+    --code-border: #e2e8f0;
+    --quote-bg: rgba(99, 102, 241, 0.06);
+    --table-head-bg: #f8fafc;
   }
-  :global(.prose p) {
-    margin-top: 0.75em;
-    margin-bottom: 0.75em;
-    line-height: 1.6;
+  :global(.bg-slate-900 .markdown-body) {
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --lh-body: 1.42;
+    --lh-code: 1.3;
+    --bg: #0d0e11;
+    --surface: #14161a;
+    --surface-hover: rgba(129, 140, 248, 0.12);
+    --text: #adbac7;
+    --heading: #f3f4f6;
+    --muted: #94a3b8;
+    --text-muted: #94a3b8;
+    --border: #21262d;
+    --accent: #818cf8;
+    --accent-strong: #a5b4fc;
+    --accent-soft: rgba(129, 140, 248, 0.12);
+    --code-bg: #151b23;
+    --code-border: #21262d;
+    --quote-bg: rgba(129, 140, 248, 0.08);
+    --table-head-bg: #151b23;
   }
-  :global(.prose h1) {
-    font-size: 1.875rem;
-    line-height: 1.25;
-    margin-top: 1.4em;
-    margin-bottom: 0.5em;
+  :global(.markdown-body) {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: var(--lh-body);
+    max-width: 960px;
+    overflow-wrap: break-word;
+    color: var(--text);
+  }
+  :global(.markdown-body h1), :global(.markdown-body h2), :global(.markdown-body h3) {
+    font-family: var(--font-mono);
     font-weight: 700;
-  }
-  :global(.prose h1:first-child) {
-    margin-top: 0;
-  }
-  :global(.prose h2) {
-    font-size: 1.5rem;
     line-height: 1.3;
-    margin-top: 1.3em;
-    margin-bottom: 0.45em;
-    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--heading);
   }
-  :global(.prose h3) {
-    font-size: 1.25rem;
-    line-height: 1.35;
-    margin-top: 1.1em;
-    margin-bottom: 0.4em;
-    font-weight: 600;
+  :global(.markdown-body h1) {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
   }
-  :global(.prose h4, .prose h5, .prose h6) {
+  :global(.markdown-body h1:first-child) { margin-top: 0; }
+  :global(.markdown-body h2) { font-size: 1.35rem; margin: 1.2rem 0 0.4rem; }
+  :global(.markdown-body h3) { font-size: 1.1rem; margin: 0.9rem 0 0.35rem; }
+  :global(.markdown-body h4), :global(.markdown-body h5), :global(.markdown-body h6) {
     line-height: 1.4;
     margin-top: 1em;
     margin-bottom: 0.3em;
     font-weight: 600;
   }
-  :global(.prose ul, .prose ol) {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-    padding-left: 1.5em;
+  :global(.markdown-body p) { margin: 0.7rem 0; line-height: var(--lh-body); }
+  :global(.markdown-body ul), :global(.markdown-body ol) { margin: 0.7rem 0; padding-left: 1.75rem; }
+  :global(.markdown-body li) { margin: 0.2rem 0; line-height: var(--lh-body); }
+  :global(.markdown-body li > p) { margin-top: 0.25em; margin-bottom: 0.25em; }
+  :global(.markdown-body a) { color: var(--accent); text-decoration: none; }
+  :global(.markdown-body a:hover) { text-decoration: underline; }
+  :global(.markdown-body img) { max-width: 100%; border-radius: var(--radius-md); }
+  :global(.markdown-body hr) { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  :global(.markdown-body code) {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
   }
-  :global(.prose li) {
-    margin-top: 0.25em;
-    margin-bottom: 0.25em;
-    line-height: 1.6;
-  }
-  :global(.prose li > p) {
-    margin-top: 0.25em;
-    margin-bottom: 0.25em;
-  }
-  :global(.prose blockquote) {
-    margin-top: 0.85em;
-    margin-bottom: 0.85em;
-  }
-  :global(.prose hr) {
-    margin-top: 1.5em;
-    margin-bottom: 1.5em;
-  }
-  :global(.prose table) {
-    margin-top: 0.85em;
-    margin-bottom: 0.85em;
-  }
-
-  /* Base Markdown Styling */
-  :global(.prose pre) {
-    border-radius: 0.5rem;
-    padding: 1rem;
+  :global(.markdown-body pre) {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
     overflow-x: auto;
-    margin-top: 0.85em;
-    margin-bottom: 0.85em;
-    line-height: 1.45;
+    margin: 1.25rem 0;
   }
-
-  /* Light Mode Code Styling */
-  :global(.bg-white .prose pre) {
-    background-color: #f8fafc !important;
-    border: 1px solid #e2e8f0;
+  :global(.markdown-body pre code) {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: var(--lh-code);
   }
-  :global(.bg-white .prose pre code) { color: #1e293b; }
-
-  /* Dark Mode Code Styling */
-  :global(.bg-slate-900 .prose pre) {
-    background-color: #0f172a !important;
-    border: 1px solid #334155;
+  :global(.markdown-body table) { border-collapse: collapse; width: 100%; margin: 1.25rem 0; font-size: 0.925rem; }
+  :global(.markdown-body th), :global(.markdown-body td) {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align: left;
+    line-height: 1.3;
   }
-  :global(.bg-slate-900 .prose pre code) { color: #f1f5f9; }
+  :global(.markdown-body th) {
+    background: var(--table-head-bg);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  :global(.markdown-body tr:nth-child(even) td) { background: var(--accent-soft); }
+  :global(.markdown-body blockquote) {
+    background: var(--quote-bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin: 1.25rem 0;
+    padding: 0.75rem 1.25rem;
+  }
+  :global(.markdown-body blockquote p) { margin: 0.5rem 0; }
 
   /* External Link Indicator */
-  :global(.external-link::after) {
-    content: " ↗";
-    font-size: 0.8em;
-    opacity: 0.6;
+  :global(.markdown-body a.external-link::after) {
+    content: "";
+    display: inline-block;
+    width: 0.72em;
+    height: 0.72em;
+    margin-left: 0.28em;
+    vertical-align: -0.08em;
+    background-color: currentColor;
+    opacity: 0.75;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E") no-repeat center / contain;
   }
+  :global(.markdown-body a.external-link:hover::after) { opacity: 1; }
 
   /* Task Lists (Checkboxes) */
-  :global(.prose ul > li:has(input[type="checkbox"])) {
+  :global(.markdown-body ul > li:has(input[type="checkbox"])) {
     list-style-type: none;
     padding-left: 0;
   }
-  :global(.prose ul > li > input[type="checkbox"]) {
+  :global(.markdown-body ul > li > input[type="checkbox"]) {
     margin-right: 0.5rem;
     margin-bottom: 0.125rem;
     vertical-align: middle;
@@ -345,7 +398,7 @@
     border-radius: 0 0.375rem 0.375rem 0;
     background: rgba(0, 0, 0, 0.03);
   }
-  :global(.prose-invert .markdown-alert) { background: rgba(255, 255, 255, 0.05); }
+  :global(.bg-slate-900 .markdown-alert) { background: rgba(255, 255, 255, 0.05); }
   :global(.markdown-alert::before) { display: block; font-weight: 600; margin-bottom: 0.25rem; text-transform: capitalize; font-size: 0.875rem; }
   :global(.markdown-alert-note) { border-color: #0969da; }
   :global(.markdown-alert-note::before) { content: "ⓘ Note"; color: #0969da; }
@@ -440,7 +493,7 @@
       padding: 0 !important;
     }
 
-    article.prose {
+    article.markdown-body {
       font-size: 11pt !important;
       line-height: 1.55 !important;
       max-width: 100% !important;
@@ -450,8 +503,8 @@
     }
 
     /* Headings */
-    :global(.prose h1), :global(.prose h2), :global(.prose h3),
-    :global(.prose h4), :global(.prose h5), :global(.prose h6) {
+    :global(.markdown-body h1), :global(.markdown-body h2), :global(.markdown-body h3),
+    :global(.markdown-body h4), :global(.markdown-body h5), :global(.markdown-body h6) {
       color: #000000 !important;
       page-break-after: avoid !important;
       break-after: avoid !important;
@@ -459,7 +512,7 @@
       break-inside: avoid !important;
     }
 
-    :global(.prose h1) {
+    :global(.markdown-body h1) {
       font-size: 18pt !important;
       margin-top: 0 !important;
       margin-bottom: 0.8rem !important;
@@ -467,7 +520,7 @@
       padding-bottom: 0.3rem !important;
     }
 
-    :global(.prose h2) {
+    :global(.markdown-body h2) {
       font-size: 14pt !important;
       margin-top: 1.2rem !important;
       margin-bottom: 0.5rem !important;
@@ -475,25 +528,25 @@
       padding-bottom: 0.2rem !important;
     }
 
-    :global(.prose h3) {
+    :global(.markdown-body h3) {
       font-size: 12pt !important;
       margin-top: 1rem !important;
       margin-bottom: 0.4rem !important;
     }
 
-    :global(.prose p), :global(.prose li) {
+    :global(.markdown-body p), :global(.markdown-body li) {
       color: #1f2937 !important;
       orphans: 3 !important;
       widows: 3 !important;
     }
 
-    :global(.prose li) {
+    :global(.markdown-body li) {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
 
     /* Code Blocks & Inlines in Print */
-    :global(.prose pre) {
+    :global(.markdown-body pre) {
       background-color: #f8fafc !important;
       border: 1px solid #cbd5e1 !important;
       border-radius: 4px !important;
@@ -506,7 +559,7 @@
       box-shadow: none !important;
     }
 
-    :global(.prose pre code) {
+    :global(.markdown-body pre code) {
       background: transparent !important;
       color: #0f172a !important;
       font-size: 9.5pt !important;
@@ -514,7 +567,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
     }
 
-    :global(.prose :not(pre) > code) {
+    :global(.markdown-body :not(pre) > code) {
       background-color: #f1f5f9 !important;
       color: #0f172a !important;
       border: 1px solid #e2e8f0 !important;
@@ -534,7 +587,7 @@
     :global(.chroma .o), :global(.chroma .ow) { color: #cf222e !important; }
 
     /* Tables */
-    :global(.prose table) {
+    :global(.markdown-body table) {
       width: 100% !important;
       border-collapse: collapse !important;
       margin: 12pt 0 !important;
@@ -543,28 +596,28 @@
       font-size: 10pt !important;
     }
 
-    :global(.prose th), :global(.prose td) {
+    :global(.markdown-body th), :global(.markdown-body td) {
       border: 1px solid #cbd5e1 !important;
       padding: 5pt 8pt !important;
       color: #111827 !important;
     }
 
-    :global(.prose th) {
+    :global(.markdown-body th) {
       background-color: #f1f5f9 !important;
       font-weight: 600 !important;
     }
 
-    :global(.prose tr:nth-child(even) td) {
+    :global(.markdown-body tr:nth-child(even) td) {
       background-color: #f8fafc !important;
     }
 
-    :global(.prose tr) {
+    :global(.markdown-body tr) {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
 
     /* Blockquotes & Alerts */
-    :global(.prose blockquote) {
+    :global(.markdown-body blockquote) {
       border-left: 3pt solid #94a3b8 !important;
       background-color: #f8fafc !important;
       color: #334155 !important;
@@ -620,7 +673,7 @@
       color: #000000 !important;
     }
 
-    :global(.prose img) {
+    :global(.markdown-body img) {
       max-width: 100% !important;
       height: auto !important;
       page-break-inside: avoid !important;
@@ -628,7 +681,7 @@
       margin: 10pt auto !important;
     }
 
-    :global(.prose a) {
+    :global(.markdown-body a) {
       color: #0969da !important;
       text-decoration: underline !important;
     }
