@@ -45,7 +45,7 @@ Willkommen bei **MarkSafe** — einem schnellen lokalen Markdown-Editor und Vors
 
 ---
 
-## Warum Sie es lieben werden
+## Warum Sie es benutzen wollen
 
 - Blitzschnelle Rendering mittels Goldmark und Chroma für Syntax-Hervorhebung.
 - Interaktive Mermaid-Diagramme, die in Echtzeit gerendert werden.
