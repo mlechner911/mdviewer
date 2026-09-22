@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"marksafe/internal/mdbrowse"
 )
 
@@ -82,4 +84,36 @@ func (a *App) BrowseSearch(rootDir, query string) ([]mdbrowse.SearchResult, erro
 		return nil, err
 	}
 	return root.Search(query)
+}
+
+// OpenBrowseWindow opens the standalone browse window for rootDir,
+// starting at relPath. At most one browse window ever exists: an
+// existing one is focused and navigated instead of opening another.
+func (a *App) OpenBrowseWindow(rootDir, relPath string) {
+	logger().Debug("Request: OpenBrowseWindow", "root", rootDir, "path", relPath)
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	target := "/?browse=" + url.QueryEscape(rootDir) + "&path=" + url.QueryEscape(relPath)
+	if w, ok := app.Window.GetByName("browse"); ok {
+		w.SetURL(target)
+		w.Focus()
+		return
+	}
+	w := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:             "browse",
+		Title:            "MarkSafe Browse",
+		Width:            1280,
+		Height:           860,
+		MinWidth:         900,
+		MinHeight:        600,
+		URL:              target,
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		Windows: application.WindowsWindow{
+			Theme: application.Dark,
+		},
+	})
+	w.Show()
+	w.Focus()
 }

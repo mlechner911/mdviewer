@@ -17,7 +17,8 @@ import {
   ResolveRelativePath,
   UpdateMenu,
   GetVersion,
-  SetWindowTitle
+  SetWindowTitle,
+  OpenBrowseWindow
 } from '../../bindings/marksafe/app'
 import { get } from 'svelte/store';
 import { t } from '../i18n';
@@ -115,6 +116,11 @@ export async function isURLAllowed(url: string): Promise<boolean> {
 export async function addPathToWhitelist(path: string): Promise<void> {
   if (!isWailsReady()) return;
   await AddPathToWhitelist(path);
+}
+
+export async function openBrowseWindow(rootDir: string, relPath: string): Promise<void> {
+  if (!isWailsReady()) return;
+  await OpenBrowseWindow(rootDir, relPath);
 }
 
 export async function addURLToWhitelist(url: string): Promise<void> {
