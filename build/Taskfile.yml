@@ -82,6 +82,14 @@ tasks:
     sources:
       - "**/*"
       - exclude: node_modules/**/*
+      # Shared browse UI lives outside the project root; without this
+      # entry lib changes silently ship the previous bundle (stale JS).
+      - ../../libs/browse/**/*
+      - exclude: ../../libs/browse/node_modules/**/*
+      - exclude: ../../libs/browse/dist/**/*
+      - exclude: ../../libs/browse/.svelte-kit/**/*
+      - exclude: ../../libs/browse/build/**/*
+      - exclude: ../../libs/browse/coverage/**
     generates:
       - dist/**/*
     deps:

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import BrowseView from '../../../libs/browse/BrowseView.svelte';
-  import { createHttpClient } from '../../../libs/browse/httpClient';
-  import type { BrowseTheme } from '../../../libs/browse/browseClient';
+  import BrowseView from '../../../frontend/src/shared/browse/BrowseView.svelte';
+  import { createHttpClient } from '../../../frontend/src/shared/browse/httpClient';
+  import type { BrowseTheme } from '../../../frontend/src/shared/browse/browseClient';
 
   // Thin host shell: theme ownership + external navigation live here,
   // everything else is the shared BrowseView (also used embedded).

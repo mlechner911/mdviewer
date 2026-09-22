@@ -39,7 +39,7 @@ export default defineConfig({
     // Shared UI lives in ../../libs (outside the project root):
     // allow the dev server to serve it. Builds are unaffected.
     fs: {
-      allow: ['../..'],
+      allow: ['../../..'],
     },
   },
 });
