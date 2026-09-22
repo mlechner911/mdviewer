@@ -23,6 +23,7 @@ interface HamburgerMenuProps {
 	onViewZoomIn?: () => void;
 	onViewZoomOut?: () => void;
 	onViewResetZoom?: () => void;
+	onViewBrowse?: () => void;
 	onHelpAbout?: () => void;
 	onHelpShowShortcuts?: () => void;
 	onOpenSettings?: () => void;
@@ -46,6 +47,7 @@ let {
 	onViewZoomIn,
 	onViewZoomOut,
 	onViewResetZoom,
+	onViewBrowse,
 	onHelpAbout,
 	onHelpShowShortcuts,
 	onOpenSettings,
@@ -108,6 +110,8 @@ function handleMenuEvent(action: string) {
 			break;
 		case 'view-reset-zoom':
 			onViewResetZoom?.();
+		case 'view-browse':
+			onViewBrowse?.();
 			break;
 		case 'help-about':
 			onHelpAbout?.();
@@ -168,6 +172,7 @@ const menuSections = [
 		icon: 'eye',
 		label: 'ansicht',
 		items: [
+			{ action: 'view-browse', icon: 'panel', label: 'browser-modus' },
 			{ action: 'view-zoom-in', icon: 'zoom-in', label: 'vergroessern' },
 			{ action: 'view-zoom-out', icon: 'zoom-out', label: 'verkleinern' },
 			{ action: 'view-reset-zoom', icon: 'zoom-reset', label: 'zoom-zuruecksetzen' },
@@ -265,6 +270,11 @@ const menuSections = [
 									{:else if item.icon === 'hash'}
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+										</svg>
+									{:else if item.icon === 'panel'}
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<rect x="3" y="3" width="18" height="18" rx="2" />
+											<line x1="9" y1="3" x2="9" y2="21" />
 										</svg>
 									{:else if item.icon === 'zoom-in'}
 										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

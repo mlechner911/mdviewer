@@ -11,6 +11,8 @@
   // Components
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
+  import BrowseView from '../../libs/browse/BrowseView.svelte';
+  import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import AboutModal from './components/AboutModal.svelte';
   import HamburgerMenu from './components/HamburgerMenu.svelte';
@@ -525,8 +527,40 @@
   });
 
   let showAbout = $state(false);
+  let browseMode = $state(false);
+  let browseRoot = $state('');
+  let browseInitial: string | null = $state(null);
+  let browseClient = $state<ReturnType<typeof createWailsClient> | null>(null);
   let aboutTitle = $state('');
   let aboutMessage = $state('');
+
+  function handleBrowseExternal(e: CustomEvent<{ url: string; reuse: boolean }>) {
+    window.open(e.detail.url, e.detail.reuse ? 'marksafe-external' : '_blank', 'noopener');
+  }
+
+  async function toggleBrowseMode() {
+    if (browseMode) {
+      browseMode = false;
+      return;
+    }
+    const tab = tabs[activeTabIndex];
+    const tabPath = tab?.path;
+    if (!tabPath) {
+      showToast($t('browseNeedFile'));
+      return;
+    }
+    const rootDir = await backend.getParentDir(tabPath);
+    if (!rootDir) {
+      showToast($t('browseNeedFile'));
+      return;
+    }
+    // Image/file delivery inside browse mode reuses the whitelist.
+    await backend.addPathToWhitelist(rootDir);
+    browseRoot = rootDir;
+    browseInitial = toBrowseRel(rootDir, tabPath) ?? 'index.md';
+    browseClient = createWailsClient(rootDir);
+    browseMode = true;
+  }
 
   function openAbout() {
     const tMap = translations[$locale] || translations.de;
@@ -536,6 +570,11 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      toggleBrowseMode();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       if (e.shiftKey) {
@@ -619,6 +658,7 @@
       onViewZoomIn={() => adjustFontSize(5)}
       onViewZoomOut={() => adjustFontSize(-5)}
       onViewResetZoom={() => fontSize = 100}
+      onViewBrowse={() => toggleBrowseMode()}
       onHelpAbout={() => openAbout()}
       onOpenSettings={() => console.log('settings')}
       onAboutWails={() => alert('MarkSafe')}
@@ -630,7 +670,16 @@
   <TabsBar tabs={tabs} bind:activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
 
   <div class="flex flex-1 overflow-hidden relative">
-    {#if !$isEditorHidden && !$isFocusMode}
+    {#if browseMode && browseClient}
+      <BrowseView
+        client={browseClient}
+        theme={$effectiveAppTheme}
+        syncUrl={false}
+        initialPath={browseInitial}
+        on:toggleTheme={() => toggleAppTheme()}
+        on:openExternal={handleBrowseExternal}
+      />
+    {:else if !$isEditorHidden && !$isFocusMode}
     <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
       <div class="h-10 border-b flex items-center px-3 gap-1 shrink-0 {toolbarClass} print:hidden overflow-x-auto select-none">
         <span class="text-xs font-bold uppercase tracking-wider opacity-50 mr-1 shrink-0">{$t('editor')}</span>
@@ -810,6 +859,12 @@
 </main>
 
 <style>
+  :global(.browse-view) {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
   :global(body) { margin: 0; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

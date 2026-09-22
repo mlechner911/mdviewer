@@ -9,5 +9,9 @@ export default defineConfig({
     host: '127.0.0.1',
     port: Number(process.env.WAILS_VITE_PORT) || 34116,
     strictPort: true,
+    // Shared UI in ../../libs lives outside the project root.
+    fs: {
+      allow: ['../..'],
+    },
   }
 })

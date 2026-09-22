@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"marksafe/internal/mdbrowse"
 )
@@ -20,8 +21,10 @@ import (
 
 // BrowseDoc is a rendered document for browse mode.
 type BrowseDoc struct {
-	Title string `json:"title"`
-	HTML  string `json:"html"`
+	Title    string `json:"title"`
+	HTML     string `json:"html"`
+	Size     int64  `json:"size"`
+	Modified string `json:"modified"`
 }
 
 // BrowseTree returns the table of contents for rootDir.
@@ -52,6 +55,8 @@ func (a *App) BrowseRender(rootDir, relPath, chromaStyle string) (BrowseDoc, err
 		return BrowseDoc{}, err
 	}
 	var title, html string
+	var size int64
+	var modified string
 	switch {
 	case info.IsDir():
 		title, html, err = root.RenderDir(relPath, chromaStyle)
@@ -59,12 +64,14 @@ func (a *App) BrowseRender(rootDir, relPath, chromaStyle string) (BrowseDoc, err
 		return BrowseDoc{}, fmt.Errorf("not a markdown file: %s", relPath)
 	default:
 		title, html, err = root.RenderDoc(relPath, chromaStyle)
+		size = info.Size()
+		modified = info.ModTime().UTC().Format(time.RFC3339)
 	}
 	if err != nil {
 		logger().Error("Failed to render", "error", err)
 		return BrowseDoc{}, err
 	}
-	return BrowseDoc{Title: title, HTML: html}, nil
+	return BrowseDoc{Title: title, HTML: html, Size: size, Modified: modified}, nil
 }
 
 // BrowseSearch runs a fuzzy full-text search over rootDir.

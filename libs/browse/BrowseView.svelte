@@ -14,6 +14,8 @@
   export let client: BrowseClient;
   export let theme: BrowseTheme = 'dark';
   export let syncUrl = true;
+  // Start document when syncUrl is off (embedded mode has no URL bar).
+  export let initialPath: string | null = null;
 
   const dispatch = createEventDispatcher();
 
@@ -214,8 +216,8 @@
     }
 
     // Startup document: deep-link (?path=…) when the host syncs URLs,
-    // plain index.md otherwise (e.g. embedded mode).
-    await loadMarkdown(syncUrl ? (urlPath() ?? 'index.md') : 'index.md', false);
+    // host-provided initial path (embedded mode) or index.md fallback.
+    await loadMarkdown(syncUrl ? (urlPath() ?? 'index.md') : (initialPath ?? 'index.md'), false);
     lastTheme = theme;
 
     isReady = true;
