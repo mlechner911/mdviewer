@@ -154,7 +154,11 @@
     }
 
     // 3. Render Mermaid Diagrams
+    // Only freshly converted fences may run: re-running on already
+    // rendered SVG (e.g. theme toggle before the debounced re-render
+    // delivers fresh markup) yields red syntax-error boxes instead.
     const mermaidDivs = previewContainer.querySelectorAll('pre code.language-mermaid');
+    let freshDiagrams = 0;
     mermaidDivs.forEach((el) => {
       const parent = el.parentElement;
       if (parent) {
@@ -163,6 +167,7 @@
         div.className = 'mermaid';
         div.textContent = content;
         parent.replaceWith(div);
+        freshDiagrams++;
       }
     });
 
@@ -175,7 +180,7 @@
       });
 
       const nodes = previewContainer.querySelectorAll('.mermaid');
-      if (nodes.length > 0) {
+      if (freshDiagrams > 0 && nodes.length > 0) {
         await mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
       }
     } catch (err) {
@@ -275,6 +280,27 @@
     --table-head-bg: #151b23;
   }
   :global(.markdown-body) {
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --lh-body: 1.42;
+    --lh-code: 1.3;
+    --bg: #0d0e11;
+    --surface: #14161a;
+    --surface-hover: rgba(129, 140, 248, 0.12);
+    --text: #adbac7;
+    --heading: #f3f4f6;
+    --muted: #94a3b8;
+    --text-muted: #94a3b8;
+    --border: #21262d;
+    --accent: #818cf8;
+    --accent-strong: #a5b4fc;
+    --accent-soft: rgba(129, 140, 248, 0.12);
+    --code-bg: #151b23;
+    --code-border: #21262d;
+    --quote-bg: rgba(129, 140, 248, 0.08);
+    --table-head-bg: #151b23;
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: var(--lh-body);
