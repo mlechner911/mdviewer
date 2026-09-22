@@ -39,9 +39,9 @@
 
   // Line density: compact (default, IDE-like), comfortable, spacious.
   const DENSITIES = [
-    { id: 'compact', label: 'Kompakt', body: '1.42', code: '1.3' },
-    { id: 'comfortable', label: 'Komfort', body: '1.6', code: '1.5' },
-    { id: 'spacious', label: 'Weit', body: '1.85', code: '1.7' },
+    { id: 'compact', label: 'Kompakt', body: '1.42', code: '1.3', tree: '0.2rem' },
+    { id: 'comfortable', label: 'Komfort', body: '1.6', code: '1.5', tree: '0.38rem' },
+    { id: 'spacious', label: 'Weit', body: '1.85', code: '1.7', tree: '0.6rem' },
   ];
   let densityId = 'compact';
 
@@ -52,6 +52,7 @@
       const root = document.documentElement;
       root.style.setProperty('--lh-body', mode.body);
       root.style.setProperty('--lh-code', mode.code);
+      root.style.setProperty('--tree-py', mode.tree);
       localStorage.setItem('marksafe-line-height', mode.id);
     } catch {
       // ignore
