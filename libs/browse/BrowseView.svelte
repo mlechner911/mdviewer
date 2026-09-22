@@ -333,6 +333,7 @@
   {#if sidebarHidden}
     <button class="expand-btn" on:click={toggleSidebar} title="Verzeichnis einblenden"
       aria-label="Verzeichnis einblenden">
+      <span class="expand-label">Verzeichnis</span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -554,6 +555,12 @@
     font-size: 1rem;
   }
   .expand-btn:hover { background: var(--surface-hover); color: var(--accent); border-color: var(--accent); }
+  .expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .expand-label { font-size: 0.85rem; }
   /* Sticky toolbar: theme toggle lives here, never overlapping text */
   .content-toolbar {
     position: sticky;

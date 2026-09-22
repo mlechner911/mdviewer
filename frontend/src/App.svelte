@@ -679,7 +679,8 @@
         on:toggleTheme={() => toggleAppTheme()}
         on:openExternal={handleBrowseExternal}
       />
-    {:else if !$isEditorHidden && !$isFocusMode}
+    {:else}
+    {#if !$isEditorHidden && !$isFocusMode}
     <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
       <div class="h-10 border-b flex items-center px-3 gap-1 shrink-0 {toolbarClass} print:hidden overflow-x-auto select-none">
         <span class="text-xs font-bold uppercase tracking-wider opacity-50 mr-1 shrink-0">{$t('editor')}</span>
@@ -849,6 +850,7 @@
         onscroll={handlePreviewScroll}
       />
     </div>
+    {/if}
   </div>
 
   <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} />
