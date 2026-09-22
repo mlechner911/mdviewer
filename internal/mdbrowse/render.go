@@ -7,6 +7,15 @@ import (
 	"marksafe/internal/markdown"
 )
 
+// ChromaStyle maps a UI theme to code colors, mirroring the editor
+// convention. Unknown/empty themes fall back to dark.
+func ChromaStyle(theme string) string {
+	if theme == "light" {
+		return "github"
+	}
+	return "github-dark"
+}
+
 // sharedRenderer is the single Markdown implementation for all frontends
 // (browse server, Wails preview): Chroma highlighting, MathJax spans,
 // GitHub alerts, sanitized HTML. No second implementation.

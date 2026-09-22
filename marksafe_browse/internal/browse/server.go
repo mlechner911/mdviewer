@@ -110,14 +110,6 @@ func (s *Server) serveText(contentType, body string) http.HandlerFunc {
 	}
 }
 
-// chromaStyle maps the UI theme to code colors (mirrors the Wails preview).
-func chromaStyle(theme string) string {
-	if theme == "light" {
-		return "github"
-	}
-	return "github-dark"
-}
-
 // securityMiddleware validates that every request stays within root.
 func (s *Server) securityMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +175,7 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 	// contract as in-content directory links via data-md).
 	var title, result string
 	if info.IsDir() {
-		title, result, err = s.root.RenderDir(path, chromaStyle(r.URL.Query().Get("theme")))
+		title, result, err = s.root.RenderDir(path, mdbrowse.ChromaStyle(r.URL.Query().Get("theme")))
 		if err != nil {
 			http.Error(w, "Error reading directory", http.StatusInternalServerError)
 			return
@@ -193,7 +185,7 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Not a markdown file", http.StatusBadRequest)
 			return
 		}
-		title, result, err = s.root.RenderDoc(path, chromaStyle(r.URL.Query().Get("theme")))
+		title, result, err = s.root.RenderDoc(path, mdbrowse.ChromaStyle(r.URL.Query().Get("theme")))
 		if err != nil {
 			http.Error(w, "Error reading file", http.StatusInternalServerError)
 			return
