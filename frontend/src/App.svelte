@@ -526,11 +526,21 @@
     };
   });
 
+  // Browse-window mode (?browse=<root>&path=<rel>): this same App boots
+  // as a standalone browser window instead of the editor.
+  const browseParams: { root: string; path: string | null } | null = (() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const root = q.get('browse');
+      if (!root) return null;
+      return { root, path: q.get('path') };
+    } catch {
+      return null;
+    }
+  })();
+  const browseWailsClient = browseParams ? createWailsClient(browseParams.root) : null;
+
   let showAbout = $state(false);
-  let browseMode = $state(false);
-  let browseRoot = $state('');
-  let browseInitial: string | null = $state(null);
-  let browseClient = $state<ReturnType<typeof createWailsClient> | null>(null);
   let aboutTitle = $state('');
   let aboutMessage = $state('');
 
@@ -539,10 +549,6 @@
   }
 
   async function toggleBrowseMode() {
-    if (browseMode) {
-      browseMode = false;
-      return;
-    }
     const tab = tabs[activeTabIndex];
     const tabPath = tab?.path;
     if (!tabPath) {
@@ -556,10 +562,7 @@
     }
     // Image/file delivery inside browse mode reuses the whitelist.
     await backend.addPathToWhitelist(rootDir);
-    browseRoot = rootDir;
-    browseInitial = toBrowseRel(rootDir, tabPath) ?? 'index.md';
-    browseClient = createWailsClient(rootDir);
-    browseMode = true;
+    await backend.openBrowseWindow(rootDir, toBrowseRel(rootDir, tabPath) ?? 'index.md');
   }
 
   function openAbout() {
@@ -570,6 +573,7 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    if (browseParams) return; // browse window has its own shortcuts
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
       e.preventDefault();
       toggleBrowseMode();
@@ -587,6 +591,7 @@
 
   // --- Svelte 5 Runes: Effects ---
   $effect(() => {
+    if (browseParams) return; // BrowseView owns the title there
     if (activeTab) {
       const winTitle = `${activeTab.title}${activeTab.isDirty ? ' *' : ''} - MarkSafe`;
       document.title = winTitle;
@@ -640,6 +645,16 @@
   onCancel={() => showSecurityModal = false}
 />
 
+{#if browseParams && browseWailsClient}
+  <BrowseView
+    client={browseWailsClient}
+    theme={$effectiveAppTheme}
+    syncUrl={false}
+    initialPath={browseParams.path}
+    on:toggleTheme={() => toggleAppTheme()}
+    on:openExternal={handleBrowseExternal}
+  />
+{:else}
 <main data-file-drop-target class="flex h-screen w-full overflow-hidden flex-col select-none {$effectiveAppTheme === 'dark' ? 'bg-slate-900' : 'bg-white'}">
   {#if SHOW_HTML_TOOLBAR}
     <HamburgerMenu 
@@ -670,16 +685,6 @@
   <TabsBar tabs={tabs} bind:activeTabIndex={activeTabIndex} onCloseTab={handleCloseTab} />
 
   <div class="flex flex-1 overflow-hidden relative">
-    {#if browseMode && browseClient}
-      <BrowseView
-        client={browseClient}
-        theme={$effectiveAppTheme}
-        syncUrl={false}
-        initialPath={browseInitial}
-        on:toggleTheme={() => toggleAppTheme()}
-        on:openExternal={handleBrowseExternal}
-      />
-    {:else}
     {#if !$isEditorHidden && !$isFocusMode}
     <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
       <div class="h-10 border-b flex items-center px-3 gap-1 shrink-0 {toolbarClass} print:hidden overflow-x-auto select-none">
@@ -850,7 +855,6 @@
         onscroll={handlePreviewScroll}
       />
     </div>
-    {/if}
   </div>
 
   <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} />
@@ -859,6 +863,8 @@
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>
   {/if}
 </main>
+
+{/if}
 
 <style>
   :global(.browse-view) {
