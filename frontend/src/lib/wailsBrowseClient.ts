@@ -3,6 +3,7 @@
 // /raw?path= targets to the /local-resource asset handler (absolute
 // paths, whitelist-checked like the main preview).
 import { BrowseTree, BrowseRender, BrowseSearch } from '../../bindings/marksafe/app';
+import { isWailsReady } from './backend';
 import type {
   BrowseClient,
   BrowseDoc,
@@ -24,9 +25,25 @@ export function toBrowseRel(rootDir: string, absPath: string): string | null {
   return null;
 }
 
+// The browse window boots faster than the main view and fires its first
+// binding call before the native bridge is attached. The main app guards
+// everything behind a readiness retry loop; without it here the tree fetch
+// dies silently (empty sidebar, working document) on cold start.
+async function ensureReady(): Promise<void> {
+  for (let i = 0; i < 100; i++) {
+    try {
+      if (isWailsReady()) return;
+    } catch {
+      // ignore and retry
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
 export function createWailsClient(rootDir: string): BrowseClient {
   return {
     async getTree(): Promise<TocEntry[]> {
+      await ensureReady();
       try {
         return (await BrowseTree(rootDir)) ?? [];
       } catch (err) {
@@ -36,6 +53,7 @@ export function createWailsClient(rootDir: string): BrowseClient {
     },
 
     async renderDoc(path: string, theme: BrowseTheme): Promise<BrowseDoc> {
+      await ensureReady();
       const doc = await BrowseRender(
         rootDir,
         path,
@@ -61,6 +79,7 @@ export function createWailsClient(rootDir: string): BrowseClient {
     },
 
     async search(q: string): Promise<BrowseHit[]> {
+      await ensureReady();
       return (await BrowseSearch(rootDir, q)) ?? [];
     },
   };
