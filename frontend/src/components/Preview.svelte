@@ -36,6 +36,35 @@
 
   let previewContainer = $state<HTMLElement>();
 
+  // Theme-switch blending: dim the article while freshly themed markup
+  // is being re-rendered, so the swap reads as a soft fade instead of
+  // a flash. Layout is untouched (opacity only), so nothing reflows.
+  let themeFading = $state(false);
+  let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    theme; // subscribe to theme switches
+    if (!html) return; // nothing displayed, nothing to blend
+    themeFading = true;
+    if (fadeTimer) clearTimeout(fadeTimer);
+    // Safety: never stay dimmed if the re-render fails silently.
+    fadeTimer = setTimeout(() => {
+      themeFading = false;
+    }, 2500);
+    return () => {
+      if (fadeTimer) clearTimeout(fadeTimer);
+    };
+  });
+
+  $effect(() => {
+    html; // fresh markup arrived -> restore full opacity
+    if (fadeTimer) {
+      clearTimeout(fadeTimer);
+      fadeTimer = null;
+    }
+    themeFading = false;
+  });
+
   /**
    * getScrollPercentage returns the current scroll position as a percentage (0-1).
    */
@@ -223,6 +252,7 @@
 >
   <article
     class="markdown-body"
+    class:theme-fading={themeFading}
     style="font-size: {fontSize}%;"
   >
     {@html html}
@@ -307,7 +337,9 @@
     max-width: 960px;
     overflow-wrap: break-word;
     color: var(--text);
+    transition: opacity 0.22s ease;
   }
+  :global(.markdown-body.theme-fading) { opacity: 0.3; }
   :global(.markdown-body h1), :global(.markdown-body h2), :global(.markdown-body h3) {
     font-family: var(--font-mono);
     font-weight: 700;
@@ -520,6 +552,8 @@
     }
 
     article.markdown-body {
+      opacity: 1 !important;
+      transition: none !important;
       font-size: 11pt !important;
       line-height: 1.55 !important;
       max-width: 100% !important;
