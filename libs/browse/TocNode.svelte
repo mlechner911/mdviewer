@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import TocNode from './TocNode.svelte';
 
   // Recursive tree node: renders files as buttons and directories as
   // collapsible <details> — at ANY depth (Sidebar only handled one level,
@@ -42,7 +43,7 @@
       <summary title={entry.path}>{entry.title}</summary>
       <ul class="toc sub">
         {#each entry.children ?? [] as child}
-          <svelte:self entry={child} {activePath} depth={depth + 1} on:select={forward} />
+          <TocNode entry={child} {activePath} depth={depth + 1} on:select={forward} />
         {/each}
       </ul>
     </details>
