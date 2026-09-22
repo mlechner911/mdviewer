@@ -185,20 +185,6 @@ func (a *App) UpdateMenu(t map[string]string) {
 	}
 }
 
-// ShowAbout displays a native message box with product information.
-func (a *App) ShowAbout(title, message string) {
-	if title == "" {
-		title = "Über MarkSafe"
-	}
-	if message == "" {
-		message = "MarkSafe v" + a.GetVersion() + "\n\nMarkdown-Betrachter und -Editor\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT."
-	}
-	application.Get().Dialog.Info().
-		SetTitle(title).
-		SetMessage(message).
-		Show()
-}
-
 // SetWindowTitle dynamically updates the native OS application window title.
 func (a *App) SetWindowTitle(title string) {
 	if a.window != nil {

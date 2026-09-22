@@ -17,7 +17,6 @@ import {
   ResolveRelativePath,
   UpdateMenu,
   GetVersion,
-  ShowAbout,
   SetWindowTitle
 } from '../../bindings/marksafe/app'
 import { get } from 'svelte/store';
@@ -137,20 +136,6 @@ export async function resolveRelativePath(baseDir: string, relPath: string): Pro
 export async function updateMenu(translations: Record<string, string>): Promise<void> {
   if (!isWailsReady()) return;
   await UpdateMenu(translations);
-}
-
-// About Dialog Binding
-export async function showAbout(title: string, message: string): Promise<void> {
-  if (!isWailsReady()) {
-    alert(`${title}\n\n${message}`);
-    return;
-  }
-  try {
-    await ShowAbout(title, message);
-  } catch (err) {
-    console.error('showAbout failed:', err);
-    alert(`${title}\n\n${message}`);
-  }
 }
 
 // Version Binding
