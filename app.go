@@ -127,7 +127,9 @@ func (a *App) UpdateMenu(t map[string]string) {
 	})
 	fileMenu.AddSeparator()
 	fileMenu.Add(t["menuAbout"]).OnClick(func(*application.Context) {
-		a.ShowAbout(t["aboutTitle"], t["aboutBody"])
+		// Themed in-app dialog (frontend) instead of the native one,
+		// so About follows the active Dark/Light mode.
+		emit("menu-about")
 	})
 
 	// Format Menu
@@ -144,12 +146,18 @@ func (a *App) UpdateMenu(t map[string]string) {
 	// View Menu (Language & Appearance)
 	viewMenu := appMenu.AddSubmenu(t["menuView"])
 
-	// Submenu: Language
+	// Submenu: Language (checkmark tracks the active locale; the menu
+	// rebuilds on every locale change, so exactly one item is checked)
 	langMenu := viewMenu.AddSubmenu(t["menuLanguage"])
-	langMenu.Add("English").OnClick(func(*application.Context) { emit("set-locale", "en") })
-	langMenu.Add("Deutsch").OnClick(func(*application.Context) { emit("set-locale", "de") })
-	langMenu.Add("Español").OnClick(func(*application.Context) { emit("set-locale", "es") })
-	langMenu.Add("Français").OnClick(func(*application.Context) { emit("set-locale", "fr") })
+	activeLocale := t["currentLocale"]
+	for _, lang := range []struct{ id, label string }{
+		{"en", "English"}, {"de", "Deutsch"}, {"es", "Espa\u00f1ol"}, {"fr", "Fran\u00e7ais"},
+	} {
+		lang := lang // capture for closure
+		langMenu.Add(lang.label).
+			OnClick(func(*application.Context) { emit("set-locale", lang.id) }).
+			SetChecked(lang.id != "" && lang.id == activeLocale)
+	}
 
 	// Submenu: Appearance
 	apprMenu := viewMenu.AddSubmenu(t["menuAppearance"])

@@ -12,6 +12,7 @@
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
   import WhitelistModal from './components/WhitelistModal.svelte';
+  import AboutModal from './components/AboutModal.svelte';
   import HamburgerMenu from './components/HamburgerMenu.svelte';
   import TabsBar from './components/TabsBar.svelte';
   import StatusBar from './components/StatusBar.svelte';
@@ -210,6 +211,7 @@
     const tMap = translations[currentLocale];
     if (!tMap) return;
     const menuTranslations = {
+      currentLocale,
       menuFile: tMap.menuFile,
       menuEdit: tMap.menuEdit,
       menuView: tMap.menuView,
@@ -437,6 +439,7 @@
           EventsOn("format-h3", () => prefixSelection('### '));
           EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
           EventsOn("set-locale", (l: string) => locale.set(l));
+          EventsOn("menu-about", () => openAbout());
           EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
       const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
@@ -502,6 +505,13 @@
     };
     init();
     updateEffectiveTheme();
+    // Restore editor visibility (last persisted state).
+    try {
+      if (localStorage.getItem('marksafe-editor-hidden') === '1') isEditorHidden.set(true);
+    } catch { /* storage unavailable */ }
+    isEditorHidden.subscribe((hidden) => {
+      try { localStorage.setItem('marksafe-editor-hidden', hidden ? '1' : '0'); } catch { /* ignore */ }
+    });
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => { if ($appTheme === 'auto') updateEffectiveTheme(); };
     mediaQuery.addEventListener('change', handler);
@@ -509,10 +519,21 @@
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
       EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab");
-      EventsOff("set-locale"); EventsOff("set-theme");
+      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
+
+  let showAbout = $state(false);
+  let aboutTitle = $state('');
+  let aboutMessage = $state('');
+
+  function openAbout() {
+    const tMap = translations[$locale] || translations.de;
+    aboutTitle = tMap.aboutTitle;
+    aboutMessage = tMap.aboutBody.replace('%s', get(appVersion));
+    showAbout = true;
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -563,6 +584,14 @@
 
 <svelte:window onmousemove={onMouseMove} onmouseup={stopResizing} onkeydown={handleKeydown} />
 
+<AboutModal
+  show={showAbout}
+  title={aboutTitle}
+  message={aboutMessage}
+  onClose={() => showAbout = false}
+  theme={$effectiveAppTheme}
+/>
+
 <WhitelistModal 
   show={showSecurityModal} 
   type={securityType} 
@@ -590,10 +619,7 @@
       onViewZoomIn={() => adjustFontSize(5)}
       onViewZoomOut={() => adjustFontSize(-5)}
       onViewResetZoom={() => fontSize = 100}
-      onHelpAbout={() => {
-        const tMap = translations[$locale] || translations.de;
-        backend.showAbout(tMap.aboutTitle, tMap.aboutBody.replace('%s', $appVersion));
-      }}
+      onHelpAbout={() => openAbout()}
       onOpenSettings={() => console.log('settings')}
       onAboutWails={() => alert('MarkSafe')}
       onOpenProductPage={() => window.open('https://mlcgo.eu/products/marksafe/', '_blank')}
