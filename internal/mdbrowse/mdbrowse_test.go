@@ -204,6 +204,34 @@ func TestExternalLinksMarkedAndTabbed(t *testing.T) {
 	}
 }
 
+func TestAnchorValidation(t *testing.T) {
+	dir := t.TempDir()
+	writeFixture(t, dir, "index.md", "# Doc\n\n[Exact](#hello-world) and [Sloppy](#Hello_World!) and [Bad](#gibts-nicht) and [Top](#).\n\n## Hello World\n\nText.\n")
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, html, err := root.RenderDoc("index.md", "github-dark")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(html, `<a href="#hello-world"`) {
+		t.Errorf("exact anchor altered: %s", html)
+	}
+	if !strings.Contains(html, `href="#hello-world">[Sloppy]`) && !strings.Contains(html, `href="#hello-world" rel=`) {
+		t.Errorf("sloppy anchor not canonicalized: %s", html)
+	}
+	if strings.Contains(html, "#gibts-nicht") && !strings.Contains(html, "broken-link") {
+		t.Errorf("bad anchor not marked: %s", html)
+	}
+	if !strings.Contains(html, "Anker nicht gefunden") {
+		t.Errorf("missing tooltip: %s", html)
+	}
+	if !strings.Contains(html, "Top.") {
+		t.Errorf("bare-hash text lost: %s", html)
+	}
+}
+
 func TestTOCEntryJSONKeys(t *testing.T) {
 	raw, _ := json.Marshal(TOCEntry{Path: "a/b.md", Title: "B", IsDir: false})
 	s := string(raw)

@@ -27,6 +27,7 @@ var (
 	srcRe    = regexp.MustCompile(`src="([^"]*)"`)
 	altRe    = regexp.MustCompile(`alt="([^"]*)"`)
 	schemeRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+	idAttrRe = regexp.MustCompile(`\sid="([^"]*)"`)
 )
 
 // isWebExternal reports http(s) links (and protocol-relative ones).
@@ -70,6 +71,62 @@ func classifyTarget(href string) (linkKind, string) {
 		return linkKeep, ""
 	}
 	return linkInternal, target
+}
+
+// slugifyAnchor mirrors the heading-ID rules (lowercase, spaces and
+// underscores to hyphens, everything else dropped): "Hello_World.TXT ä"
+// becomes "hello-worldtxt--", exactly like goldmark generates it.
+// Duplicate headings are numbered by the parser (-1, -2, …), never here.
+func slugifyAnchor(s string) string {
+	s = strings.ToLower(s)
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == ' ' || r == '\t' || r == '\n' || r == '_' || r == '-':
+			b.WriteRune('-')
+		case r >= 'a' && r <= 'z' || r >= '0' && r <= '9':
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// collectIDs gathers every id="..." in the rendered document plus a
+// slug->id lookup for tolerant matching (first id wins on collision).
+func collectIDs(html string) (map[string]bool, map[string]string) {
+	set := map[string]bool{}
+	slugs := map[string]string{}
+	for _, m := range idAttrRe.FindAllStringSubmatch(html, -1) {
+		id := m[1]
+		set[id] = true
+		if s := slugifyAnchor(id); s != "" {
+			if _, exists := slugs[s]; !exists {
+				slugs[s] = id
+			}
+		}
+	}
+	return set, slugs
+}
+
+// checkAnchorTag validates an in-page #fragment link: exact id match
+// passes through, slug-equivalent spellings are rewritten to the
+// canonical id, misses become non-clickable placeholders.
+func checkAnchorTag(attrs, href string, idSet map[string]bool, slugMap map[string]string) string {
+	frag := href[1:]
+	if frag == "" {
+		return `<a` + attrs + `>`
+	}
+	if idSet[frag] {
+		return `<a` + attrs + `>`
+	}
+	if u, err := url.PathUnescape(frag); err == nil && idSet[u] {
+		return `<a` + attrs + `>`
+	}
+	if canon, ok := slugMap[slugifyAnchor(frag)]; ok {
+		fixed := hrefRe.ReplaceAllString(attrs, `href="#`+escapeHTML(canon)+`"`)
+		return `<a` + fixed + `>`
+	}
+	return brokenLinkTag(attrs, href, "Anker nicht gefunden: "+href)
 }
 
 // resolveDocTarget resolves a link target against the document's directory.
@@ -141,6 +198,7 @@ func addClass(attrs, class string) string {
 // rendered HTML. docRelPath is the root-relative path of the document.
 func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 	docRelPath = filepath.ToSlash(docRelPath)
+	idSet, slugMap := collectIDs(html)
 
 	html = aTagRe.ReplaceAllStringFunc(html, func(tag string) string {
 		attrs := aTagRe.FindStringSubmatch(tag)[1]
@@ -149,6 +207,9 @@ func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 			return tag // no href — leave alone
 		}
 		href := m[1]
+		if strings.HasPrefix(href, "#") {
+			return checkAnchorTag(attrs, href, idSet, slugMap)
+		}
 		if isWebExternal(href) {
 			// External links: always recognizable, always a new window.
 			// The client additionally asks for confirmation (see
