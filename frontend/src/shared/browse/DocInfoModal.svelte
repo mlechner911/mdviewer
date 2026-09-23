@@ -1,12 +1,21 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
 
-  export let title: string = '';
-  export let path: string = '';
-  export let size: number = 0;
-  export let modified: string = '';
-  export let words: number = 0;
-  export let chars: number = 0;
+  let {
+    title = '',
+    path = '',
+    size = 0,
+    modified = '',
+    words = 0,
+    chars = 0,
+  }: {
+    title?: string;
+    path?: string;
+    size?: number;
+    modified?: string;
+    words?: number;
+    chars?: number;
+  } = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -30,7 +39,7 @@
     return d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
   }
 
-  $: readingMins = Math.max(1, Math.ceil(words / 225));
+  let readingMins = $derived(Math.max(1, Math.ceil(words / 225)));
 
   function close() {
     dispatch('close');
@@ -41,9 +50,9 @@
   }
 </script>
 
-<svelte:window on:keydown={onWindowKey} />
+<svelte:window onkeydown={onWindowKey} />
 
-<div class="info-overlay" role="presentation" on:click|self={close}>
+<div class="info-overlay" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) close(); }}>
   <div class="info-modal" role="dialog" aria-modal="true" aria-label="Dokumentinformationen">
     <div class="info-head">
       <svg
@@ -60,7 +69,7 @@
         <line x1="12" y1="8" x2="12.01" y2="8" />
       </svg>
       <strong>Dokumentinfo</strong>
-      <button class="info-x" on:click={close} aria-label="Schließen">
+      <button class="info-x" onclick={close} aria-label="Schließen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" aria-hidden="true">
           <line x1="18" y1="6" x2="6" y2="18" />

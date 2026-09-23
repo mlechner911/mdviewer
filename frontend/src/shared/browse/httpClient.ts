@@ -35,5 +35,12 @@ export function createHttpClient(): BrowseClient {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return (await resp.json()) ?? [];
     },
+
+    async chromaCss(theme: BrowseTheme): Promise<string> {
+      const file = theme === 'light' ? 'chroma-light.css' : 'chroma-dark.css';
+      const resp = await fetch(`/assets/${file}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return await resp.text();
+    },
   };
 }

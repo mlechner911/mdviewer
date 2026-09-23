@@ -1,14 +1,17 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
 
-  export let url: string;
-  // The "reuse one window" choice only applies to window.open hosts.
-  // System-browser hosts hide it.
-  export let showReuse = true;
+  let {
+    url,
+    showReuse = true,
+  }: {
+    url: string;
+    showReuse?: boolean;
+  } = $props();
 
   const dispatch = createEventDispatcher();
-  let reuse = false;
-  let openBtn: HTMLButtonElement | null = null;
+  let reuse = $state(false);
+  let openBtn = $state<HTMLButtonElement | null>(null);
 
   try {
     reuse = localStorage.getItem('marksafe-external-reuse') === '1';
@@ -38,9 +41,9 @@
   }
 </script>
 
-<svelte:window on:keydown={onWindowKey} />
+<svelte:window onkeydown={onWindowKey} />
 
-<div class="confirm-overlay" role="presentation" on:click|self={cancel}>
+<div class="confirm-overlay" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) cancel(); }}>
   <div
     class="confirm-modal"
     role="alertdialog"
@@ -75,8 +78,8 @@
     </label>
     {/if}
     <div class="confirm-actions">
-      <button class="btn-ghost" on:click={cancel}>Abbrechen</button>
-      <button class="btn-primary" bind:this={openBtn} on:click={confirm}>Extern öffnen</button>
+      <button class="btn-ghost" onclick={cancel}>Abbrechen</button>
+      <button class="btn-primary" bind:this={openBtn} onclick={confirm}>Extern öffnen</button>
     </div>
   </div>
 </div>

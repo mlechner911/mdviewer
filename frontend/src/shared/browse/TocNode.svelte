@@ -5,9 +5,15 @@
   // Recursive tree node: renders files as buttons and directories as
   // collapsible <details> — at ANY depth (Sidebar only handled one level,
   // which left grandchildren as dead <strong> text).
-  export let entry: any;
-  export let activePath: string | null = null;
-  export let depth: number = 0;
+  let {
+    entry,
+    activePath = null,
+    depth = 0,
+  }: {
+    entry: any;
+    activePath?: string | null;
+    depth?: number;
+  } = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -16,7 +22,7 @@
   // bind:open keeps manual toggles in sync; navigation only ever forces
   // closed sections open, never closes anything behind the user's back.
   // (Depth 0 stays open as before.)
-  let open = depth < 1;
+  let open = $state(false);
 
   function subtreeHas(e: any, p: string | null): boolean {
     if (!p) return false;
@@ -24,8 +30,10 @@
     return (e.children ?? []).some((c: any) => subtreeHas(c, p));
   }
 
-  $: wantOpen = depth < 1 || subtreeHas(entry, activePath);
-  $: if (wantOpen) open = true;
+  let wantOpen = $derived(depth < 1 || subtreeHas(entry, activePath));
+  $effect(() => {
+    if (wantOpen) open = true;
+  });
 
   function select(e: any) {
     if (!e.isDir && e.path) dispatch('select', { path: e.path });
@@ -53,7 +61,7 @@
     <button
       class:active={entry.path === activePath}
       title={entry.path}
-      on:click={() => select(entry)}
+      onclick={() => select(entry)}
       aria-current={entry.path === activePath ? 'page' : undefined}
     >{entry.title}</button>
   </li>

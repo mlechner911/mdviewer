@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  export let theme: string = 'dark';
+  let { theme = 'dark' }: { theme?: string } = $props();
   const dispatch = createEventDispatcher();
 
   function handleClick() {
@@ -10,7 +10,7 @@
 
 <button
   class="theme-toggle"
-  on:click={handleClick}
+  onclick={handleClick}
   title="Theme: {theme} — klicken zum Wechseln"
 >
   {#if theme === 'dark'}

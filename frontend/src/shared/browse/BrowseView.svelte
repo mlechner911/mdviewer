@@ -11,32 +11,40 @@
   import DocInfoModal from './DocInfoModal.svelte';
 
   // Host-owned: data access, color scheme, URL sync.
-  export let client: BrowseClient;
-  export let theme: BrowseTheme = 'dark';
-  export let syncUrl = true;
-  export let allowReuseWindow = true;
-  // Start document when syncUrl is off (embedded mode has no URL bar).
-  export let initialPath: string | null = null;
+  let {
+    client,
+    theme = 'dark',
+    syncUrl = true,
+    allowReuseWindow = true,
+    initialPath = null,
+  }: {
+    client: BrowseClient;
+    theme?: BrowseTheme;
+    syncUrl?: boolean;
+    allowReuseWindow?: boolean;
+    initialPath?: string | null;
+  } = $props();
 
   const dispatch = createEventDispatcher();
 
   const MIN_WIDTH = 180;
   const MAX_WIDTH = 520;
 
-  // State — plain variables, no stores needed
-  let tabs: any[] = [];
-  let htmlContent = '';
-  let pageTitle = 'MarkSafe Browse';
-  let isReady = false;
-  let lastTheme: BrowseTheme | null = null;
-  let currentPath: string | null = null;
-  let searchOpen = false;
-  let externalUrl: string | null = null;
-  let infoOpen = false;
-  let docSize = 0;
-  let docModified = '';
-  let docWords = 0;
-  let docChars = 0;
+  // Reactive view state ($state: shared with both hosts, runes-safe)
+  let tabs = $state<any[]>([]);
+  let htmlContent = $state('');
+  let pageTitle = $state('MarkSafe Browse');
+  let isReady = $state(false);
+  let lastTheme = $state<BrowseTheme | null>(null);
+  let currentPath = $state<string | null>(null);
+  let searchOpen = $state(false);
+  let externalUrl = $state<string | null>(null);
+  let infoOpen = $state(false);
+  let docSize = $state(0);
+  let docModified = $state('');
+  let docWords = $state(0);
+  let docChars = $state(0);
+  let chromaCssTag = $state('');
 
   // Line density: compact (default, IDE-like), comfortable, spacious.
   const DENSITIES = [
@@ -44,7 +52,7 @@
     { id: 'comfortable', label: 'Komfort', body: '1.6', code: '1.5', tree: '0.38rem' },
     { id: 'spacious', label: 'Weit', body: '1.85', code: '1.7', tree: '0.6rem' },
   ];
-  let densityId = 'compact';
+  let densityId = $state('compact');
 
   function applyDensity(id: string) {
     const mode = DENSITIES.find((d) => d.id === id) ?? DENSITIES[0];
@@ -65,28 +73,27 @@
     applyDensity(DENSITIES[(i + 1) % DENSITIES.length].id);
   }
 
-  $: densityLabel =
-    (DENSITIES.find((d) => d.id === densityId) ?? DENSITIES[0]).label;
+  let densityLabel = $derived(
+    (DENSITIES.find((d) => d.id === densityId) ?? DENSITIES[0]).label,
+  );
 
-  // Plain-text stats for the info panel. NOTE: htmlContent must be
-  // referenced lexically inside the $: block — Svelte does not track
-  // reads hidden in called functions, which froze these at 0.
+  // Plain-text stats for the info panel.
   function docText(html: string): string {
     return html
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
-  $: {
+  $effect(() => {
     const _t = docText(htmlContent);
     docWords = _t ? _t.split(' ').length : 0;
     docChars = _t.length;
-  }
+  });
 
   // Sidebar layout state (persisted)
-  let sidebarWidth = 280;
-  let sidebarHidden = false;
-  let dragging = false;
+  let sidebarWidth = $state(280);
+  let sidebarHidden = $state(false);
+  let dragging = $state(false);
 
   try {
     const w = parseInt(localStorage.getItem('marksafe-sidebar-width') || '', 10);
@@ -235,7 +242,7 @@
     tabs = await client.getTree();
     console.debug(`[browse] tree entries: ${tabs.length}`);
 
-    setChroma(theme);
+    await loadChroma();
 
     try {
       const stored = localStorage.getItem('marksafe-line-height');
@@ -262,16 +269,25 @@
   // Re-render with matching code colors whenever the host theme flips.
   // Guarded by lastTheme so startup (which loads explicitly above)
   // does not fetch twice.
-  $: if (isReady && currentPath && theme !== lastTheme) {
-    lastTheme = theme;
-    setChroma(theme);
-    loadMarkdown(currentPath, false);
-  }
+  $effect(() => {
+    if (isReady && currentPath && theme !== lastTheme) {
+      lastTheme = theme;
+      loadChroma().then(() => {
+        if (currentPath) loadMarkdown(currentPath, false);
+      });
+    }
+  });
 
-  function setChroma(theme: string) {
-    const link = document.getElementById('chroma-css') as HTMLLinkElement | null;
-    if (link) {
-      link.href = theme === 'light' ? '/assets/chroma-light.css' : '/assets/chroma-dark.css';
+  // Code colors come through the client (static file vs. binding),
+  // injected as one style tag so every host behaves identically.
+  async function loadChroma() {
+    try {
+      const css = await client.chromaCss(theme);
+      // Built in script (not markup) so the Svelte parser never sees
+      // a literal style element here.
+      chromaCssTag = '<' + 'style>' + css + '</' + 'style>';
+    } catch (e) {
+      console.error('Failed to load chroma CSS:', e);
     }
   }
 
@@ -287,9 +303,9 @@
   // back/forward, search). Only the latest request may touch state —
   // stale responses are dropped silently instead of blanking the view.
   // Failures become a visible retry panel, never a silent blank page.
-  let loadSeq = 0;
-  let loadAbort: AbortController | null = null;
-  let loadError: string | null = null;
+  let loadSeq = $state(0);
+  let loadAbort = $state<AbortController | null>(null);
+  let loadError = $state<string | null>(null);
 
   async function loadMarkdown(path: string, push = true): Promise<boolean> {
     const seq = ++loadSeq;
@@ -353,7 +369,7 @@
     if (!text) return 'MarkSafe Browse – Markdown-Verzeichnis im Browser lesen.';
     return text.length > 160 ? text.slice(0, 157).trimEnd() + '…' : text;
   }
-  $: pageDescription = excerpt(htmlContent);
+  let pageDescription = $derived(excerpt(htmlContent));
 
   // Theme ownership lives with the host: flip there, this view follows
   // via the theme prop (re-render handled by the reactive guard above).
@@ -367,10 +383,11 @@
   <meta name="description" content={pageDescription} />
 </svelte:head>
 
+{@html chromaCssTag}
 <div class="browse-view" data-theme={theme}>
 <div class="app-container">
   {#if sidebarHidden}
-    <button class="expand-btn" on:click={toggleSidebar} title="Verzeichnis einblenden"
+    <button class="expand-btn" onclick={toggleSidebar} title="Verzeichnis einblenden"
       aria-label="Verzeichnis einblenden">
       <span class="expand-label">Verzeichnis</span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -402,9 +419,9 @@
       aria-valuemax={MAX_WIDTH}
       aria-valuenow={sidebarWidth}
       tabindex="0"
-      on:pointerdown={startResize}
-      on:dblclick={toggleSidebar}
-      on:keydown={onResizerKey}
+      onpointerdown={startResize}
+      ondblclick={toggleSidebar}
+      onkeydown={onResizerKey}
       title="Ziehen oder Pfeiltasten zum Anpassen · Doppelklick zum Ausblenden"
     ></div>
   {/if}
@@ -412,20 +429,20 @@
   <main class="content" style={sidebarHidden ? 'margin-left: 0;' : `margin-left: ${sidebarWidth + 20}px;`}>
     <div class="content-toolbar">
       <div class="nav-btns" role="group" aria-label="Navigation">
-        <button class="nav-btn" on:click={() => (searchOpen = true)} title="Suchen (Strg+K)" aria-label="Suchen">
+        <button class="nav-btn" onclick={() => (searchOpen = true)} title="Suchen (Strg+K)" aria-label="Suchen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
-        <button class="nav-btn" on:click={() => history.back()} title="Zurück (Alt+←)" aria-label="Zurück">
+        <button class="nav-btn" onclick={() => history.back()} title="Zurück (Alt+←)" aria-label="Zurück">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <button class="nav-btn" on:click={() => history.forward()} title="Vor (Alt+→)" aria-label="Vor">
+        <button class="nav-btn" onclick={() => history.forward()} title="Vor (Alt+→)" aria-label="Vor">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="9 18 15 12 9 6" />
@@ -435,7 +452,7 @@
       <div class="toolbar-right">
         <button
           class="nav-btn"
-          on:click={cycleDensity}
+          onclick={cycleDensity}
           title="Zeilenabstand: {densityLabel} (klicken zum Wechseln)"
           aria-label="Zeilenabstand wechseln, aktuell {densityLabel}"
         >
@@ -449,7 +466,7 @@
         </button>
         <button
           class="nav-btn"
-          on:click={() => (infoOpen = true)}
+          onclick={() => (infoOpen = true)}
           title="Dokumentinfo anzeigen"
           aria-label="Dokumentinfo anzeigen"
         >
@@ -473,7 +490,7 @@
       <div class="load-error" role="alert">
         <strong>Dokument konnte nicht geladen werden.</strong>
         <p>{loadError}</p>
-        <button class="retry-btn" on:click={retryLoad}>Erneut versuchen</button>
+        <button class="retry-btn" onclick={retryLoad}>Erneut versuchen</button>
       </div>
     {:else}
       {#key currentPath}

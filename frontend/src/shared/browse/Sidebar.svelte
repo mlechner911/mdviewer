@@ -2,9 +2,15 @@
   import { createEventDispatcher, tick } from 'svelte';
   import TocNode from './TocNode.svelte';
 
-  export let tabs: any[] = [];
-  export let width: number = 280;
-  export let activePath: string | null = null;
+  let {
+    tabs = [],
+    width = 280,
+    activePath = null,
+  }: {
+    tabs?: any[];
+    width?: number;
+    activePath?: string | null;
+  } = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -13,7 +19,7 @@
     dispatch('select', e.detail);
   }
 
-  let nav: HTMLElement | null = null;
+  let nav = $state<HTMLElement | null>(null);
 
   // Scroll the marked entry into view inside the sidebar whenever
   // navigation lands on another page (content links included).
@@ -23,7 +29,9 @@
       ?.querySelector(':scope .toc-entry button.active')
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
-  $: if (activePath && tabs.length) void revealActive();
+  $effect(() => {
+    if (activePath && tabs.length) void revealActive();
+  });
 </script>
 
 <nav class="sidebar" style="width: {width}px" aria-label="Inhaltsverzeichnis" bind:this={nav}>
@@ -38,7 +46,7 @@
     </h2>
     <button
       class="collapse-btn"
-      on:click={() => dispatch('collapse')}
+      onclick={() => dispatch('collapse')}
       title="Verzeichnis ausblenden"
       aria-label="Verzeichnis ausblenden"
     >

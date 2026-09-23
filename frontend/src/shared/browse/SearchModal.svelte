@@ -2,15 +2,15 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import type { BrowseClient, BrowseHit } from './browseClient';
 
-  export let client: BrowseClient;
+  let { client }: { client: BrowseClient } = $props();
 
   const dispatch = createEventDispatcher();
-  let q = '';
-  let results: BrowseHit[] = [];
-  let active = 0;
-  let loading = false;
+  let q = $state('');
+  let results = $state<BrowseHit[]>([]);
+  let active = $state(0);
+  let loading = $state(false);
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let input: HTMLInputElement | null = null;
+  let input = $state<HTMLInputElement | null>(null);
 
   onMount(() => {
     input?.focus();
@@ -70,9 +70,9 @@
   }
 </script>
 
-<svelte:window on:keydown={onWindowKey} />
+<svelte:window onkeydown={onWindowKey} />
 
-<div class="search-overlay" role="presentation" on:click|self={close}>
+<div class="search-overlay" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) close(); }}>
   <div class="search-modal" role="dialog" aria-modal="true" aria-label="Dokumente durchsuchen">
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -83,8 +83,8 @@
       <input
         bind:this={input}
         bind:value={q}
-        on:input={onInput}
-        on:keydown={onKey}
+        oninput={onInput}
+        onkeydown={onKey}
         placeholder="Dokumente durchsuchen …"
         aria-label="Suchbegriff"
         autocomplete="off"
@@ -106,8 +106,8 @@
             class:selected={i === active}
             role="option"
             aria-selected={i === active}
-            on:click={() => choose(i)}
-            on:mousemove={() => (active = i)}
+            onclick={() => choose(i)}
+            onmousemove={() => (active = i)}
           >
             <div class="search-title">{hit.title}</div>
             <div class="search-snippet">{@html hit.snippet}</div>

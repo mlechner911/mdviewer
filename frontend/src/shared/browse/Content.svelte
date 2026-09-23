@@ -1,10 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
 
-  export let htmlContent: string = '';
+  let { htmlContent = '' }: { htmlContent?: string } = $props();
 
   const dispatch = createEventDispatcher();
-  let docEl: HTMLElement | null = null;
+  let docEl = $state<HTMLElement | null>(null);
 
   // Visible-text check: an "empty" render (frontmatter-only file,
   // tag-only fragment) shows the friendly placeholder instead of a
@@ -18,7 +18,7 @@
         .trim().length > 0
     );
   }
-  $: showDoc = hasVisibleText(htmlContent);
+  let showDoc = $derived(hasVisibleText(htmlContent));
 
   // In-app navigation: links the server validated (a[data-md]) open via
   // /render instead of a full page load (which would 404). Broken links

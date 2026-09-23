@@ -34,4 +34,6 @@ export interface BrowseClient {
   renderDoc(path: string, theme: BrowseTheme, signal?: AbortSignal): Promise<BrowseDoc>;
   /** Ranked full-text hits. Rejects on transport errors. */
   search(q: string): Promise<BrowseHit[]>;
+  /** Syntax-highlighting CSS for the active theme (code colors). */
+  chromaCss(theme: BrowseTheme): Promise<string>;
 }
