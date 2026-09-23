@@ -649,7 +649,7 @@
   <BrowseView
     client={browseWailsClient}
     theme={$effectiveAppTheme}
-    syncUrl={false}
+    syncUrl={true}
     initialPath={browseParams.path}
     on:toggleTheme={() => toggleAppTheme()}
     on:openExternal={handleBrowseExternal}

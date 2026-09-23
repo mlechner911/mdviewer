@@ -172,7 +172,10 @@
   function pushUrl(path: string) {
     if (!syncUrl) return;
     try {
-      history.pushState({ path }, '', '?path=' + encodeURIComponent(path));
+      // Keep existing params (?browse= root must survive navigation).
+      const q = new URLSearchParams(window.location.search);
+      q.set('path', path);
+      history.pushState({ path }, '', '?' + q.toString());
     } catch {
       // ignore (e.g. file:// or sandboxed iframe)
     }
