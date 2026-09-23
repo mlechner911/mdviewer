@@ -34,6 +34,12 @@
       dispatch('external', { url: ext.href });
       return;
     }
+    // Empty hrefs would reload the whole app (landing on the index
+    // fallback); swallow them, there is nothing to navigate to.
+    if (target?.closest?.('a[href=""]')) {
+      e.preventDefault();
+      return;
+    }
     const anchor = target?.closest?.('a[data-md]') as HTMLAnchorElement | null;
     if (!anchor) return;
     e.preventDefault();

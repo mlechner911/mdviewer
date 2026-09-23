@@ -178,10 +178,33 @@
     }
   }
 
+  // First document depth-first: landing fallback wherever no usable
+  // path exists (roots without index.md must not 404 into an error).
+  function firstDocPath(): string | null {
+    const walk = (entries: any[]): string | null => {
+      for (const e of entries ?? []) {
+        if (!e.isDir && e.path) return e.path;
+        if (e.isDir) {
+          const f = walk(e.children ?? []);
+          if (f) return f;
+        }
+      }
+      return null;
+    };
+    return walk(tabs);
+  }
+
+  async function loadFirstDoc(): Promise<void> {
+    const f = firstDocPath();
+    // Nothing to fall back to: honest error instead of a blind guess.
+    await loadMarkdown(f ?? 'index.md', false);
+  }
+
   // Browser back/forward buttons: reload the historic document.
   function onPopState(e: PopStateEvent) {
-    const p = (e.state as { path?: string } | null)?.path ?? urlPath() ?? 'index.md';
-    loadMarkdown(p, false);
+    const p = (e.state as { path?: string } | null)?.path ?? urlPath();
+    if (p) loadMarkdown(p, false);
+    else loadFirstDoc();
   }
 
   // Ctrl/Cmd+K opens the search; Alt+Left / Alt+Right = back / forward.
@@ -219,7 +242,14 @@
 
     // Startup document: deep-link (?path=…) when the host syncs URLs,
     // host-provided initial path (embedded mode) or index.md fallback.
-    await loadMarkdown(syncUrl ? (urlPath() ?? 'index.md') : (initialPath ?? 'index.md'), false);
+    // A missing index.md falls through to the first tree document
+    // instead of stranding on a 404 error panel.
+    const start = syncUrl ? (urlPath() ?? 'index.md') : (initialPath ?? 'index.md');
+    const ok = await loadMarkdown(start, false);
+    if (!ok) {
+      const f = firstDocPath();
+      if (f && f !== start) await loadMarkdown(f, false);
+    }
     lastTheme = theme;
 
     isReady = true;
@@ -257,7 +287,7 @@
   let loadAbort: AbortController | null = null;
   let loadError: string | null = null;
 
-  async function loadMarkdown(path: string, push = true) {
+  async function loadMarkdown(path: string, push = true): Promise<boolean> {
     const seq = ++loadSeq;
     loadAbort?.abort();
     const ctrl = new AbortController();
@@ -265,7 +295,7 @@
     loadError = null;
     try {
       const doc = await client.renderDoc(path, theme, ctrl.signal);
-      if (seq !== loadSeq) return; // superseded
+      if (seq !== loadSeq) return false; // superseded
       if (doc) {
         htmlContent = doc.html;
         pageTitle = doc.title;
@@ -277,18 +307,21 @@
           `[browse] rendered ${path} (${doc.html.length} chars, seq ${seq})`,
         );
         await refreshEnhancements();
+        return true;
       }
+      return false;
     } catch (e) {
       const aborted = e instanceof DOMException && e.name === 'AbortError';
-      if (aborted || seq !== loadSeq) return; // superseded, silent
+      if (aborted || seq !== loadSeq) return false; // superseded, silent
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Failed to load ${path}:`, e);
       loadError = `"${path}" konnte nicht geladen werden (${msg}).`;
+      return false;
     }
   }
 
   function retryLoad() {
-    loadMarkdown(currentPath ?? 'index.md', false);
+    loadMarkdown(currentPath ?? firstDocPath() ?? 'index.md', false);
   }
 
   function handleSelectEntry(event: CustomEvent<{ path: string }>) {
