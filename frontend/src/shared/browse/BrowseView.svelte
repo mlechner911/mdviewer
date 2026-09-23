@@ -14,6 +14,7 @@
   export let client: BrowseClient;
   export let theme: BrowseTheme = 'dark';
   export let syncUrl = true;
+  export let allowReuseWindow = true;
   // Start document when syncUrl is off (embedded mode has no URL bar).
   export let initialPath: string | null = null;
 
@@ -482,6 +483,7 @@
   {#if externalUrl}
     <ExternalLinkModal
       url={externalUrl}
+      showReuse={allowReuseWindow}
       on:confirm={confirmExternal}
       on:cancel={() => (externalUrl = null)}
     />

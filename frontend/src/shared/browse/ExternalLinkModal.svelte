@@ -2,6 +2,9 @@
   import { createEventDispatcher, onMount } from 'svelte';
 
   export let url: string;
+  // The "reuse one window" choice only applies to window.open hosts.
+  // System-browser hosts hide it.
+  export let showReuse = true;
 
   const dispatch = createEventDispatcher();
   let reuse = false;
@@ -65,10 +68,12 @@
       Diese Seite führt zu einer Website außerhalb deines Verzeichnisses. Wirklich öffnen?
     </p>
     <div id="ext-url" class="confirm-url" title={url}>{url}</div>
+    {#if showReuse}
     <label class="confirm-reuse">
       <input type="checkbox" bind:checked={reuse} />
       <span>Immer im selben externen Fenster öffnen (statt neuem Tab)</span>
     </label>
+    {/if}
     <div class="confirm-actions">
       <button class="btn-ghost" on:click={cancel}>Abbrechen</button>
       <button class="btn-primary" bind:this={openBtn} on:click={confirm}>Extern öffnen</button>

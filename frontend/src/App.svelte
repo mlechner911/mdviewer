@@ -5,7 +5,7 @@
    */
   import { onMount, tick, untrack } from 'svelte';
   import { get } from 'svelte/store';
-  import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from './lib/wails';
+  import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff, BrowserOpenURL } from './lib/wails';
   import * as backend from './lib/backend';
   
   // Components
@@ -544,8 +544,25 @@
   let aboutTitle = $state('');
   let aboutMessage = $state('');
 
-  function handleBrowseExternal(e: CustomEvent<{ url: string; reuse: boolean }>) {
-    window.open(e.detail.url, e.detail.reuse ? 'marksafe-external' : '_blank', 'noopener');
+  async function handleBrowseExternal(e: CustomEvent<{ url: string; reuse: boolean }>) {
+    const { url } = e.detail;
+    // Dead links surface here instead of a browser error page. A
+    // failing checker must not block the user: fail open.
+    let alive = true;
+    try {
+      alive = await backend.checkExternalURL(url);
+    } catch {
+      alive = true;
+    }
+    if (!alive) {
+      showToast($t('externalDead'), 4000, 'error');
+      return;
+    }
+    try {
+      BrowserOpenURL(url);
+    } catch (err) {
+      console.error(`Failed to open ${url}:`, err);
+    }
   }
 
   async function toggleBrowseMode() {
@@ -650,6 +667,7 @@
     client={browseWailsClient}
     theme={$effectiveAppTheme}
     syncUrl={true}
+    allowReuseWindow={false}
     initialPath={browseParams.path}
     on:toggleTheme={() => toggleAppTheme()}
     on:openExternal={handleBrowseExternal}

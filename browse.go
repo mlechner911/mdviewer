@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -118,4 +119,39 @@ func (a *App) OpenBrowseWindow(rootDir, relPath string) {
 	})
 	w.Show()
 	w.Focus()
+}
+
+// CheckExternalURL probes whether an external link target exists, so the
+// UI can report dead links instead of opening them. HEAD first, ranged
+// GET fallback for servers rejecting HEAD. Only http(s) is checked.
+func (a *App) CheckExternalURL(rawURL string) (bool, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return false, nil
+	}
+	client := &http.Client{Timeout: 6 * time.Second}
+	head, err := http.NewRequest("HEAD", rawURL, nil)
+	if err != nil {
+		return false, nil
+	}
+	head.Header.Set("User-Agent", "MarkSafe (link check)")
+	if resp, err := client.Do(head); err == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusMethodNotAllowed &&
+			resp.StatusCode != http.StatusNotImplemented {
+			return resp.StatusCode < 400, nil
+		}
+	}
+	get, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return false, nil
+	}
+	get.Header.Set("User-Agent", "MarkSafe (link check)")
+	get.Header.Set("Range", "bytes=0-0")
+	resp, err := client.Do(get)
+	if err != nil {
+		return false, nil
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode < 400, nil
 }

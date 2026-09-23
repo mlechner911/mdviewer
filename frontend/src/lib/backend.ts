@@ -18,7 +18,8 @@ import {
   UpdateMenu,
   GetVersion,
   SetWindowTitle,
-  OpenBrowseWindow
+  OpenBrowseWindow,
+  CheckExternalURL
 } from '../../bindings/marksafe/app'
 import { get } from 'svelte/store';
 import { t } from '../i18n';
@@ -121,6 +122,16 @@ export async function addPathToWhitelist(path: string): Promise<void> {
 export async function openBrowseWindow(rootDir: string, relPath: string): Promise<void> {
   if (!isWailsReady()) return;
   await OpenBrowseWindow(rootDir, relPath);
+}
+
+export async function checkExternalURL(url: string): Promise<boolean> {
+  if (!isWailsReady()) return true;
+  try {
+    return await CheckExternalURL(url);
+  } catch (err) {
+    console.error('checkExternalURL failed:', err);
+    return true;
+  }
 }
 
 export async function addURLToWhitelist(url: string): Promise<void> {
