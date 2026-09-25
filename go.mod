@@ -2,6 +2,8 @@ module marksafe
 
 go 1.25.0
 
+toolchain go1.25.13
+
 require (
 	github.com/alecthomas/chroma/v2 v2.23.1
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
