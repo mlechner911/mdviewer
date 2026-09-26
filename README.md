@@ -59,3 +59,8 @@ MIT License - Copyright (c) 2026 Michael Lechner
 
 ---
 *For technical details and build instructions, see **[DEVELOPER.md](./DEVELOPER.md)** and **[THEMING.md](./THEMING.md)**. Changes per release: **[CHANGELOG.md](./CHANGELOG.md)**. The standalone directory browser: **[marksafe_browse](./marksafe_browse/README.md)**.*
+
+<!-- mlcai-private -->
+## Project documentation (`.mlcai/`)
+
+`.mlcai/` is a **private git submodule**: internal planning, backlog and work notes, maintained with the MLC Doc Hub. It is not publicly accessible — clone **without** `--recurse-submodules`; the build does not need it. Links into `.mlcai/` only work with access (`git submodule update --init .mlcai`).
