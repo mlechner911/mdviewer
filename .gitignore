@@ -39,3 +39,6 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 mlcplan.md
+
+# lokale MCP-Konfiguration (dochub-cli agent-rules)
+.mcp.json
