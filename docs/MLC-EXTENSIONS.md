@@ -47,13 +47,13 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | --- | --- | --- | --- |
 | Page break | `<div class="page-break"></div>` | starts a new page | ✅ marker on screen, page break in print |
 | Anchor target | `<a id="name"></a>` | link target inside the document | ✅ |
-| Checkbox field | `[@#name]` | fillable checkbox | ⏳ shown as text |
-| Text field | `[@#name ______]` (width = number of `_`), multi-line over several lines | fillable text field | ⏳ shown as text |
-| Default value | `[@#name ____value____]` | text field with a preset value | ⏳ shown as text |
-| Pattern field | `[@#name TT.MM.JJJJ]`, `[@HH:MM]`, with default `=16\.10\.2026` | date/time field | ⏳ shown as text |
-| Field tooltip | `<!--* hint -->` right after a field | tooltip in the PDF viewer, not printed | ⏳ hidden |
-| Fill hint | `<!--! hint -->` | hint for the whole form, not printed | ⏳ hidden |
-| Document header | `**Dokumenten-ID:** SOP-QM-001`, `**Version:** 1.0` | document id and version for the Sensor Monitor | ⏳ shown as text |
+| Checkbox field | `[@#name]` | fillable checkbox | ✅ checked, highlighted in the editor; preview shows text |
+| Text field | `[@#name ______]` (width = number of `_`), multi-line over several lines | fillable text field | ✅ checked, highlighted; preview shows text |
+| Default value | `[@#name ____value____]` | text field with a preset value | ✅ checked, highlighted; preview shows text |
+| Pattern field | `[@#name TT.MM.JJJJ]`, `[@HH:MM]`, with default `=16\.10\.2026` | date/time field | ✅ checked, highlighted; preview shows text |
+| Field tooltip | `<!--* hint -->` right after a field | tooltip in the PDF viewer, not printed | ✅ highlighted in the editor; hidden in the preview |
+| Fill hint | `<!--! hint -->` | hint for the whole form, not printed | ✅ highlighted in the editor; hidden in the preview |
+| Document header | `**Dokumenten-ID:** SOP-QM-001`, `**Version:** 1.0` | document id and version for the Sensor Monitor | ✅ checked; ⏳ readable header in the preview |
 | Layout front matter | `header`, `footer`, `signatures`, `toc`, `page-size` … | page header/footer, signature block, layout | ⏳ generic metadata table |
 
 ✅ supported · ⏳ planned (see roadmap below)
@@ -68,12 +68,19 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 - Validity dates and approval status are **not** written in the document. The
   Sensor Monitor sets them on approval.
 
+## Tooling
+
+- **Checker** ([`mlcext`](../mlcext), Go module
+  `github.com/mlechner911/mdviewer/mlcext`): validates the extension and
+  reports problems with line and column. MarkSafe and the Sensor Monitor use
+  the same module. MarkSafe shows the result in the status bar.
+- **Editor support** ([`packages/mlcext-editor`](../packages/mlcext-editor),
+  CodeMirror 6): highlights fields and hints, shows the checker's messages at
+  their lines, and offers the building blocks after `[@` and in the editor's
+  "MLC" menu. It appears only for documents that use the extension.
+
 ## Roadmap
 
-1. A shared checker (Go module) that validates the MLC extension and reports
-   problems with line and column. MarkSafe and the Sensor Monitor use the same
-   module.
-2. Editor support: highlighting of fields, snippets to insert them, and
-   checker messages in the editor.
-3. A PDF preview rendered by `mlcdoc` itself, so fields look exactly as
+1. A PDF preview rendered by `mlcdoc` itself, so fields look exactly as
    printed. MarkSafe does not re-implement the PDF layout.
+2. A readable document header instead of the generic front matter table.

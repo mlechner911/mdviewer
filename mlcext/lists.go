@@ -23,18 +23,35 @@ func IsEventKind(k string) bool {
 	return false
 }
 
-// PrefillFields are field names the Sensor Monitor fills from an event
+// PrefillField is a field the Sensor Monitor fills from an event, with the
+// marker an author writes for it.
+type PrefillField struct {
+	Name   string `json:"name"`
+	Marker string `json:"marker"`
+	Label  string `json:"label"`
+}
+
+// Prefill lists the fields the Sensor Monitor fills from an event
 // ("[@#ort ____]" gets "Zone › Gerät › Probe"). Using them is intended, so
 // the check reports them as information, not as a problem.
-var PrefillFields = []string{
-	"ereignis",
-	"entdeckt_datum",
-	"entdeckt_uhrzeit",
-	"ort",
-	"betroffen",
-	"vorfall",
-	"sofortmassnahmen",
+var Prefill = []PrefillField{
+	{"ereignis", "[@#ereignis ____________]", "Ereignis-Nr. (EV-…)"},
+	{"entdeckt_datum", "[@#entdeckt_datum TT.MM.JJJJ]", "Beginn, Datum"},
+	{"entdeckt_uhrzeit", "[@#entdeckt_uhrzeit HH:MM]", "Beginn, Uhrzeit"},
+	{"ort", "[@#ort ______________________________]", "Zone › Gerät › Probe"},
+	{"betroffen", "[@#betroffen ______________________________]", "Charge bzw. Produktprofil"},
+	{"vorfall", "[@#vorfall ______________________________________________________________________\n______________________________________________________________________\n______________________________________________________________________]", "Art, Stufe, Zeitraum, Werte, Quittierung"},
+	{"sofortmassnahmen", "[@#sofortmassnahmen ______________________________________________________________________\n______________________________________________________________________]", "Notizen der Quittierung und am Ereignis"},
 }
+
+// PrefillFields are the names of Prefill.
+var PrefillFields = func() []string {
+	names := make([]string, len(Prefill))
+	for i, p := range Prefill {
+		names[i] = p.Name
+	}
+	return names
+}()
 
 // IsPrefillField reports whether name is filled from an event.
 func IsPrefillField(name string) bool {

@@ -8,13 +8,19 @@
 
     "allowJs": true,
     "checkJs": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    // ../packages/mlcext-editor resolves CodeMirror from this app
+    "baseUrl": ".",
+    "paths": {
+      "@codemirror/*": ["./node_modules/@codemirror/*"]
+    }
   },
   "include": [
     "src/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.js",
-    "src/**/*.svelte"
+    "src/**/*.svelte",
+    "../packages/mlcext-editor/src/**/*.ts"
   ],
   "references": [
     {

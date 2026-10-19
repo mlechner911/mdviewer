@@ -13,6 +13,7 @@
   import Preview from './components/Preview.svelte';
   import BrowseView from './shared/browse/BrowseView.svelte';
   import documentCSS from './shared/markdown/document.css?raw';
+  import { mlcSnippets } from '../../packages/mlcext-editor/src/index';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import AboutModal from './components/AboutModal.svelte';
@@ -255,8 +256,11 @@
     if ($splitWidth > 90) splitWidth.set(90);
   }
 
-  // MLC Markdown Extension diagnostics of the active document (status bar).
-  let mlcDiagnostics = $state<backend.MLCDiagnostic[]>([]);
+  // MLC Markdown Extension (non-standard) analysis of the active document:
+  // status bar, editor menu. The editor gets its own via mlcSource.
+  let mlcAnalysis = $state<backend.MLCAnalysis | null>(null);
+  const mlcSource = { analyze: (md: string) => backend.analyzeMLC(md) };
+  const mlcMenu = $derived(mlcAnalysis?.detected ? mlcSnippets(mlcAnalysis.lists) : []);
 
   let timeout: ReturnType<typeof setTimeout>;
   function debouncedUpdate(value: string, themeStyle: string) {
@@ -265,7 +269,7 @@
     timeout = setTimeout(async () => {
       try {
         htmlContent = await backend.renderMarkdown(value, themeStyle);
-        mlcDiagnostics = await backend.checkMLC(value);
+        mlcAnalysis = await backend.analyzeMLC(value);
       } catch (err) {
         console.error("Failed to render markdown:", err);
       }
@@ -772,6 +776,24 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
         </button>
+        {#if mlcMenu.length > 0}
+          <!-- MLC Markdown Extension (non-standard): only for MLC documents -->
+          <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
+          <details class="mlc-menu relative shrink-0">
+            <summary
+              class="list-none cursor-pointer px-1.5 h-6 flex items-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 {buttonClass}"
+              title={$t('mlcInsertTitle')}
+            >MLC ▾</summary>
+            <div class="fixed z-50 mt-1 py-1 min-w-56 rounded border shadow-lg text-xs {toolbarClass}">
+              {#each mlcMenu as item}
+                <button
+                  class="w-full text-left px-3 py-1 flex justify-between gap-4 hover:bg-black/10 dark:hover:bg-white/10"
+                  onclick={(e) => { editorComponent?.insertSnippet(item); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+                ><span>{item.label}</span><span class="opacity-60 font-mono">{item.detail}</span></button>
+              {/each}
+            </div>
+          </details>
+        {/if}
       </div>
       {#if tabs[activeTabIndex]}
       <div class="flex-1 min-h-0 relative">
@@ -782,6 +804,7 @@
           placeholder={$t('placeholder')}
           onchange={onContentInput}
           onscroll={handleEditorScroll}
+          {mlcSource}
         />
       </div>
       {/if}
@@ -880,7 +903,7 @@
     </div>
   </div>
 
-  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcDiagnostics} />
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} />
 
   {#if $dropMessage}
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>

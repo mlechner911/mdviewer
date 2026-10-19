@@ -173,3 +173,37 @@ func TestDetect(t *testing.T) {
 		}
 	}
 }
+
+func TestAnalyzePositions(t *testing.T) {
+	md := "# Ä\n\nOrt: [@#ort ___] <!--* Raum -->\n<!--! Tipp -->\n[@#vorfall ___\n___]\n"
+	a := Analyze(md)
+	if !a.Detected || len(a.Fields) != 2 || len(a.Hints) != 2 {
+		t.Fatalf("analysis: %+v", a)
+	}
+	f := a.Fields[0]
+	if f.Line != 3 || f.Col != 6 || f.EndLine != 3 || f.EndCol != 17 || !f.Prefill || f.Kind != "text" {
+		t.Errorf("field 0: %+v", f)
+	}
+	if m := a.Fields[1]; m.Line != 5 || m.EndLine != 6 || m.EndCol != 5 || m.Kind != "multiline" || !m.Prefill {
+		t.Errorf("field 1: %+v", m)
+	}
+	if h := a.Hints[0]; h.Kind != "tooltip" || h.Line != 3 || h.Col != 18 {
+		t.Errorf("hint 0: %+v", h)
+	}
+	if h := a.Hints[1]; h.Kind != "fill-hint" || h.Line != 4 || h.Col != 1 || h.EndCol != 15 {
+		t.Errorf("hint 1: %+v", h)
+	}
+	if plain := Analyze("# README\n"); plain.Detected || len(plain.Lists.EventKinds) == 0 {
+		t.Errorf("plain: %+v", plain)
+	}
+}
+
+// Every prefill marker must itself be a valid field of the right name.
+func TestPrefillMarkersAreValidFields(t *testing.T) {
+	for _, p := range Prefill {
+		fs, errs := ExtractFields(p.Marker)
+		if len(errs) > 0 || len(fs) != 1 || fs[0].Name != p.Name {
+			t.Errorf("%s: %q gives %+v %v", p.Name, p.Marker, fs, errs)
+		}
+	}
+}

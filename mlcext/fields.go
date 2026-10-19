@@ -70,8 +70,17 @@ type Field struct {
 	Tooltip string
 	// Line and Col (1-based, Col in characters) of the "[@".
 	Line, Col int
-	// Offset is the byte offset of the "[@" in the source.
-	Offset int
+	// Offset is the byte offset of the "[@" in the source, End the offset
+	// after its closing "]".
+	Offset, End int
+}
+
+// Hint is a "<!--* … -->" field tooltip or a "<!--! … -->" fill hint.
+type Hint struct {
+	Kind            string // "tooltip" | "fill-hint"
+	Line, Col       int
+	EndLine, EndCol int
+	Offset, End     int
 }
 
 // FieldError is a field mlcdoc would reject.
@@ -99,6 +108,7 @@ type scanner struct {
 	pos          int
 	fields       []Field
 	errs         []FieldError
+	hints        []Hint
 	section      string
 	sectionCount int
 	inHeading    bool
@@ -147,11 +157,12 @@ func (s *scanner) run() {
 			s.skipCodeSpan()
 			lineStart = false
 		case r == '<' && strings.HasPrefix(rest, "<!--"):
+			n := len(rest)
 			if end := strings.Index(rest, "-->"); end >= 0 {
-				s.advance(end + 3)
-			} else {
-				s.advance(len(rest))
+				n = end + 3
 			}
+			s.hint(s.pos, s.pos+n)
+			s.advance(n)
 			lineStart = false
 		case r == '[' && strings.HasPrefix(rest, "[@"):
 			s.advance(s.field())
@@ -194,6 +205,23 @@ func (s *scanner) skipCodeSpan() {
 		return
 	}
 	s.advance(ticks)
+}
+
+// hint records a "<!--* … -->" tooltip or "<!--! … -->" fill hint.
+func (s *scanner) hint(from, to int) {
+	kind := ""
+	switch {
+	case strings.HasPrefix(s.src[from:], "<!--*"):
+		kind = "tooltip"
+	case strings.HasPrefix(s.src[from:], "<!--!"):
+		kind = "fill-hint"
+	default:
+		return // a plain HTML comment
+	}
+	h := Hint{Kind: kind, Offset: from, End: to}
+	h.Line, h.Col = position(s.src, from)
+	h.EndLine, h.EndCol = position(s.src, to)
+	s.hints = append(s.hints, h)
 }
 
 func (s *scanner) fail(code, msg string) {
@@ -247,12 +275,14 @@ func (s *scanner) field() int {
 		body = strings.TrimPrefix(rest, "\n")
 	}
 
+	markerEnd := start + n
 	tooltip := ""
 	after := rest[n:]
 	gap := len(after) - len(strings.TrimLeft(after, " \t"))
 	if comment, ok := strings.CutPrefix(after[gap:], "<!--*"); ok {
 		if end := strings.Index(comment, "-->"); end >= 0 {
 			tooltip = strings.Join(strings.Fields(comment[:end]), " ")
+			s.hint(start+n+gap, start+n+gap+len("<!--*")+end+3)
 			n += gap + len("<!--*") + end + 3
 		}
 	}
@@ -278,7 +308,7 @@ func (s *scanner) field() int {
 		}
 	}
 	f.Line, f.Col = position(s.src, start)
-	f.Offset = start
+	f.Offset, f.End = start, markerEnd
 	s.fields = append(s.fields, f)
 	return n
 }

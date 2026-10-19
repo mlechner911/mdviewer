@@ -256,14 +256,12 @@ func (a *App) GetInitialContent() *FileResult {
 	return nil
 }
 
-// CheckMLC returns the diagnostics of the MLC Markdown Extension (a
-// non-standard extension, docs/MLC-EXTENSIONS.md) for md. Plain Markdown
-// gets none: only documents that use the extension are checked.
-func (a *App) CheckMLC(md string) []mlcext.Diagnostic {
-	if !mlcext.Detect(md) {
-		return []mlcext.Diagnostic{}
-	}
-	return mlcext.Check(md, mlcext.Options{RequireHeader: true})
+// AnalyzeMLC returns the MLC Markdown Extension analysis of md (a
+// non-standard extension, docs/MLC-EXTENSIONS.md): diagnostics, field and
+// hint positions and the shared lists, for the editor and the status bar.
+// Plain Markdown gets an empty analysis (Detected false).
+func (a *App) AnalyzeMLC(md string) mlcext.Analysis {
+	return mlcext.Analyze(md)
 }
 
 // RenderMarkdown converts markdown string to sanitized HTML.

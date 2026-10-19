@@ -10,6 +10,7 @@
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
   import { tags as t } from '@lezer/highlight';
   import type { EffectiveTheme_t } from '../lib/constants';
+  import { mlcExtension, insertMlcSnippet, type MlcSource, type MlcAnalysis, type MlcSnippet } from '../../../packages/mlcext-editor/src/index';
 
   // --- Svelte 5 Runes: Props ---
   let { 
@@ -17,13 +18,18 @@
     theme = 'dark',
     placeholder = "",
     onchange,
-    onscroll
+    onscroll,
+    mlcSource,
+    onmlcanalysis
   } = $props<{
     value: string;
     theme: EffectiveTheme_t;
     placeholder?: string;
     onchange?: (val: string) => void;
     onscroll?: (percentage: number) => void;
+    /** MLC Markdown Extension (non-standard) support: analysis from mlcext. */
+    mlcSource?: MlcSource;
+    onmlcanalysis?: (analysis: MlcAnalysis) => void;
   }>();
 
   let containerEl = $state<HTMLDivElement>();
@@ -191,6 +197,13 @@
   }
 
   /**
+   * insertSnippet inserts a building block of the MLC Markdown Extension.
+   */
+  export function insertSnippet(snippet: MlcSnippet) {
+    if (editorView) insertMlcSnippet(editorView, snippet);
+  }
+
+  /**
    * Focus the CodeMirror editor.
    */
   export function focus() {
@@ -213,6 +226,7 @@
         basicSetup,
         markdown(),
         EditorView.lineWrapping,
+        ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a) })] : []),
         themeCompartment.of(isDark ? marksafeDarkTheme : marksafeLightTheme),
         highlightCompartment.of(syntaxHighlighting(isDark ? marksafeDarkHighlighting : marksafeLightHighlighting)),
         EditorView.updateListener.of((update) => {

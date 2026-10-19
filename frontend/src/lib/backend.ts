@@ -20,9 +20,9 @@ import {
   SetWindowTitle,
   OpenBrowseWindow,
   CheckExternalURL,
-  CheckMLC
+  AnalyzeMLC
 } from '../../bindings/marksafe/app'
-import type { Diagnostic as MLCDiagnostic } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
+import type { Analysis as MLCAnalysis, Diagnostic as MLCDiagnostic } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
 import { get } from 'svelte/store';
 import { t } from '../i18n';
 
@@ -54,16 +54,19 @@ export async function getStyleCSS(style: string): Promise<string> {
   }
 }
 
-export type { MLCDiagnostic };
+export type { MLCAnalysis, MLCDiagnostic };
 
-/** Diagnostics of the MLC Markdown Extension (non-standard); [] for plain Markdown. */
-export async function checkMLC(value: string): Promise<MLCDiagnostic[]> {
-  if (!isWailsReady()) return [];
+/**
+ * Analysis of the MLC Markdown Extension (non-standard): diagnostics, field
+ * and hint positions, shared lists. Null outside Wails.
+ */
+export async function analyzeMLC(value: string): Promise<MLCAnalysis | null> {
+  if (!isWailsReady()) return null;
   try {
-    return (await CheckMLC(value)) ?? [];
+    return await AnalyzeMLC(value);
   } catch (err) {
-    console.error('checkMLC failed:', err);
-    return [];
+    console.error('analyzeMLC failed:', err);
+    return null;
   }
 }
 
