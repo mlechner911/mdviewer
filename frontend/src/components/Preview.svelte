@@ -80,6 +80,45 @@
   /**
    * setScrollPercentage sets the scroll position based on a percentage (0-1).
    */
+  /**
+   * getExportHTML returns the rendered document (Mermaid SVG, KaTeX, images)
+   * as a self-contained <article>: local images become data: URIs, each
+   * diagram keeps its Mermaid source in an inert <template>. Formulas keep
+   * their TeX source in KaTeX's MathML annotation.
+   */
+  export async function getExportHTML(): Promise<string> {
+    const article = previewContainer?.querySelector('article');
+    if (!article) return '';
+    const clone = article.cloneNode(true) as HTMLElement;
+    clone.classList.remove('theme-fading');
+    clone.removeAttribute('style');
+
+    for (const div of Array.from(clone.querySelectorAll<HTMLElement>('.mermaid[data-source]'))) {
+      const tpl = document.createElement('template');
+      tpl.className = 'mermaid-source';
+      tpl.content.append(div.dataset.source ?? '');
+      div.removeAttribute('data-source');
+      div.before(tpl);
+    }
+
+    for (const img of Array.from(clone.querySelectorAll('img'))) {
+      const src = img.getAttribute('src') || '';
+      if (!src.startsWith('/local-resource')) continue;
+      try {
+        const blob = await (await fetch(src)).blob();
+        img.src = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      } catch (err) {
+        console.error('Export: image not embedded:', src, err);
+      }
+    }
+    return clone.outerHTML;
+  }
+
   export function setScrollPercentage(percentage: number) {
     if (!previewContainer) return;
     const { scrollHeight, clientHeight } = previewContainer;
@@ -196,6 +235,7 @@
         const content = el.textContent || "";
         const div = document.createElement('div');
         div.className = 'mermaid';
+        div.dataset.source = content; // kept for the HTML export
         div.textContent = content;
         parent.replaceWith(div);
         freshDiagrams++;

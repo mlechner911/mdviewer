@@ -384,28 +384,7 @@ func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) 
 		return "", nil
 	}
 
-	katexCSS := a.renderer.GetKatexCSS()
-
-	// Standalone HTML document. Content styles (shared document.css, theme
-	// background, Chroma) and the themed .md-doc wrapper come from the
-	// frontend, so the export looks exactly like the preview.
-	fullHTML := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MarkSafe Export</title>
-<style>
-%s
-</style>
-<style>
-%s
-</style>
-</head>
-<body>
-%s
-</body>
-</html>`, katexCSS, cssContent, htmlContent)
+	fullHTML := a.renderer.StandaloneHTML(htmlContent, cssContent)
 
 	err = filesystem.WriteFile(path, fullHTML)
 	if err != nil {

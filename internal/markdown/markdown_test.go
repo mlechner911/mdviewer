@@ -124,3 +124,25 @@ func TestCodeBlocks(t *testing.T) {
 		})
 	}
 }
+
+func TestKatexCSSInlineEmbedsAllFonts(t *testing.T) {
+	css := NewRenderer().GetKatexCSSInline()
+	if strings.Contains(css, "url(fonts/") {
+		t.Fatalf("KaTeX CSS still references external font files")
+	}
+	if n := strings.Count(css, "data:font/woff2;base64,"); n < 15 {
+		t.Fatalf("expected all KaTeX fonts embedded, got %d", n)
+	}
+}
+
+func TestStandaloneHTMLEmbedsKatexOnlyWithMath(t *testing.T) {
+	r := NewRenderer()
+	plain := r.StandaloneHTML(`<article class="md-doc"><p>x</p></article>`, ".md-doc{}")
+	if strings.Contains(plain, "KaTeX") {
+		t.Errorf("KaTeX CSS embedded without math")
+	}
+	math := r.StandaloneHTML(`<article class="md-doc"><span class="katex">x</span></article>`, "")
+	if !strings.Contains(math, "data:font/woff2;base64,") {
+		t.Errorf("KaTeX fonts missing for a document with math")
+	}
+}

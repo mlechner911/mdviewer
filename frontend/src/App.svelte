@@ -371,7 +371,10 @@
       const pageCSS = `body { margin: 0; padding: 2rem; background: ${theme === 'dark' ? '#0d0e11' : '#ffffff'}; }
         .md-doc { margin: 0 auto; }
         @media print { body { background: #ffffff; padding: 0; } }`;
-      const article = `<article class="md-doc" data-theme="${theme}" lang="${$locale}">${htmlContent}</article>`;
+      // The rendered preview (diagrams, formulas, embedded images), so the
+      // file shows offline exactly what the preview shows.
+      const article = (await previewComponent?.getExportHTML())
+        || `<article class="md-doc" data-theme="${theme}" lang="${$locale}">${htmlContent}</article>`;
       await backend.exportHTML(article, documentCSS + '\n' + pageCSS + '\n' + highlightingCSS);
     } catch (err) {
       console.error("Failed to export HTML:", err);
