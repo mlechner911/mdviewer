@@ -73,43 +73,43 @@ func TestCodeBlocks(t *testing.T) {
 		input string
 	}{
 		{
-			name: "Fenced code block without lang",
+			name:  "Fenced code block without lang",
 			input: "```\nhello world\n```\n\n**bold after**",
 		},
 		{
-			name: "Fenced code block with lang",
+			name:  "Fenced code block with lang",
 			input: "```go\nfunc main() {}\n```\n\n*italic after*",
 		},
 		{
-			name: "Unclosed code block",
+			name:  "Unclosed code block",
 			input: "```\nhello unclosed",
 		},
 		{
-			name: "Inline code then bold",
+			name:  "Inline code then bold",
 			input: "`inline code` and **bold**",
 		},
 		{
-			name: "Code block immediately followed by heading without blank line",
+			name:  "Code block immediately followed by heading without blank line",
 			input: "```\ncode\n```\n# Heading immediately after\n**bold immediately after**",
 		},
 		{
-			name: "Code block immediately followed by text with format end",
+			name:  "Code block immediately followed by text with format end",
 			input: "```\ncode\n```\nSome formatted text that ends with something",
 		},
 		{
-			name: "Mermaid block",
+			name:  "Mermaid block",
 			input: "```mermaid\ngraph TD\nA --> B\n```",
 		},
 		{
-			name: "Single line fence with bold",
+			name:  "Single line fence with bold",
 			input: "``` **bold text** ```",
 		},
 		{
-			name: "Code fence with markdown inside",
+			name:  "Code fence with markdown inside",
 			input: "```\n**bold text**\n```",
 		},
 		{
-			name: "Code fence closed with word end",
+			name:  "Code fence closed with word end",
 			input: "```\n**bold text**\nend\n\nnormal text",
 		},
 	}
