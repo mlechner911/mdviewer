@@ -1,0 +1,433 @@
+/* ============================================================
+   MarkSafe document stylesheet: the single source for how rendered
+   Markdown looks, shared by the editor preview, the browse view
+   (app window + marksafe_browse) and the standalone HTML export.
+
+   Usage: put class="md-doc" on the element that contains the rendered
+   HTML. Light is the default; data-theme="dark" on the element or any
+   ancestor switches to dark. Alert headings follow the nearest lang
+   attribute (de → Hinweis/Tipp/…, otherwise English), like mlcdoc.
+
+   Host chrome (sidebar, toolbar, scroll container) stays in the hosts.
+   ============================================================ */
+
+/* ---------- Tokens ---------- */
+.md-doc {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular,
+    Menlo, Consolas, 'Liberation Mono', monospace;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --lh-body: 1.42;
+  --lh-code: 1.3;
+
+  --text: #0f172a;
+  --heading: #334155;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --surface: #f8fafc;
+  --accent: #4f46e5;
+  --accent-strong: #4338ca;
+  --accent-soft: rgba(99, 102, 241, 0.1);
+  --code-bg: #f1f5f9;
+  --code-border: #e2e8f0;
+  --quote-bg: rgba(99, 102, 241, 0.06);
+  --table-head-bg: #f8fafc;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  --alert-bg: rgba(0, 0, 0, 0.03);
+  --alert-note: #0969da;
+  --alert-tip: #1a7f37;
+  --alert-important: #8250df;
+  --alert-warning: #9a6700;
+  --alert-caution: #cf222e;
+
+  --label-note: 'Note';
+  --label-tip: 'Tip';
+  --label-important: 'Important';
+  --label-warning: 'Warning';
+  --label-caution: 'Caution';
+  --label-page-break: 'Page break';
+}
+
+.md-doc[data-theme='dark'],
+[data-theme='dark'] .md-doc {
+  --text: #adbac7;
+  --heading: #f3f4f6;
+  --muted: #94a3b8;
+  --border: #21262d;
+  --surface: #14161a;
+  --accent: #818cf8;
+  --accent-strong: #a5b4fc;
+  --accent-soft: rgba(129, 140, 248, 0.12);
+  --code-bg: #151b23;
+  --code-border: #21262d;
+  --quote-bg: rgba(129, 140, 248, 0.08);
+  --table-head-bg: #151b23;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+  --alert-bg: rgba(255, 255, 255, 0.05);
+  --alert-note: #4493f8;
+  --alert-tip: #3fb950;
+  --alert-important: #ab7df8;
+  --alert-warning: #d29922;
+  --alert-caution: #f85149;
+}
+
+.md-doc:lang(de) {
+  --label-note: 'Hinweis';
+  --label-tip: 'Tipp';
+  --label-important: 'Wichtig';
+  --label-warning: 'Warnung';
+  --label-caution: 'Vorsicht';
+  --label-page-break: 'Seitenumbruch';
+}
+
+/* ---------- Base ---------- */
+.md-doc {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: var(--lh-body);
+  max-width: 960px;
+  overflow-wrap: break-word;
+  color: var(--text);
+}
+
+/* ---------- Headings ---------- */
+.md-doc h1,
+.md-doc h2,
+.md-doc h3 {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--heading);
+}
+.md-doc h1 {
+  font-size: 1.75rem;
+  margin: 1.5rem 0 1rem;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.md-doc h1:first-child { margin-top: 0; }
+.md-doc h2 { font-size: 1.35rem; margin: 1.2rem 0 0.4rem; }
+.md-doc h3 { font-size: 1.1rem; margin: 0.9rem 0 0.35rem; }
+.md-doc h4,
+.md-doc h5,
+.md-doc h6 {
+  font-weight: 600;
+  margin: 0.8rem 0 0.3rem;
+  color: var(--heading);
+}
+
+/* ---------- Text blocks ---------- */
+.md-doc p { margin: 0.7rem 0; }
+.md-doc ul,
+.md-doc ol { margin: 0.7rem 0; padding-left: 1.75rem; }
+.md-doc ul { list-style: disc; }
+.md-doc ol { list-style: decimal; }
+.md-doc li { margin: 0.2rem 0; }
+.md-doc li > p { margin: 0.25em 0; }
+.md-doc strong { font-weight: 600; }
+.md-doc em { font-style: italic; }
+.md-doc del { text-decoration: line-through; }
+.md-doc hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+.md-doc img { max-width: 100%; border-radius: var(--radius-md); }
+.md-doc sup,
+.md-doc sub { font-size: 0.75em; line-height: 0; }
+
+/* ---------- Links ---------- */
+.md-doc a { color: var(--accent); text-decoration: none; }
+.md-doc a:hover { text-decoration: underline; }
+/* External links: recognizable via an icon (no emoji). */
+.md-doc a.external-link::after {
+  content: '';
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: 0.28em;
+  vertical-align: -0.08em;
+  background-color: currentColor;
+  opacity: 0.75;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.md-doc a.external-link:hover::after { opacity: 1; }
+/* Pre-validated broken links (browse): muted, dotted, not clickable. */
+.md-doc a.broken-link,
+.md-doc a.broken-link:hover {
+  color: var(--muted);
+  text-decoration: underline dotted;
+  cursor: not-allowed;
+}
+.md-doc .broken-img {
+  display: block;
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+/* ---------- Code ---------- */
+.md-doc code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+.md-doc pre {
+  position: relative;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.25rem 0;
+  box-shadow: var(--shadow);
+}
+.md-doc pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: var(--lh-code);
+}
+/* Copy button (injected by the browse view's enhanceContent). */
+.md-doc pre .copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.md-doc pre:hover .copy-btn,
+.md-doc pre:focus-within .copy-btn { opacity: 1; }
+.md-doc pre .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+.md-doc pre .copy-btn.copied { color: var(--accent-strong); border-color: var(--accent); opacity: 1; }
+
+/* ---------- Tables ---------- */
+.md-doc table { border-collapse: collapse; width: 100%; margin: 1.25rem 0; font-size: 0.925rem; }
+.md-doc th,
+.md-doc td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; line-height: 1.3; }
+.md-doc th {
+  background: var(--table-head-bg);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.md-doc tr:nth-child(even) td { background: var(--accent-soft); }
+
+/* ---------- Blockquotes and alerts ---------- */
+.md-doc blockquote {
+  background: var(--quote-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin: 1.25rem 0;
+  padding: 0.75rem 1.25rem;
+}
+.md-doc blockquote p { margin: 0.5rem 0; }
+
+.md-doc .markdown-alert {
+  --alert: var(--alert-note);
+  background: var(--alert-bg);
+  border-left: 0.25rem solid var(--alert);
+  padding: 0.75rem 1rem;
+}
+.md-doc .markdown-alert::before {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  color: var(--alert);
+}
+.md-doc .markdown-alert-note { --alert: var(--alert-note); }
+.md-doc .markdown-alert-note::before { content: 'ⓘ ' var(--label-note); }
+.md-doc .markdown-alert-tip { --alert: var(--alert-tip); }
+.md-doc .markdown-alert-tip::before { content: '💡 ' var(--label-tip); }
+.md-doc .markdown-alert-important { --alert: var(--alert-important); }
+.md-doc .markdown-alert-important::before { content: '❗ ' var(--label-important); }
+.md-doc .markdown-alert-warning { --alert: var(--alert-warning); }
+.md-doc .markdown-alert-warning::before { content: '⚠️ ' var(--label-warning); }
+.md-doc .markdown-alert-caution { --alert: var(--alert-caution); }
+.md-doc .markdown-alert-caution::before { content: '☢️ ' var(--label-caution); }
+
+/* ---------- Task lists ---------- */
+.md-doc li:has(> input[type='checkbox']) { list-style: none; }
+.md-doc ul:has(> li > input[type='checkbox']) { padding-left: 1.1rem; }
+.md-doc li > input[type='checkbox'] {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0 0.5rem 0.125rem 0;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+/* ---------- Page break (mlcdoc: <div class="page-break"></div>) ---------- */
+.md-doc .page-break {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2rem 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.md-doc .page-break::before,
+.md-doc .page-break::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--border);
+}
+.md-doc .page-break::after { content: var(--label-page-break); flex: none; border: none; }
+.md-doc .page-break > * { display: none; }
+
+/* ---------- Math and diagrams ---------- */
+.md-doc .katex { font-size: 1.1em; }
+.md-doc .mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.md-doc .mermaid svg { max-width: 100%; height: auto; }
+.md-doc .mermaid .marker { fill: currentColor !important; }
+.md-doc .mermaid .edgePath .path { stroke: currentColor !important; }
+.md-doc .mermaid .edgeLabel,
+.md-doc .mermaid .edgeLabel span { background-color: transparent !important; color: currentColor !important; }
+.md-doc .mermaid .edgeLabel rect { fill: transparent !important; }
+.md-doc .mermaid svg[id^='mermaid-error'] {
+  border: 3px solid var(--alert-caution) !important;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+/* ---------- Front matter (generic metadata box) ---------- */
+.md-doc .frontmatter-container {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  margin-bottom: 1.5rem;
+  font-size: 0.75rem;
+  overflow: hidden;
+}
+.md-doc .frontmatter-container summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--code-bg);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.md-doc .frontmatter-container > div { padding: 0.75rem; overflow-x: auto; }
+.md-doc .frontmatter-table { margin: 0; font-size: inherit; }
+.md-doc .frontmatter-table td { border: none; padding: 0.15rem 1rem 0.15rem 0; vertical-align: top; background: none !important; }
+.md-doc .frontmatter-table td:first-child { color: var(--muted); white-space: nowrap; font-weight: 500; }
+.md-doc .frontmatter-tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+  font-family: var(--font-mono);
+  border-radius: 9999px;
+  background: var(--border);
+}
+
+/* ============================================================
+   Print / PDF via the system print dialog: high contrast, no
+   splits inside blocks, colors that survive paper.
+   ============================================================ */
+@media print {
+  .md-doc {
+    --text: #1f2937;
+    --heading: #000000;
+    --muted: #4b5563;
+    --border: #cbd5e1;
+    --surface: #ffffff;
+    --accent: #0969da;
+    --accent-soft: #f8fafc;
+    --code-bg: #f8fafc;
+    --code-border: #cbd5e1;
+    --quote-bg: #f8fafc;
+    --table-head-bg: #f1f5f9;
+    --shadow: none;
+    --alert-note: #0969da;
+    --alert-tip: #1a7f37;
+    --alert-important: #8250df;
+    --alert-warning: #9a6700;
+    --alert-caution: #cf222e;
+    max-width: 100%;
+    font-size: 11pt;
+    line-height: 1.55;
+  }
+
+  .md-doc h1,
+  .md-doc h2,
+  .md-doc h3,
+  .md-doc h4,
+  .md-doc h5,
+  .md-doc h6 { break-after: avoid; break-inside: avoid; }
+  .md-doc h1 { font-size: 18pt; border-bottom-width: 1.5pt; }
+  .md-doc h2 { font-size: 14pt; }
+  .md-doc h3 { font-size: 12pt; }
+  .md-doc p,
+  .md-doc li { orphans: 3; widows: 3; }
+  .md-doc li,
+  .md-doc tr,
+  .md-doc pre,
+  .md-doc table,
+  .md-doc blockquote,
+  .md-doc img,
+  .md-doc .mermaid,
+  .md-doc .katex-display,
+  .md-doc .frontmatter-container { break-inside: avoid; }
+
+  .md-doc pre { white-space: pre-wrap; word-break: break-word; }
+  .md-doc pre code,
+  .md-doc code { font-size: 9.5pt; }
+  .md-doc table { font-size: 10pt; }
+  .md-doc a { text-decoration: underline; }
+  .md-doc a.external-link::after,
+  .md-doc pre .copy-btn { display: none; }
+  .md-doc .markdown-alert-note { background: #f0f6fc; }
+  .md-doc .markdown-alert-tip { background: #f0fdf4; }
+  .md-doc .markdown-alert-important { background: #faf5ff; }
+  .md-doc .markdown-alert-warning { background: #fffbeb; }
+  .md-doc .markdown-alert-caution { background: #fef2f2; }
+  .md-doc .katex { color: #000000; }
+
+  /* A page break is a page break on paper, not a marker. */
+  .md-doc .page-break { break-after: page; margin: 0; height: 0; }
+  .md-doc .page-break::before,
+  .md-doc .page-break::after { display: none; }
+
+  /* High-contrast syntax colors (Chroma token classes). */
+  .md-doc .chroma { color: #0f172a !important; background-color: transparent !important; }
+  .md-doc .chroma :is(.k, .kd, .kn, .kp, .kr, .o, .ow) { color: #cf222e !important; }
+  .md-doc .chroma :is(.s, .sa, .sb, .sc, .s1, .s2) { color: #0a3069 !important; }
+  .md-doc .chroma :is(.c, .ch, .cm, .c1, .cs) { color: #57606a !important; font-style: italic; }
+  .md-doc .chroma :is(.nf, .na, .nb) { color: #8250df !important; }
+  .md-doc .chroma :is(.nc, .nn) { color: #953800 !important; }
+  .md-doc .chroma :is(.m, .mb, .mf, .mh, .mi, .mo) { color: #0550ae !important; }
+}

@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"fmt"
 	htmlpkg "html"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
@@ -42,6 +44,8 @@ func NewRenderer() *Renderer {
 	p.AllowAttrs("id").OnElements("div")
 	// Allow heading anchors (in-page #links, document outlines)
 	p.AllowAttrs("id").OnElements("h1", "h2", "h3", "h4", "h5", "h6")
+	// Explicit anchor targets of the MLC dialect: <a id="name"></a>
+	p.AllowAttrs("id").Matching(regexp.MustCompile(`^[\p{L}\p{N}_-]+$`)).OnElements("a")
 	p.AllowAttrs("open").OnElements("details")
 
 	// Allow Task Lists (Checkboxes)
@@ -242,13 +246,19 @@ func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
+			// "## Title {#anchor}" sets an explicit heading id (mlcdoc).
+			parser.WithAttribute(),
 			parser.WithASTTransformers(
 				util.Prioritized(&GitHubAlertTransformer{}, 100),
 			),
 		),
+		goldmark.WithRendererOptions(
+			// Page breaks and anchor targets pass, other raw HTML is dropped.
+			renderer.WithNodeRenderers(util.Prioritized(&mlcHTMLRenderer{}, 100)),
+		),
 	)
 
-	context := parser.NewContext()
+	context := parser.NewContext(parser.WithIDs(newHeadingIDs()))
 	if err := md.Convert([]byte(input), &buf, parser.WithContext(context)); err != nil {
 		return "", fmt.Errorf("goldmark conversion error: %w", err)
 	}

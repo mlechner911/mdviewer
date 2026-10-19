@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
+  import '../markdown/document.css';
 
   let { htmlContent = '' }: { htmlContent?: string } = $props();
 
@@ -19,6 +20,9 @@
     );
   }
   let showDoc = $derived(hasVisibleText(htmlContent));
+  // Alert headings follow lang (document.css); until documents carry
+  // their own lang (front matter), use the viewer's language.
+  const lang = typeof navigator !== 'undefined' ? navigator.language.slice(0, 2) : 'en';
 
   // In-app navigation: links the server validated (a[data-md]) open via
   // /render instead of a full page load (which would 404). Broken links
@@ -56,7 +60,7 @@
   });
 </script>
 
-<section class="doc" bind:this={docEl}>
+<section class="doc md-doc" {lang} bind:this={docEl}>
   {#if showDoc}
     {@html htmlContent}
   {:else}

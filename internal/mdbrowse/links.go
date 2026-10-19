@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // Link validation + rewriting for rendered markdown HTML.
@@ -83,10 +84,11 @@ func classifyTarget(href string) (linkKind, string) {
 	return linkInternal, target
 }
 
-// slugifyAnchor mirrors the heading-ID rules (lowercase, spaces and
-// underscores to hyphens, everything else dropped): "Hello_World.TXT ä"
-// becomes "hello-worldtxt--", exactly like goldmark generates it.
-// Duplicate headings are numbered by the parser (-1, -2, …), never here.
+// slugifyAnchor is the tolerant matching key for anchors: lowercase,
+// whitespace and underscores to hyphens, letters (umlauts included) and
+// digits kept, everything else dropped: "Hello_World.TXT ä" becomes
+// "hello-worldtxt-ä". Duplicate headings are numbered by the parser
+// (-1, -2, …), never here.
 func slugifyAnchor(s string) string {
 	s = strings.ToLower(s)
 	var b strings.Builder
@@ -94,7 +96,7 @@ func slugifyAnchor(s string) string {
 		switch {
 		case r == ' ' || r == '\t' || r == '\n' || r == '_' || r == '-':
 			b.WriteRune('-')
-		case r >= 'a' && r <= 'z' || r >= '0' && r <= '9':
+		case unicode.IsLetter(r) || unicode.IsNumber(r):
 			b.WriteRune(r)
 		}
 	}

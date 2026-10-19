@@ -12,6 +12,7 @@
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
   import BrowseView from './shared/browse/BrowseView.svelte';
+  import documentCSS from './shared/markdown/document.css?raw';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import AboutModal from './components/AboutModal.svelte';
@@ -366,18 +367,12 @@
   async function handleExport() {
     if (!isReady || !checkWailsReady()) return;
     try {
-      const isDark = $effectiveAppTheme === 'dark';
-      const themeVars = `
-        :root {
-            --bg-color: ${isDark ? '#0f172a' : '#ffffff'};
-            --text-color: ${isDark ? '#f1f5f9' : '#0f172a'};
-            --link-color: ${isDark ? '#60a5fa' : '#0969da'};
-            --border-color: ${isDark ? '#334155' : '#e2e8f0'};
-            --code-bg: ${isDark ? '#1e293b' : '#f8fafc'};
-            --alert-bg: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};
-        }
-      `;
-      await backend.exportHTML(htmlContent, themeVars + highlightingCSS);
+      const theme = $effectiveAppTheme === 'dark' ? 'dark' : 'light';
+      const pageCSS = `body { margin: 0; padding: 2rem; background: ${theme === 'dark' ? '#0d0e11' : '#ffffff'}; }
+        .md-doc { margin: 0 auto; }
+        @media print { body { background: #ffffff; padding: 0; } }`;
+      const article = `<article class="md-doc" data-theme="${theme}" lang="${$locale}">${htmlContent}</article>`;
+      await backend.exportHTML(article, documentCSS + '\n' + pageCSS + '\n' + highlightingCSS);
     } catch (err) {
       console.error("Failed to export HTML:", err);
       showToast($t('exportFailed'), 3000, 'error');

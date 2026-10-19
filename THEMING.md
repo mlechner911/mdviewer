@@ -17,11 +17,17 @@ Themes are located in `frontend/src/themes/`:
 
 Theme merging is handled in `frontend/src/themes.ts` via `getTheme('dark' | 'light')`.
 
-The preview pane itself no longer uses Tailwind `prose`: it renders the
-shared browse token system (`.markdown-body`, same variables as
-`frontend/src/shared/browse/browse.css` — Inter/JetBrains Mono, slate +
-indigo, 3/4px radii), keyed on the theme container classes
-(`.bg-white` / `.bg-slate-900`) with dark fallbacks.
+### Document stylesheet (single source)
+Everything rendered from Markdown is styled by one file,
+`frontend/src/shared/markdown/document.css`, used by the editor preview,
+the browse view (app window and `marksafe_browse`) and the HTML export:
+- Put `class="md-doc"` on the element holding the rendered HTML. Light is
+  the default; `data-theme="dark"` on it or any ancestor switches to dark.
+- Alert headings follow the nearest `lang` attribute (`de` → Hinweis, Tipp,
+  Wichtig, Warnung, Vorsicht), like the mlcdoc PDF toolkit.
+- Hosts keep only their chrome (sidebar, toolbar, scroll container).
+- `<div class="page-break"></div>` shows as a marker on screen and breaks
+  the page in print.
 
 ## 2. Dynamic Syntax Highlighting & Diagram Sync
 
