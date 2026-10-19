@@ -16,6 +16,8 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0
 )
 
+require gopkg.in/yaml.v3 v3.0.1 // indirect
+
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
@@ -29,6 +31,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mlechner911/mdviewer/mlcext v0.0.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	golang.org/x/net v0.56.0 // indirect
@@ -38,3 +41,5 @@ require (
 )
 
 // replace github.com/wailsapp/wails/v2 v2.11.0 => /home/mlc/go/pkg/mod
+
+replace github.com/mlechner911/mdviewer/mlcext => ./mlcext

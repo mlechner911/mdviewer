@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"github.com/mlechner911/mdviewer/mlcext"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -253,6 +254,16 @@ func (a *App) GetInitialContent() *FileResult {
 		}
 	}
 	return nil
+}
+
+// CheckMLC returns the diagnostics of the MLC Markdown Extension (a
+// non-standard extension, docs/MLC-EXTENSIONS.md) for md. Plain Markdown
+// gets none: only documents that use the extension are checked.
+func (a *App) CheckMLC(md string) []mlcext.Diagnostic {
+	if !mlcext.Detect(md) {
+		return []mlcext.Diagnostic{}
+	}
+	return mlcext.Check(md, mlcext.Options{RequireHeader: true})
 }
 
 // RenderMarkdown converts markdown string to sanitized HTML.

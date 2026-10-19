@@ -19,8 +19,10 @@ import {
   GetVersion,
   SetWindowTitle,
   OpenBrowseWindow,
-  CheckExternalURL
+  CheckExternalURL,
+  CheckMLC
 } from '../../bindings/marksafe/app'
+import type { Diagnostic as MLCDiagnostic } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
 import { get } from 'svelte/store';
 import { t } from '../i18n';
 
@@ -49,6 +51,19 @@ export async function getStyleCSS(style: string): Promise<string> {
   } catch (err) {
     console.error('getStyleCSS failed:', err);
     return '';
+  }
+}
+
+export type { MLCDiagnostic };
+
+/** Diagnostics of the MLC Markdown Extension (non-standard); [] for plain Markdown. */
+export async function checkMLC(value: string): Promise<MLCDiagnostic[]> {
+  if (!isWailsReady()) return [];
+  try {
+    return (await CheckMLC(value)) ?? [];
+  } catch (err) {
+    console.error('checkMLC failed:', err);
+    return [];
   }
 }
 

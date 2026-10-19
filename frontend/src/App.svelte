@@ -255,6 +255,9 @@
     if ($splitWidth > 90) splitWidth.set(90);
   }
 
+  // MLC Markdown Extension diagnostics of the active document (status bar).
+  let mlcDiagnostics = $state<backend.MLCDiagnostic[]>([]);
+
   let timeout: ReturnType<typeof setTimeout>;
   function debouncedUpdate(value: string, themeStyle: string) {
     if (!isReady || !checkWailsReady()) return;
@@ -262,6 +265,7 @@
     timeout = setTimeout(async () => {
       try {
         htmlContent = await backend.renderMarkdown(value, themeStyle);
+        mlcDiagnostics = await backend.checkMLC(value);
       } catch (err) {
         console.error("Failed to render markdown:", err);
       }
@@ -876,7 +880,7 @@
     </div>
   </div>
 
-  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} />
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcDiagnostics} />
 
   {#if $dropMessage}
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>
