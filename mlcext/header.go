@@ -152,3 +152,18 @@ func parseFrontMatter(md string) (FrontMatter, string, *yaml.Node, error) {
 	fm.EventKindsSet = reEventKindsKey.MatchString(raw)
 	return fm, body, &node, nil
 }
+
+// KindLabel is the German name of a document kind from KindFromRef.
+func KindLabel(kind string) string {
+	switch kind {
+	case "sop":
+		return "Standardarbeitsanweisung (SOP)"
+	case "va":
+		return "Verfahrensanweisung (VA)"
+	case "form":
+		return "Formblatt (FB)"
+	case "info":
+		return "Information (INFO)"
+	}
+	return ""
+}

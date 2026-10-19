@@ -15,6 +15,7 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 	mathjax "github.com/litao91/goldmark-mathjax"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/mlechner911/mdviewer/mlcext"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
@@ -39,7 +40,7 @@ type Renderer struct {
 func NewRenderer() *Renderer {
 	p := bluemonday.UGCPolicy()
 	// Allow classes/styles for Chroma, Mermaid, Alerts, and Front Matter
-	p.AllowAttrs("class").OnElements("span", "code", "pre", "div", "blockquote", "p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "ul", "ol", "table", "tbody", "thead", "tr", "th", "td", "details", "summary", "aside")
+	p.AllowAttrs("class").OnElements("dd", "span", "code", "pre", "div", "blockquote", "p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "ul", "ol", "table", "tbody", "thead", "tr", "th", "td", "details", "summary", "aside")
 	p.AllowAttrs("style").OnElements("span", "code", "pre", "div")
 	p.AllowAttrs("id").OnElements("div")
 	// Allow heading anchors (in-page #links, document outlines)
@@ -266,6 +267,9 @@ func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
 
 	metaData := meta.Get(context)
 	frontMatterHTML := renderFrontMatter(metaData)
+	if mlcext.Detect(input) {
+		frontMatterHTML = renderMLCDocInfo(input)
+	}
 
 	rawHTML := frontMatterHTML + buf.String()
 	return r.p.Sanitize(rawHTML), nil

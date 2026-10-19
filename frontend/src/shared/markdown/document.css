@@ -355,6 +355,37 @@
   background: var(--border);
 }
 
+/* ---------- MLC document info (MLC Markdown Extension, not standard):
+   how the Sensor Monitor reads the document. Editing aid only: hidden in
+   print, removed from the HTML export. ---------- */
+.md-doc .mlc-docinfo {
+  border: 1px solid var(--border);
+  border-left: 3px solid #c94c35;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.8rem;
+}
+.md-doc .mlc-docinfo-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.md-doc .mlc-docinfo dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.15rem 1rem;
+  margin: 0;
+}
+.md-doc .mlc-docinfo dt { color: var(--muted); font-weight: 500; }
+.md-doc .mlc-docinfo dd { margin: 0; }
+.md-doc .mlc-docinfo-missing { color: var(--alert-warning); font-style: italic; }
+.md-doc .mlc-docinfo-error { color: var(--alert-caution); font-weight: 600; }
+
 /* ============================================================
    Print / PDF via the system print dialog: high contrast, no
    splits inside blocks, colors that survive paper.
@@ -417,6 +448,8 @@
   .md-doc .markdown-alert-warning { background: #fffbeb; }
   .md-doc .markdown-alert-caution { background: #fef2f2; }
   .md-doc .katex { color: #000000; }
+
+  .md-doc .mlc-docinfo { display: none; }
 
   /* A page break is a page break on paper, not a marker. */
   .md-doc .page-break { break-after: page; margin: 0; height: 0; }

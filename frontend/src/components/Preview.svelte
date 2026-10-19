@@ -92,6 +92,8 @@
     const clone = article.cloneNode(true) as HTMLElement;
     clone.classList.remove('theme-fading');
     clone.removeAttribute('style');
+    // Editing aid (how the Sensor Monitor reads the document), not content.
+    clone.querySelectorAll('.mlc-docinfo').forEach((el) => el.remove());
 
     for (const div of Array.from(clone.querySelectorAll<HTMLElement>('.mermaid[data-source]'))) {
       const tpl = document.createElement('template');
