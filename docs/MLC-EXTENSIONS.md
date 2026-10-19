@@ -79,8 +79,12 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   their lines, and offers the building blocks after `[@` and in the editor's
   "MLC" menu. It appears only for documents that use the extension.
 
+- **PDF preview** (`mlcext/mlcdoc`): the "PDF" button in the preview bar
+  shows the pages as `mlcdoc` renders them, so fields look exactly as
+  printed. MarkSafe does not re-implement the PDF layout; without `mlcdoc`
+  installed the button is hidden. Header, footer and logo of the final PDF
+  come from the Sensor Monitor and are not part of the local preview.
+
 ## Roadmap
 
-1. A PDF preview rendered by `mlcdoc` itself, so fields look exactly as
-   printed. MarkSafe does not re-implement the PDF layout.
-2. A readable document header instead of the generic front matter table.
+1. A readable document header instead of the generic front matter table.
