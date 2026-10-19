@@ -20,6 +20,7 @@
   import HamburgerMenu from './components/HamburgerMenu.svelte';
   import TabsBar from './components/TabsBar.svelte';
   import StatusBar from './components/StatusBar.svelte';
+  import PdfPreview from './components/PdfPreview.svelte';
 
   // State & Config
   import { getTheme } from './themes';
@@ -262,6 +263,13 @@
   const mlcSource = { analyze: (md: string) => backend.analyzeMLC(md) };
   const mlcMenu = $derived(mlcAnalysis?.detected ? mlcSnippets(mlcAnalysis.lists) : []);
 
+  // PDF preview rendered by mlcdoc, offered for MLC documents when mlcdoc
+  // is installed. The HTML preview stays mounted (export, scroll sync).
+  let mlcdocVersion = $state('');
+  let previewMode = $state<'html' | 'pdf'>('html');
+  const canPdfPreview = $derived(!!mlcdocVersion && !!mlcAnalysis?.detected);
+  const showPdfPreview = $derived(canPdfPreview && previewMode === 'pdf');
+
   let timeout: ReturnType<typeof setTimeout>;
   function debouncedUpdate(value: string, themeStyle: string) {
     if (!isReady || !checkWailsReady()) return;
@@ -431,6 +439,7 @@
     const init = async () => {
       const version = await backend.getVersion();
       appVersion.set(version);
+      backend.mlcdocVersion().then((v) => (mlcdocVersion = v));
       const wailsReady = checkWailsReady();
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
@@ -859,6 +868,13 @@
         <button onclick={() => toggleBrowseMode()} title={$t('browserModus')} aria-label={$t('browserModus')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
         </button>
+        {#if canPdfPreview}
+          <button
+            onclick={() => (previewMode = previewMode === 'pdf' ? 'html' : 'pdf')}
+            title={$t('pdfPreviewToggle')}
+            class="px-1.5 h-6 rounded text-[11px] font-bold transition-colors {buttonClass} {showPdfPreview ? 'ring-1 ring-current' : ''}"
+          >PDF</button>
+        {/if}
         <button onclick={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
@@ -889,6 +905,10 @@
           <button onclick={() => adjustFontSize(5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">+</button>
         </div>
       </div>
+      {#if showPdfPreview}
+        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} />
+      {/if}
+      <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview}>
       <Preview 
         bind:this={previewComponent}
         html={htmlContent} 
@@ -900,6 +920,7 @@
         onopen_file={handleOpenExternalMD}
         onscroll={handlePreviewScroll}
       />
+      </div>
     </div>
   </div>
 

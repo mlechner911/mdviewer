@@ -20,7 +20,9 @@ import {
   SetWindowTitle,
   OpenBrowseWindow,
   CheckExternalURL,
-  AnalyzeMLC
+  AnalyzeMLC,
+  MLCDocVersion,
+  PreviewMLCDoc
 } from '../../bindings/marksafe/app'
 import type { Analysis as MLCAnalysis, Diagnostic as MLCDiagnostic } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
 import { get } from 'svelte/store';
@@ -66,6 +68,27 @@ export async function analyzeMLC(value: string): Promise<MLCAnalysis | null> {
     return await AnalyzeMLC(value);
   } catch (err) {
     console.error('analyzeMLC failed:', err);
+    return null;
+  }
+}
+
+/** Installed mlcdoc version, "" when there is none (PDF preview hidden). */
+export async function mlcdocVersion(): Promise<string> {
+  if (!isWailsReady()) return '';
+  try {
+    return (await MLCDocVersion()) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Page images rendered by mlcdoc, or the reason it cannot render. */
+export async function previewMLCDoc(md: string, docPath: string) {
+  if (!isWailsReady()) return null;
+  try {
+    return await PreviewMLCDoc(md, docPath);
+  } catch (err) {
+    console.error('previewMLCDoc failed:', err);
     return null;
   }
 }
