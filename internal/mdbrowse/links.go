@@ -30,6 +30,16 @@ var (
 	idAttrRe = regexp.MustCompile(`\sid="([^"]*)"`)
 )
 
+// isViewableImage reports extensions browsers render natively, so
+// those links navigate instead of downloading.
+func isViewableImage(resolved string) bool {
+	switch strings.ToLower(path.Ext(resolved)) {
+	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".svg", ".bmp", ".ico":
+		return true
+	}
+	return false
+}
+
 // isWebExternal reports http(s) links (and protocol-relative ones).
 // mailto:, tel:, data: and friends keep native behavior and need no
 // confirmation or new window.
@@ -243,7 +253,15 @@ func (r *Root) rewriteMarkdownLinks(html, docRelPath string) string {
 			return `<a` + attrs + ` data-md="` + escapeHTML(resolved) + `">`
 		}
 		// Existing non-markdown file: serve via /raw (works with/without JS).
-		newAttrs := hrefRe.ReplaceAllString(attrs, `href="/raw?path=`+url.QueryEscape(resolved)+`"`)
+		// The download attribute keeps the app alive (no navigation into
+		// a viewer dead-end) and preserves the real filename. Viewable
+		// images keep plain navigation (no download attr).
+		hrefVal := "/raw?path=" + url.QueryEscape(resolved)
+		if isViewableImage(resolved) {
+			newAttrs := hrefRe.ReplaceAllString(attrs, `href="`+hrefVal+`"`)
+			return `<a` + newAttrs + `>`
+		}
+		newAttrs := hrefRe.ReplaceAllString(attrs, `href="`+hrefVal+`" download="`+escapeHTML(path.Base(resolved))+`"`)
 		return `<a` + newAttrs + `>`
 	})
 

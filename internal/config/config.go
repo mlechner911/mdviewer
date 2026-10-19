@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -105,7 +106,7 @@ func (m *ConfigManager) GetRecentFiles() []string {
 // AddRecentFile adds a file path to the list of recent files, keeping only the most recent 10.
 func (m *ConfigManager) AddRecentFile(path string) error {
 	m.mu.Lock()
-	
+
 	// Remove if already exists to move it to the top
 	newList := []string{path}
 	for _, f := range m.config.RecentFiles {
@@ -163,13 +164,38 @@ func isWithin(target, dir string) bool {
 	return strings.HasPrefix(target, dir)
 }
 
-// IsURLAllowed checks if a URL's host is whitelisted.
+// hostOf extracts the lower-cased hostname from a full URL
+// ("https://Example.com:8080/x") or a bare host ("example.com") — the
+// preview passes bare hostnames, older configs may hold full URLs.
+func hostOf(s string) string {
+	s = strings.TrimSpace(s)
+	if !strings.Contains(s, "://") {
+		s = "//" + s
+	}
+	u, err := url.Parse(s)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// IsURLAllowed checks if a URL's host is whitelisted. Matching is by
+// domain, not substring: "example.com" allows "sub.example.com" but
+// not "evil-example.com".
 func (m *ConfigManager) IsURLAllowed(targetURL string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
+	target := hostOf(targetURL)
+	if target == "" {
+		return false
+	}
 	for _, u := range m.config.WhitelistedURLs {
-		if strings.Contains(targetURL, u) {
+		pattern := hostOf(u)
+		if pattern == "" {
+			continue
+		}
+		if target == pattern || strings.HasSuffix(target, "."+pattern) {
 			return true
 		}
 	}

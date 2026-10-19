@@ -36,3 +36,27 @@ func TestIsWithinRootWithTrailingSeparator(t *testing.T) {
 		t.Errorf("expected every absolute path to be within the filesystem root")
 	}
 }
+
+func TestIsURLAllowed(t *testing.T) {
+	m := &ConfigManager{config: AppConfig{WhitelistedURLs: []string{"example.com", "https://Docs.MLCgo.eu/path"}}}
+
+	tests := []struct {
+		target string
+		want   bool
+	}{
+		{"example.com", true},
+		{"sub.example.com", true},
+		{"https://example.com/img.png", true},
+		{"https://example.com:8443/x", true},
+		{"evil-example.com", false},
+		{"example.com.evil.net", false},
+		{"docs.mlcgo.eu", true},
+		{"mlcgo.eu", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := m.IsURLAllowed(tt.target); got != tt.want {
+			t.Errorf("IsURLAllowed(%q) = %v, want %v", tt.target, got, tt.want)
+		}
+	}
+}

@@ -2,7 +2,7 @@
 // hit the Go service from Phase 1 directly. Rendered HTML rewrites
 // /raw?path= targets to the /local-resource asset handler (absolute
 // paths, whitelist-checked like the main preview).
-import { BrowseTree, BrowseRender, BrowseSearch, GetVersion } from '../../bindings/marksafe/app';
+import { BrowseTree, BrowseRender, BrowseSearch, GetVersion, GetStyleCSS } from '../../bindings/marksafe/app';
 import type {
   BrowseClient,
   BrowseDoc,
@@ -82,6 +82,11 @@ export function createWailsClient(rootDir: string): BrowseClient {
     async search(q: string): Promise<BrowseHit[]> {
       await ensureReady();
       return (await BrowseSearch(rootDir, q)) ?? [];
+    },
+
+    async chromaCss(theme: BrowseTheme): Promise<string> {
+      await ensureReady();
+      return (await GetStyleCSS(theme === 'light' ? 'github' : 'github-dark')) ?? '';
     },
   };
 }
