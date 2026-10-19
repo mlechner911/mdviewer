@@ -9,8 +9,8 @@ import (
 	"github.com/yuin/goldmark/parser"
 )
 
-// HeadingSlug turns heading text into an anchor exactly like mlcdoc
-// (mlcmd2pdf heading_slug) and GitHub: lower case, space → "-", keep
+// HeadingSlug turns heading text into an anchor exactly like GitHub and
+// the MLC PDF toolkit (mlcmd2pdf heading_slug): lower case, space → "-", keep
 // letters (umlauts included), digits, "-" and "_", drop the rest.
 // "1. Ziel & Zweck (v2)" → "1-ziel--zweck-v2". Same anchors in the
 // preview and in the PDF, so in-document links work in both.

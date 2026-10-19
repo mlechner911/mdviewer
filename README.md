@@ -17,6 +17,7 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
   - **GitHub Alerts**: High-visibility notes, tips, and warnings using `> [!NOTE]` syntax.
   - **Math**: Integrated KaTeX for complex mathematical expressions.
   - **Diagrams**: Native Mermaid.js support for flowcharts, sequences, Gantt charts, and architecture diagrams.
+  - **MLC Markdown Extension** *(non-standard)*: page breaks and anchor targets for MLC Sensor Monitor documents (SOPs, forms). Not part of any Markdown standard — see **[docs/MLC-EXTENSIONS.md](./docs/MLC-EXTENSIONS.md)** for what is standard, what is a common extension and what is MLC-specific.
 - ** Synchronized Dark / Light Mode**: Unified theme system across editor, preview, syntax highlighting, and UI frames (with automatic OS preference detection).
 - ** High-Contrast Print & PDF**: Dedicated print stylesheet (`@media print`) that removes UI chrome, sets clean page margins, prevents bad page breaks, and optimizes colors for paper.
 - ** Export to HTML**: Export standalone HTML documents with embedded CSS and styles.

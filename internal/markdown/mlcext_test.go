@@ -22,7 +22,7 @@ func TestHeadingSlugMatchesMlcdoc(t *testing.T) {
 	}
 }
 
-func TestDialectAnchorsAndPageBreak(t *testing.T) {
+func TestMLCExtAnchorsAndPageBreak(t *testing.T) {
 	src := "# Bericht\n\n## Übersicht\n\n## Übersicht\n\n## Explizit {#fest}\n\n" +
 		"<div class=\"page-break\"></div>\n\nText <a id=\"marke\"></a> weiter.\n"
 	html, err := NewRenderer().Render(src, "github")
@@ -43,7 +43,7 @@ func TestDialectAnchorsAndPageBreak(t *testing.T) {
 	}
 }
 
-func TestDialectDropsOtherRawHTML(t *testing.T) {
+func TestMLCExtDropsOtherRawHTML(t *testing.T) {
 	src := "<script>alert(1)</script>\n\n<div class=\"page-break\" onclick=\"x()\"></div>\n\n" +
 		"Text <span onclick=\"x()\">s</span> <a id=\"x\" href=\"javascript:x()\">l</a>\n"
 	html, err := NewRenderer().Render(src, "github")
@@ -57,10 +57,11 @@ func TestDialectDropsOtherRawHTML(t *testing.T) {
 	}
 }
 
-// The shared fixture covers the dialect end to end; the same file is the
-// visual reference for document.css.
-func TestDialectFixture(t *testing.T) {
-	src, err := os.ReadFile("testdata/mlc-markdown.md")
+// The fixture covers standard Markdown, the common extensions and the MLC
+// Markdown Extension (docs/MLC-EXTENSIONS.md) end to end; the same file is
+// the visual reference for document.css.
+func TestMLCExtFixture(t *testing.T) {
+	src, err := os.ReadFile("testdata/mlc-extension.md")
 	if err != nil {
 		t.Fatal(err)
 	}

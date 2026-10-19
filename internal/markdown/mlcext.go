@@ -9,26 +9,27 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// The MLC document dialect (mlcdoc, MARKDOWN-PDF-LAYOUT.md) uses exactly
-// two pieces of raw HTML: a page break block and empty anchor targets.
-// Goldmark drops all raw HTML in safe mode; this renderer lets these two
-// forms through verbatim and keeps dropping everything else. bluemonday
-// still sanitizes the result afterwards.
+// MLC Markdown Extension — NOT standard Markdown (docs/MLC-EXTENSIONS.md).
+// It allows exactly two pieces of raw HTML: a page break block and empty
+// anchor targets. Goldmark drops all raw HTML in safe mode; this renderer
+// lets these two forms through verbatim and keeps dropping everything
+// else. bluemonday still sanitizes the result afterwards.
 var (
 	pageBreakRe  = regexp.MustCompile(`^\s*<div class="page-break">\s*</div>\s*$`)
 	anchorOpenRe = regexp.MustCompile(`^<a id="[\p{L}\p{N}_-]+">$`)
 	anchorFullRe = regexp.MustCompile(`^\s*<a id="[\p{L}\p{N}_-]+">\s*</a>\s*$`)
 )
 
-// mlcHTMLRenderer renders allowlisted raw HTML (block and inline).
-type mlcHTMLRenderer struct{}
+// mlcExtHTMLRenderer renders the extension's allowlisted raw HTML
+// (block and inline).
+type mlcExtHTMLRenderer struct{}
 
-func (r *mlcHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+func (r *mlcExtHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindHTMLBlock, r.renderHTMLBlock)
 	reg.Register(ast.KindRawHTML, r.renderRawHTML)
 }
 
-func (r *mlcHTMLRenderer) renderHTMLBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r *mlcExtHTMLRenderer) renderHTMLBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
@@ -48,7 +49,7 @@ func (r *mlcHTMLRenderer) renderHTMLBlock(w util.BufWriter, source []byte, node 
 	return ast.WalkContinue, nil
 }
 
-func (r *mlcHTMLRenderer) renderRawHTML(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r *mlcExtHTMLRenderer) renderRawHTML(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkSkipChildren, nil
 	}

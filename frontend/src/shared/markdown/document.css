@@ -278,7 +278,8 @@
   pointer-events: none;
 }
 
-/* ---------- Page break (mlcdoc: <div class="page-break"></div>) ---------- */
+/* ---------- Page break: MLC Markdown Extension, not standard
+   (docs/MLC-EXTENSIONS.md): <div class="page-break"></div> ---------- */
 .md-doc .page-break {
   display: flex;
   align-items: center;

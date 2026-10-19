@@ -1,11 +1,11 @@
 ---
-title: Testdokument MLC-Markdown
+title: Testdokument MLC-Erweiterung
 version: "1.0"
 tags: [sop, test]
 ---
 # Standardarbeitsanweisung (SOP)
 
-**Titel:** Testdokument für den gemeinsamen Dialekt
+**Titel:** Testdokument Standard, verbreitete Erweiterungen und MLC-Erweiterung
 **Dokumenten-ID:** SOP-TEST-001
 **Version:** 1.0
 
@@ -57,9 +57,11 @@ func main() { fmt.Println("hallo") }
 graph LR; A-->B;
 ```
 
+Seitenumbruch (MLC-Erweiterung, kein Standard):
+
 <div class="page-break"></div>
 
-## 4. Formularfelder
+## 4. Formularfelder (MLC-Erweiterung, kein Standard)
 
 Ort: [@#ort ______________________] <!--* z. B. Kühlraum A -->
 
