@@ -147,8 +147,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.Add(label(t, "menuSaveAs", "Save As...")).SetAccelerator("CmdOrCtrl+Shift+s").OnClick(func(*application.Context) {
 		a.MenuSaveAsFile()
 	})
-	fileMenu.Add(label(t, "menuExportPdf", "Export as PDF…")).SetAccelerator("CmdOrCtrl+Shift+e").OnClick(func(*application.Context) {
+	// Submenu: Export (PDF from mlcdoc, HTML from the preview)
+	exportMenu := fileMenu.AddSubmenu(label(t, "menuExport", "Export"))
+	exportMenu.Add(label(t, "menuExportPdf", "As PDF…")).SetAccelerator("CmdOrCtrl+Shift+e").OnClick(func(*application.Context) {
 		emit("menu-export-pdf")
+	})
+	exportMenu.Add(label(t, "menuExportHtml", "As HTML…")).OnClick(func(*application.Context) {
+		emit("menu-export-html")
 	})
 	fileMenu.AddSeparator()
 	fileMenu.Add(t["menuAbout"]).OnClick(func(*application.Context) {

@@ -17,6 +17,8 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    menuExportHtml: 'As HTML…',
+    menuExport: 'Export',
     tplOpenFolder: 'Open template folder',
     tplGroupGeneral: 'General',
     tplGroupMlc: 'MLC documents',
@@ -89,7 +91,7 @@ export const translations: Record<string, any> = {
     menuThemeLight: 'Light',
     menuThemeAuto: 'System Default',
     menuNewTab: 'New Tab',
-    menuExportPdf: 'Export as PDF…',
+    menuExportPdf: 'As PDF…',
     pdfExportFailed: 'PDF export failed:',
     pdfExported: 'PDF saved: %s',
     pdfIgnoredKeys: 'Front matter not used in the PDF: %s',
@@ -130,6 +132,8 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    menuExportHtml: 'Als HTML…',
+    menuExport: 'Exportieren',
     tplOpenFolder: 'Vorlagenordner öffnen',
     tplGroupGeneral: 'Allgemein',
     tplGroupMlc: 'MLC-Dokumente',
@@ -202,7 +206,7 @@ export const translations: Record<string, any> = {
     menuThemeLight: 'Hell',
     menuThemeAuto: 'Systemstandard',
     menuNewTab: 'Neuer Tab',
-    menuExportPdf: 'Als PDF exportieren…',
+    menuExportPdf: 'Als PDF…',
     pdfExportFailed: 'PDF-Export fehlgeschlagen:',
     pdfExported: 'PDF gespeichert: %s',
     pdfIgnoredKeys: 'Im PDF nicht verwendet (Front Matter): %s',
@@ -243,6 +247,8 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    menuExportHtml: 'Como HTML…',
+    menuExport: 'Exportar',
     tplOpenFolder: 'Abrir carpeta de plantillas',
     tplGroupGeneral: 'General',
     tplGroupMlc: 'Documentos MLC',
@@ -315,7 +321,7 @@ export const translations: Record<string, any> = {
     menuThemeLight: 'Claro',
     menuThemeAuto: 'Predeterminado del sistema',
     menuNewTab: 'Nueva pestaña',
-    menuExportPdf: 'Exportar como PDF…',
+    menuExportPdf: 'Como PDF…',
     pdfExportFailed: 'Error al exportar PDF:',
     pdfExported: 'PDF guardado: %s',
     pdfIgnoredKeys: 'Front matter no usado en el PDF: %s',
@@ -356,6 +362,8 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    menuExportHtml: 'En HTML…',
+    menuExport: 'Exporter',
     tplOpenFolder: 'Ouvrir le dossier des modèles',
     tplGroupGeneral: 'Général',
     tplGroupMlc: 'Documents MLC',
@@ -428,7 +436,7 @@ export const translations: Record<string, any> = {
     menuThemeLight: 'Clair',
     menuThemeAuto: 'Par défaut du système',
     menuNewTab: 'Nouvel onglet',
-    menuExportPdf: 'Exporter en PDF…',
+    menuExportPdf: 'En PDF…',
     pdfExportFailed: "Échec de l'export PDF :",
     pdfExported: 'PDF enregistré : %s',
     pdfIgnoredKeys: 'Front matter non utilisé dans le PDF : %s',

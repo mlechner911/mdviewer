@@ -6,6 +6,7 @@
    * here — the images come from mlcdoc via PreviewPDF, the same path as the
    * PDF export.
    */
+  import { untrack } from 'svelte';
   import { t } from '../i18n';
   import * as backend from '../lib/backend';
 
@@ -40,7 +41,9 @@
       warnings = res.warnings ?? [];
       ignored = res.ignored ?? [];
       if (!res.error) pages = res.pages ?? [];
-    }, pages.length === 0 ? 0 : 800);
+      // pages is read untracked: setting it must not schedule the next
+      // render (that looped every 800 ms, "wird gesetzt…" for ever).
+    }, untrack(() => pages.length) === 0 ? 0 : 800);
     return () => clearTimeout(timer);
   });
 </script>
@@ -88,4 +91,15 @@
   .pdf-pages { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem; }
   .pdf-pages.stale { opacity: 0.45; }
   .pdf-pages img { width: 100%; max-width: 820px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
+  /* Print: only the pages, one per sheet; status bar and notes are screen
+     aids. The page images carry their own margins, so the sheet has none
+     (this also drops the browser's date/title lines). */
+  @page { margin: 0; }
+  @media print {
+    .pdf-preview { background: none; overflow: visible; }
+    .pdf-bar, .pdf-msg { display: none; }
+    .pdf-pages { display: block; padding: 0; }
+    .pdf-pages img { max-width: none; box-shadow: none; break-after: page; display: block; }
+    .pdf-pages img:last-child { break-after: auto; }
+  }
 </style>

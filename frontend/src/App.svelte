@@ -238,7 +238,9 @@
       menuThemeAuto: tMap.menuThemeAuto,
       menuNewTab: tMap.menuNewTab,
       menuNewFromTemplate: tMap.menuNewFromTemplate,
+      menuExport: tMap.menuExport,
       menuExportPdf: tMap.menuExportPdf,
+      menuExportHtml: tMap.menuExportHtml,
       menuOpenDocumentRoot: tMap.menuOpenDocumentRoot,
       menuChooseDocumentRoot: tMap.menuChooseDocumentRoot,
       menuOpen: tMap.menuOpen,
@@ -511,6 +513,7 @@
           EventsOn("menu-new-tab", addNewTab);
           EventsOn("menu-new-from-template", () => (showTemplateModal = true));
           EventsOn("menu-export-pdf", handleExportPdf);
+          EventsOn("menu-export-html", handleExport);
           EventsOn("format-bold", () => wrapSelection('**', '**'));
           EventsOn("format-italic", () => wrapSelection('*', '*'));
           EventsOn("format-h1", () => prefixSelection('# '));
@@ -596,7 +599,7 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf");
+      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html");
       EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
@@ -925,7 +928,7 @@
 
     <div class="flex-1 min-w-0 flex flex-col relative">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
-      <div class="p-2 h-10 border-b flex items-center px-4 gap-4 shrink-0 {toolbarClass} print:hidden">
+      <div class="p-2 h-10 border-b flex flex-nowrap items-center px-4 gap-4 shrink-0 whitespace-nowrap overflow-hidden {toolbarClass} print:hidden">
         <div class="flex items-center gap-2">
             <!-- Focus mode always hides the editor, so the editor toggle would do nothing there -->
             {#if !$isFocusMode}
@@ -967,12 +970,6 @@
         <button onclick={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
-        {#if canPdfPreview}
-          <button onclick={handleExportPdf} title={$t('menuExportPdf')} class="px-1.5 h-6 rounded text-[11px] font-bold transition-colors {buttonClass}">PDF ⤓</button>
-        {/if}
-        <button onclick={handleExport} title={$t('export')} class="p-1 rounded transition-colors {buttonClass}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        </button>
         <div class="h-4 w-px {dividerClass}"></div>
         <button 
           onclick={toggleAppTheme} 
@@ -990,12 +987,15 @@
             <span>{$t('menuThemeAuto')}</span>
           {/if}
         </button>
+        <!-- Zoom scales the HTML preview only; the PDF pages come as images. -->
+        {#if !showPdfPreview}
         <div class="h-4 w-px {dividerClass}"></div>
         <div class="flex gap-1 items-center">
           <button onclick={() => adjustFontSize(-5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">-</button>
           <span class="text-[10px] opacity-60 w-8 text-center font-mono">{fontSize}%</span>
           <button onclick={() => adjustFontSize(5)} class="w-5 h-5 flex items-center justify-center rounded text-xs font-bold {buttonClass}">+</button>
         </div>
+        {/if}
       </div>
       {#if showPdfPreview}
         <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} />
