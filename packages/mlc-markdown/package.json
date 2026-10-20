@@ -33,7 +33,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mlechner911/mdviewer",
+    "url": "git+https://github.com/mlechner911/mdviewer.git",
     "directory": "packages/mlc-markdown"
   },
   "scripts": {
