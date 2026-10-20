@@ -1,16 +1,13 @@
 package main
 
 import (
-	"context"
 	_ "embed"
-	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"marksafe/internal/config"
 	"marksafe/internal/filesystem"
@@ -18,7 +15,6 @@ import (
 	"marksafe/internal/mdbrowse"
 
 	"github.com/mlechner911/mdviewer/mlcext"
-	"github.com/mlechner911/mdviewer/mlcext/mlcdoc"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -47,6 +43,7 @@ type App struct {
 	renderer    *markdown.Renderer
 	config      *config.ConfigManager
 	initialFile string
+	pdf         pdfTool
 }
 
 // emit broadcasts an event to the frontend (v2: runtime.EventsEmit).
@@ -140,6 +137,9 @@ func (a *App) UpdateMenu(t map[string]string) {
 	})
 	fileMenu.Add(label(t, "menuSaveAs", "Save As...")).SetAccelerator("CmdOrCtrl+Shift+s").OnClick(func(*application.Context) {
 		a.MenuSaveAsFile()
+	})
+	fileMenu.Add(label(t, "menuExportPdf", "Export as PDF…")).SetAccelerator("CmdOrCtrl+Shift+e").OnClick(func(*application.Context) {
+		emit("menu-export-pdf")
 	})
 	fileMenu.AddSeparator()
 	fileMenu.Add(t["menuAbout"]).OnClick(func(*application.Context) {
@@ -277,48 +277,6 @@ func (a *App) GetInitialContent() *FileResult {
 // Plain Markdown gets an empty analysis (Detected false).
 func (a *App) AnalyzeMLC(md string) mlcext.Analysis {
 	return mlcext.Analyze(md)
-}
-
-// MLCDocPreview is a page preview rendered by mlcdoc: PNG data URLs per
-// page, mlcdoc's warnings, or the message why mlcdoc cannot render it.
-type MLCDocPreview struct {
-	Pages    []string `json:"pages"`
-	Warnings []string `json:"warnings"`
-	Error    string   `json:"error"`
-}
-
-// MLCDocVersion returns the installed mlcdoc ("mlcdoc 0.16.0 (…)") or ""
-// when there is none; the PDF preview is hidden then.
-func (a *App) MLCDocVersion() string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	return mlcdoc.Version(ctx, "")
-}
-
-// PreviewMLCDoc renders md with mlcdoc into page images, exactly as the
-// PDF will look (MLC Markdown Extension, non-standard). docPath locates
-// relative images; they are only read from a whitelisted directory.
-func (a *App) PreviewMLCDoc(md string, docPath string) MLCDocPreview {
-	baseDir := ""
-	if docPath != "" {
-		if abs, err := filepath.Abs(docPath); err == nil && a.config.IsPathAllowed(filepath.Dir(abs)) {
-			baseDir = filepath.Dir(abs)
-		}
-	}
-	// Render what the Sensor Monitor stores: without the upload front
-	// matter, which mlcdoc rejects.
-	res, err := mlcdoc.Preview(context.Background(), mlcdoc.Request{Markdown: mlcext.StoredText(md), BaseDir: baseDir})
-	if err != nil {
-		return MLCDocPreview{Pages: []string{}, Warnings: []string{}, Error: err.Error()}
-	}
-	out := MLCDocPreview{Pages: make([]string, len(res.Pages)), Warnings: res.Warnings}
-	if out.Warnings == nil {
-		out.Warnings = []string{}
-	}
-	for i, p := range res.Pages {
-		out.Pages[i] = "data:image/png;base64," + base64.StdEncoding.EncodeToString(p)
-	}
-	return out
 }
 
 // MLCTemplates lists the templates for new documents of the MLC Markdown

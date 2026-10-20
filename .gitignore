@@ -46,3 +46,4 @@ mlcplan.md
 # private Klone (dochub-cli mlcai attach) — nicht Teil dieses Repos
 /.mlcai/
 /mlcprodweb/
+build/mlcdoc/

@@ -30,7 +30,7 @@ if mlcext.Detect(md) {
 | `Analyze` | Everything an editor needs: findings, field and hint positions, lists |
 | `LoadTemplates`, `TemplateInfo.Render`, `SuggestRefNo` | Templates as data: schema (`*.json`, see `mlc-template.schema.json`) + Markdown body; built-in starting set, overridable from a folder |
 | `StoredText` | The text as the Sensor Monitor stores and renders it (upload front matter removed) |
-| `mlcdoc.Preview` | Page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`) |
+| `mlcdoc.New`, `Client.RenderPDF`, `Client.RenderPages` | PDF and page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`): version check, front matter preparation (`mlcdoc.Prepare`), typed `RenderError` with line |
 
 Severity: **error** means the Sensor Monitor rejects the document or mlcdoc
 cannot render it; **warning** means it is accepted but probably not intended;

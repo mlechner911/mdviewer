@@ -79,12 +79,14 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   their lines, and offers the building blocks after `[@` and in the editor's
   "MLC" menu. It appears only for documents that use the extension.
 
-- **PDF preview** (`mlcext/mlcdoc`): the "PDF" button in the preview bar
-  shows the pages as `mlcdoc` renders them, so fields look exactly as
-  printed. MarkSafe does not re-implement the PDF layout; without `mlcdoc`
-  installed the button is hidden. Header, footer and logo of the final PDF
-  come from the Sensor Monitor and are not part of the local preview.
-
+- **PDF preview and export** (`mlcext/mlcdoc`, File → "Export as PDF…",
+  `Ctrl+Shift+E`): for every document, rendered by the MLC PDF toolkit
+  `mlcdoc`, which MarkSafe ships. Fields of the MLC extension look exactly as
+  printed; MarkSafe does not re-implement the PDF layout. Front matter keys
+  `mlcdoc` does not know (tags, event_kinds …) are left out and listed.
+  Header, footer and logo of the Sensor Monitor's PDFs come from the server
+  and are not part of the local PDF. Formulas are not typeset by `mlcdoc`
+  yet; they appear as text, and MarkSafe says so.
 - **Templates** (File → "New from Template…", `Ctrl+Shift+N`): a template
   is data, not code: a schema `<id>.json` (name, input fields, output file
   name) plus a Markdown body with `{{placeholders}}`. The dialog is built

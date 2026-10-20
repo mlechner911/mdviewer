@@ -65,7 +65,9 @@ All file and URL access is intercepted by `Preview.svelte`. It calls `backend.is
 - Go 1.24+, Node.js 20+, Wails CLI `wails3` v3.0.0-beta.17 (`go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.17`), [Task](https://taskfile.dev/), NSIS (`makensis`).
 - Linux: GTK3 + webkit2gtk-4.1 dev packages (`libgtk-3-dev libwebkit2gtk-4.1-dev`). Builds use the `gtk3` tag, because Wails v3 beta defaults to GTK4 + WebKitGTK 6.0.
 
-Build output goes to `bin/`. Build configuration (product info, file associations) lives in `build/config.yml`; after changing it run `wails3 task common:update:build-assets`.
+Build output goes to `bin/`.
+
+**Bundled PDF toolkit:** MarkSafe ships `mlcdoc` (MLC PDF toolkit, mlcmd2pdf + Typst) for PDF preview and export; the app finds it next to its executable. `task mlcdoc:fetch` takes the pinned release (`MLCDOC_VERSION` in `Taskfile.yml`, default source `/mnt/data2tb/dropzone/mlcdoc/<version>/`, override with `MLCDOC_DIST`), checks `SHA256SUMS` and extracts binary and licenses into `build/mlcdoc/` (git-ignored). `task build` (Linux) and `task build:windows` run it automatically; the Windows installer puts `mlcdoc.exe` next to `marksafe.exe` (`build/windows/nsis/mlcdoc.nsh`) and the build fails if it is missing. macOS bundling is not done yet. The Go interface is `mlcext/mlcdoc`. Build configuration (product info, file associations) lives in `build/config.yml`; after changing it run `wails3 task common:update:build-assets`.
 
 | Task | Command | Description |
 |---|---|---|

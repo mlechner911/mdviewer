@@ -22,7 +22,8 @@ import {
   CheckExternalURL,
   AnalyzeMLC,
   MLCDocVersion,
-  PreviewMLCDoc,
+  PreviewPDF,
+  ExportPDF,
   MLCTemplates,
   RenderMLCTemplate,
   SuggestMLCRefNo
@@ -91,14 +92,31 @@ export async function mlcdocVersion(): Promise<string> {
   }
 }
 
-/** Page images rendered by mlcdoc, or the reason it cannot render. */
-export async function previewMLCDoc(md: string, docPath: string) {
+export type PDFResult = {
+  pages: string[]; path: string; warnings: string[]; ignored: string[]; error: string; errorLine: number;
+};
+
+function pdfFailure(err: any): PDFResult {
+  return { pages: [], path: '', warnings: [], ignored: [], error: String(err?.message ?? err), errorLine: 0 };
+}
+
+/** Page images rendered by mlcdoc (as in the exported PDF), or why it cannot render. */
+export async function previewPDF(md: string, docPath: string): Promise<PDFResult | null> {
   if (!isWailsReady()) return null;
   try {
-    return await PreviewMLCDoc(md, docPath);
+    return (await PreviewPDF(md, docPath)) as PDFResult;
   } catch (err) {
-    console.error('previewMLCDoc failed:', err);
-    return null;
+    return pdfFailure(err);
+  }
+}
+
+/** Render with mlcdoc and save via a dialog; path "" when cancelled. */
+export async function exportPDF(md: string, docPath: string): Promise<PDFResult> {
+  if (!isWailsReady()) return pdfFailure('Wails not ready');
+  try {
+    return (await ExportPDF(md, docPath)) as PDFResult;
+  } catch (err) {
+    return pdfFailure(err);
   }
 }
 

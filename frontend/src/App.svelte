@@ -238,6 +238,7 @@
       menuThemeAuto: tMap.menuThemeAuto,
       menuNewTab: tMap.menuNewTab,
       menuNewFromTemplate: tMap.menuNewFromTemplate,
+      menuExportPdf: tMap.menuExportPdf,
       menuOpenDocumentRoot: tMap.menuOpenDocumentRoot,
       menuChooseDocumentRoot: tMap.menuChooseDocumentRoot,
       menuOpen: tMap.menuOpen,
@@ -280,7 +281,27 @@
   // is installed. The HTML preview stays mounted (export, scroll sync).
   let mlcdocVersion = $state('');
   let previewMode = $state<'html' | 'pdf'>('html');
-  const canPdfPreview = $derived(!!mlcdocVersion && !!mlcAnalysis?.detected);
+  // PDF via mlcdoc (shipped with MarkSafe) for every document.
+  const canPdfPreview = $derived(!!mlcdocVersion);
+  // Formulas are not typeset by mlcdoc yet; they appear as plain text.
+  const hasMath = $derived(htmlContent.includes('class="math'));
+
+  async function handleExportPdf() {
+    const tab = tabs[activeTabIndex];
+    if (!tab || !mlcdocVersion) return;
+    const res = await backend.exportPDF(tab.content, tab.path ?? '');
+    if (res.error) {
+      showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
+      return;
+    }
+    if (!res.path) return; // cancelled
+    const notes = [
+      ...(res.ignored.length ? [$t('pdfIgnoredKeys', res.ignored.join(', '))] : []),
+      ...(hasMath ? [$t('pdfMathAsText')] : []),
+      ...res.warnings,
+    ];
+    showToast($t('pdfExported', res.path) + (notes.length ? ' · ' + notes.join(' · ') : ''), notes.length ? 7000 : 3000, 'info');
+  }
   const showPdfPreview = $derived(canPdfPreview && previewMode === 'pdf');
 
   let timeout: ReturnType<typeof setTimeout>;
@@ -463,6 +484,7 @@
           EventsOn("menu-save-file-as", handleSaveAs);
           EventsOn("menu-new-tab", addNewTab);
           EventsOn("menu-new-from-template", () => (showTemplateModal = true));
+          EventsOn("menu-export-pdf", handleExportPdf);
           EventsOn("format-bold", () => wrapSelection('**', '**'));
           EventsOn("format-italic", () => wrapSelection('*', '*'));
           EventsOn("format-h1", () => prefixSelection('# '));
@@ -549,7 +571,7 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template");
+      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf");
       EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
@@ -901,6 +923,9 @@
         <button onclick={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
+        {#if canPdfPreview}
+          <button onclick={handleExportPdf} title={$t('menuExportPdf')} class="px-1.5 h-6 rounded text-[11px] font-bold transition-colors {buttonClass}">PDF ⤓</button>
+        {/if}
         <button onclick={handleExport} title={$t('export')} class="p-1 rounded transition-colors {buttonClass}">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
@@ -929,7 +954,7 @@
         </div>
       </div>
       {#if showPdfPreview}
-        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} />
+        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} />
       {/if}
       <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview}>
       <Preview 

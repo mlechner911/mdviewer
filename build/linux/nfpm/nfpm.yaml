@@ -19,6 +19,13 @@ release: "1"
 contents:
   - src: "./bin/marksafe"
     dst: "/usr/local/bin/marksafe"
+  # MLC PDF toolkit, found next to marksafe (task mlcdoc:fetch / build)
+  - src: "./bin/mlcdoc"
+    dst: "/usr/local/bin/mlcdoc"
+  - src: "./build/mlcdoc/0.16.0/linux/LICENSE-*"
+    dst: "/usr/share/doc/marksafe/mlcdoc/"
+  - src: "./build/mlcdoc/0.16.0/linux/NOTICE-*"
+    dst: "/usr/share/doc/marksafe/mlcdoc/"
   - src: "./build/appicon.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/marksafe.png"
   - src: "./build/linux/marksafe.desktop"
