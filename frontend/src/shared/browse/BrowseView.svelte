@@ -7,6 +7,8 @@
   import Content from './Content.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
   import SearchModal from './SearchModal.svelte';
+  import DocumentsModal from './DocumentsModal.svelte';
+  import type { MlcDocument } from './browseClient';
   import ExternalLinkModal from './ExternalLinkModal.svelte';
   import DocInfoModal from './DocInfoModal.svelte';
 
@@ -38,6 +40,16 @@
   let lastTheme = $state<BrowseTheme | null>(null);
   let currentPath = $state<string | null>(null);
   let searchOpen = $state(false);
+  // MLC documents of the root (overview); the button shows only with some.
+  let mlcDocs = $state<MlcDocument[]>([]);
+  let docsOpen = $state(false);
+  async function openDocs() {
+    mlcDocs = await client.documents();
+    docsOpen = true;
+  }
+  onMount(() => {
+    client.documents().then((d) => (mlcDocs = d));
+  });
   let externalUrl = $state<string | null>(null);
   let infoOpen = $state(false);
   let docSize = $state(0);
@@ -450,6 +462,18 @@
         </button>
       </div>
       <div class="toolbar-right">
+        {#if mlcDocs.length > 0}
+          <button class="nav-btn" onclick={openDocs} title="Dokumente der MLC-Erweiterung (Kennung, Art, Prüfung)" aria-label="Dokumente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="8" y1="13" x2="16" y2="13" />
+              <line x1="8" y1="17" x2="13" y2="17" />
+            </svg>
+            <span class="nav-label">Dokumente</span>
+          </button>
+        {/if}
         <button
           class="nav-btn"
           onclick={cycleDensity}
@@ -515,6 +539,17 @@
       words={docWords}
       chars={docChars}
       on:close={() => (infoOpen = false)}
+    />
+  {/if}
+
+  {#if docsOpen}
+    <DocumentsModal
+      docs={mlcDocs}
+      on:open={(e) => {
+        docsOpen = false;
+        handleSelectEntry(e);
+      }}
+      on:close={() => (docsOpen = false)}
     />
   {/if}
 

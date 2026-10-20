@@ -92,6 +92,15 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   can tell, on upload. Every template passes the checker and renders in
   `mlcdoc` without warnings.
 
+- **Document folder** (File → "Choose Document Folder…", "Open Document
+  Folder", `Ctrl+Shift+D`): one fixed base folder for the document
+  collection, like an Obsidian vault. It is a workspace only: status,
+  versions and approval stay in the Sensor Monitor. The browse window shows
+  a "Dokumente" overview (ID, kind, title, version, fields, check result).
+  Own templates go into `_vorlagen/` in that folder, named with the kind
+  prefix (`FB - Batteriewechsel.md`), with the placeholders `{{TITEL}}`,
+  `{{TITEL_YAML}}`, `{{KENNUNG}}` and `{{VERSION}}`.
+
 ## Roadmap
 
 1. A readable document header instead of the generic front matter table.

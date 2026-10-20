@@ -23,8 +23,14 @@
   const buttonClass = $derived(STYLE.button[currentTheme]);
   const editorClass = $derived(STYLE.editor[currentTheme]);
 
-  let templates = $state<{ kind: string; prefix: string; label: string }[]>([]);
-  let kind = $state('sop');
+  type Tpl = { kind: string; prefix: string; label: string; file: string };
+  let templates = $state<Tpl[]>([]);
+  // Selected template: "<kind>|<file>" (file empty for built-in ones).
+  let choice = $state('sop|');
+  const builtin = $derived(templates.filter((t) => !t.file));
+  const own = $derived(templates.filter((t) => t.file));
+  const kind = $derived(choice.split('|')[0]);
+  const templateFile = $derived(choice.slice(choice.indexOf('|') + 1));
   let title = $state('');
   let area = $state('QM');
   let refNo = $state('');
@@ -33,9 +39,8 @@
   let error = $state('');
 
   $effect(() => {
-    if (show && templates.length === 0) {
-      backend.mlcTemplates().then((list) => (templates = list));
-    }
+    // Reload on every opening: the document folder's own templates change.
+    if (show) backend.mlcTemplates().then((list) => (templates = list as Tpl[]));
   });
 
   // Keep the RefNo suggestion in step with kind and area until edited.
@@ -49,7 +54,7 @@
 
   async function create() {
     error = '';
-    const res = await backend.newMLCDocument({ kind, title, refNo, version });
+    const res = await backend.newMLCDocument({ template: templateFile, kind, title, refNo, version });
     if (res.error) {
       error = res.error;
       return;
@@ -75,10 +80,17 @@
 
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold opacity-80">{$t('tplKind')}</span>
-        <select bind:value={kind} class="px-2 py-1.5 rounded border {editorClass}">
-          {#each templates as tpl}
-            <option value={tpl.kind}>{tpl.label}</option>
+        <select bind:value={choice} class="px-2 py-1.5 rounded border {editorClass}">
+          {#each builtin as tpl}
+            <option value="{tpl.kind}|">{tpl.label}</option>
           {/each}
+          {#if own.length > 0}
+            <optgroup label={$t('tplOwn')}>
+              {#each own as tpl}
+                <option value="{tpl.kind}|{tpl.file}">{tpl.prefix} · {tpl.label}</option>
+              {/each}
+            </optgroup>
+          {/if}
         </select>
       </label>
 

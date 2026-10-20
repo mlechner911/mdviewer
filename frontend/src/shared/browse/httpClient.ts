@@ -1,4 +1,4 @@
-import type { BrowseClient, BrowseDoc, BrowseHit, TocEntry, BrowseTheme } from './browseClient';
+import type { BrowseClient, BrowseDoc, BrowseHit, TocEntry, BrowseTheme, MlcDocument } from './browseClient';
 
 // BrowseClient over the marksafe_browse HTTP server
 // (GET /tree, /render?path=&theme=, /api/search?q=).
@@ -34,6 +34,16 @@ export function createHttpClient(): BrowseClient {
       const resp = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return (await resp.json()) ?? [];
+    },
+
+    async documents(): Promise<MlcDocument[]> {
+      try {
+        const resp = await fetch('/api/documents');
+        if (!resp.ok) return [];
+        return (await resp.json()) ?? [];
+      } catch {
+        return [];
+      }
     },
 
     async chromaCss(theme: BrowseTheme): Promise<string> {

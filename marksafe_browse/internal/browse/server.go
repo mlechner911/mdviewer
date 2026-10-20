@@ -80,6 +80,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/md/", s.handleMarkdown)
 	mux.HandleFunc("/raw", s.handleRaw)
 	mux.HandleFunc("/api/search", s.handleSearch)
+	mux.HandleFunc("/api/documents", s.handleDocuments)
 	mux.HandleFunc("/assets/chroma-dark.css", s.serveText("text/css; charset=utf-8", s.chromaDark))
 	mux.HandleFunc("/assets/chroma-light.css", s.serveText("text/css; charset=utf-8", s.chromaLight))
 
@@ -248,6 +249,18 @@ func (s *Server) handleRaw(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", ctype)
 	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
+}
+
+// handleDocuments answers GET /api/documents with the documents of the MLC
+// Markdown Extension (non-standard) below the root, for the overview.
+func (s *Server) handleDocuments(w http.ResponseWriter, r *http.Request) {
+	docs, err := s.root.Documents()
+	if err != nil {
+		http.Error(w, "Error scanning directory", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(docs)
 }
 
 // handleSearch answers GET /api/search?q=... with ranked JSON hits.

@@ -221,3 +221,10 @@ func TestStoredText(t *testing.T) {
 		t.Errorf("no front matter: %q", got)
 	}
 }
+
+func TestHeaderTitle(t *testing.T) {
+	h := ParseHeader("# Standardarbeitsanweisung (SOP)\n\n**Titel:** CAPA-Prozess\n**Dokumenten-ID:** SOP-QM-006\n**Version:** 1.0\n\n---\n")
+	if h.Title != "CAPA-Prozess" || h.RefNo != "SOP-QM-006" {
+		t.Errorf("header: %+v", h)
+	}
+}

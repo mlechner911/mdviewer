@@ -17,6 +17,9 @@ import (
 // Placeholders such as "[Datum]" count as empty. A trailing "\" (a Markdown
 // line break) is not part of the value.
 type Header struct {
+	// Title from "**Titel:** …" (SOP templates); informational, the Sensor
+	// Monitor takes the title from the upload form or the front matter.
+	Title   string
 	RefNo   string
 	Version string
 	// ValidFrom is the raw "Gültig ab" value. Validity is set by the
@@ -28,7 +31,7 @@ type Header struct {
 	refLine, versionLine, validLine int
 }
 
-var hdrField = regexp.MustCompile(`\*\*\s*(Dokumenten-ID|Dokument-ID|Version|Gültig ab)\s*:\s*\*\*\s*([^|\n*]*)`)
+var hdrField = regexp.MustCompile(`\*\*\s*(Titel|Dokumenten-ID|Dokument-ID|Version|Gültig ab)\s*:\s*\*\*\s*([^|\n*]*)`)
 
 // ParseHeader reads the header lines of md (front matter is skipped).
 func ParseHeader(md string) Header {
@@ -56,6 +59,10 @@ func ParseHeader(md string) Header {
 				continue // placeholder "[Datum]"
 			}
 			switch m[1] {
+			case "Titel":
+				if h.Title == "" {
+					h.Title = v
+				}
 			case "Dokumenten-ID", "Dokument-ID":
 				if h.RefNo == "" {
 					h.RefNo, h.refLine = v, line

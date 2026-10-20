@@ -107,7 +107,7 @@ export async function mlcTemplates() {
 }
 
 /** A new document from a template, or the reason it cannot be created. */
-export async function newMLCDocument(p: { kind: string; title: string; refNo: string; version: string }): Promise<{ content: string; error: string }> {
+export async function newMLCDocument(p: { template: string; kind: string; title: string; refNo: string; version: string }): Promise<{ content: string; error: string }> {
   if (!isWailsReady()) return { content: '', error: 'Wails not ready' };
   try {
     return { content: await NewMLCDocument(p), error: '' };

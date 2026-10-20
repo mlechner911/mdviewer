@@ -42,8 +42,11 @@ func renderMLCDocInfo(md string) string {
 		version = fm.Version
 	}
 	row("Version", esc(version))
-	if fm.Title != "" {
-		row("Titel", esc(fm.Title))
+	if title := fm.Title; title != "" || h.Title != "" {
+		if title == "" {
+			title = h.Title
+		}
+		row("Titel", esc(title))
 	}
 	if fm.Description != "" {
 		row("Beschreibung", esc(fm.Description))

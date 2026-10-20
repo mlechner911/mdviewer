@@ -82,3 +82,21 @@ func TestRefNosInDir(t *testing.T) {
 		t.Errorf("RefNosInDir = %s", got)
 	}
 }
+
+func TestUserTemplates(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "FB - Batteriewechsel.md"), []byte("# Formblatt: {{TITEL}}\n\n**Dokumenten-ID:** {{KENNUNG}} | **Version:** {{VERSION}}\n\n[@#ort ____]\n"), 0o600)
+	_ = os.WriteFile(filepath.Join(dir, "notizen.md"), []byte("x"), 0o600)
+	_ = os.WriteFile(filepath.Join(dir, "XY_irgendwas.md"), []byte("x"), 0o600)
+	list := TemplatesInDir(dir)
+	if len(list) != 1 || list[0].Kind != "form" || list[0].Label != "Batteriewechsel" {
+		t.Fatalf("templates: %+v", list)
+	}
+	md, err := NewDocument(NewParams{Template: list[0].File, Kind: list[0].Kind, Title: "Batterie", RefNo: "FB-TE-002"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(md, "# Formblatt: Batterie") || !strings.Contains(md, "FB-TE-002 | **Version:** 1.0") {
+		t.Errorf("document:\n%s", md)
+	}
+}

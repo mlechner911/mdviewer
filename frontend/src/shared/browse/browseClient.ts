@@ -21,6 +21,19 @@ export interface BrowseHit {
   snippet: string;
 }
 
+/** A document of the MLC Markdown Extension (non-standard) in the root. */
+export interface MlcDocument {
+  path: string;
+  refNo: string;
+  kind: string;
+  kindLabel: string;
+  version: string;
+  title: string;
+  fields: number;
+  errors: number;
+  warnings: number;
+}
+
 export type BrowseTheme = 'dark' | 'light';
 
 export interface BrowseClient {
@@ -34,6 +47,8 @@ export interface BrowseClient {
   renderDoc(path: string, theme: BrowseTheme, signal?: AbortSignal): Promise<BrowseDoc>;
   /** Ranked full-text hits. Rejects on transport errors. */
   search(q: string): Promise<BrowseHit[]>;
+  /** MLC documents below the root (never throws: [] on failure). */
+  documents(): Promise<MlcDocument[]>;
   /** Syntax-highlighting CSS for the active theme (code colors). */
   chromaCss(theme: BrowseTheme): Promise<string>;
 }

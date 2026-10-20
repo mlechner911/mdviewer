@@ -22,20 +22,23 @@ import (
 //go:embed templates/*.md
 var templateFS embed.FS
 
-// Template describes one document kind.
+// Template describes one template: a built-in one per kind, or a user
+// template file (File set).
 type Template struct {
 	Kind   string `json:"kind"`   // sop | va | form | info
 	Prefix string `json:"prefix"` // SOP | VA | FB | INFO
 	Label  string `json:"label"`
+	// File is the path of a user template; empty for built-in ones.
+	File string `json:"file"`
 }
 
 // Templates lists the built-in templates.
 func Templates() []Template {
 	return []Template{
-		{"sop", "SOP", KindLabel("sop")},
-		{"va", "VA", KindLabel("va")},
-		{"form", "FB", KindLabel("form")},
-		{"info", "INFO", KindLabel("info")},
+		{Kind: "sop", Prefix: "SOP", Label: KindLabel("sop")},
+		{Kind: "va", Prefix: "VA", Label: KindLabel("va")},
+		{Kind: "form", Prefix: "FB", Label: KindLabel("form")},
+		{Kind: "info", Prefix: "INFO", Label: KindLabel("info")},
 	}
 }
 
@@ -48,12 +51,50 @@ func templateFor(kind string) (Template, bool) {
 	return Template{}, false
 }
 
+// TemplatesInDir lists the user templates in dir (non-recursive): Markdown
+// files whose name starts with a kind prefix and a separator, such as
+// "FB - Batteriewechsel.md" or "SOP_Kalibrierung.md". They use the same
+// placeholders as the built-in templates.
+func TemplatesInDir(dir string) []Template {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var out []Template
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.EqualFold(filepath.Ext(name), ".md") {
+			continue
+		}
+		base := strings.TrimSuffix(name, filepath.Ext(name))
+		cut := strings.IndexAny(base, " -_")
+		if cut <= 0 {
+			continue
+		}
+		kind := KindFromRef(base[:cut])
+		t, ok := templateFor(kind)
+		if !ok {
+			continue
+		}
+		t.Label = strings.TrimLeft(base[cut:], " -_")
+		if t.Label == "" {
+			t.Label = base
+		}
+		t.File = filepath.Join(dir, name)
+		out = append(out, t)
+	}
+	return out
+}
+
 // NewParams are the inputs for a new document.
 type NewParams struct {
-	Kind    string `json:"kind"`
-	Title   string `json:"title"`
-	RefNo   string `json:"refNo"`
-	Version string `json:"version"` // default "1.0"
+	// Template is the File of a user template; empty uses the built-in
+	// template of Kind.
+	Template string `json:"template"`
+	Kind     string `json:"kind"`
+	Title    string `json:"title"`
+	RefNo    string `json:"refNo"`
+	Version  string `json:"version"` // default "1.0"
 }
 
 // NewDocument creates the Markdown of a new document from the built-in
@@ -82,7 +123,13 @@ func NewDocument(p NewParams) (string, error) {
 	if version == "" {
 		version = "1.0"
 	}
-	raw, err := templateFS.ReadFile("templates/" + t.Kind + ".md")
+	var err error
+	var raw []byte
+	if p.Template != "" {
+		raw, err = os.ReadFile(p.Template)
+	} else {
+		raw, err = templateFS.ReadFile("templates/" + t.Kind + ".md")
+	}
 	if err != nil {
 		return "", err
 	}

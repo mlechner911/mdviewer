@@ -238,6 +238,8 @@
       menuThemeAuto: tMap.menuThemeAuto,
       menuNewTab: tMap.menuNewTab,
       menuNewFromTemplate: tMap.menuNewFromTemplate,
+      menuOpenDocumentRoot: tMap.menuOpenDocumentRoot,
+      menuChooseDocumentRoot: tMap.menuChooseDocumentRoot,
       menuOpen: tMap.menuOpen,
       menuRecentFiles: tMap.menuRecentFiles,
       menuNoRecentFiles: tMap.menuNoRecentFiles,

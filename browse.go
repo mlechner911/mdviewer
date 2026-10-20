@@ -87,6 +87,16 @@ func (a *App) BrowseSearch(rootDir, query string) ([]mdbrowse.SearchResult, erro
 	return root.Search(query)
 }
 
+// BrowseDocuments lists the documents of the MLC Markdown Extension below
+// rootDir (RefNo, kind, version, title, check results) for the overview.
+func (a *App) BrowseDocuments(rootDir string) ([]mdbrowse.DocumentInfo, error) {
+	root, err := mdbrowse.NewRoot(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	return root.Documents()
+}
+
 // OpenBrowseWindow opens the standalone browse window for rootDir,
 // starting at relPath. At most one browse window ever exists: an
 // existing one is focused and navigated instead of opening another.

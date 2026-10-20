@@ -29,7 +29,8 @@ type PageData struct {
 }
 
 // ExtractTitle reads a markdown file and extracts its title.
-// Priority: YAML frontmatter "title:" > first H1 heading > filename (without extension).
+// Priority: first H1 heading (within 30 lines when there is a frontmatter
+// title) > YAML frontmatter "title:" > filename (without extension).
 func ExtractTitle(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -61,13 +62,14 @@ func ExtractTitle(path string) (string, error) {
 			}
 		}
 
-		// Inside frontmatter, look for title
+		// Inside frontmatter, look for title. Nothing else in it is a
+		// heading: "# …" there is a YAML comment.
 		if inFrontmatter {
 			matches := fmTitleRegex.FindStringSubmatch(line)
 			if len(matches) == 2 {
-				frontmatterTitle = strings.TrimSpace(matches[1])
-				continue
+				frontmatterTitle = strings.Trim(strings.TrimSpace(matches[1]), `"'`)
 			}
+			continue
 		}
 
 		// First H1 after frontmatter

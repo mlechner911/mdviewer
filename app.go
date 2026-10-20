@@ -15,6 +15,7 @@ import (
 	"marksafe/internal/config"
 	"marksafe/internal/filesystem"
 	"marksafe/internal/markdown"
+	"marksafe/internal/mdbrowse"
 
 	"github.com/mlechner911/mdviewer/mlcext"
 	"github.com/mlechner911/mdviewer/mlcext/mlcdoc"
@@ -109,6 +110,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.Add(t["menuNewFromTemplate"]).SetAccelerator("CmdOrCtrl+Shift+n").OnClick(func(*application.Context) {
 		emit("menu-new-from-template")
 	})
+	fileMenu.Add(label(t, "menuOpenDocumentRoot", "Open Document Folder")).SetAccelerator("CmdOrCtrl+Shift+d").OnClick(func(*application.Context) {
+		go a.OpenDocumentRoot()
+	})
+	fileMenu.Add(label(t, "menuChooseDocumentRoot", "Choose Document Folder…")).OnClick(func(*application.Context) {
+		go func() { _, _ = a.ChooseDocumentRoot() }()
+	})
+	fileMenu.AddSeparator()
 	fileMenu.Add(t["menuOpen"]).SetAccelerator("CmdOrCtrl+o").OnClick(func(*application.Context) {
 		a.MenuOpenFile()
 	})
@@ -313,28 +321,108 @@ func (a *App) PreviewMLCDoc(md string, docPath string) MLCDocPreview {
 	return out
 }
 
-// MLCTemplates lists the built-in templates for new documents of the MLC
-// Markdown Extension (SOP, VA, form, info).
+// MLCTemplates lists the templates for new documents of the MLC Markdown
+// Extension: the built-in ones (SOP, VA, form, info), then the user's own
+// from <document folder>/_vorlagen.
 func (a *App) MLCTemplates() []mlcext.Template {
-	return mlcext.Templates()
+	list := mlcext.Templates()
+	if dir := a.userTemplatesDir(); dir != "" {
+		list = append(list, mlcext.TemplatesInDir(dir)...)
+	}
+	return list
+}
+
+func (a *App) userTemplatesDir() string {
+	if root := a.documentRoot(); root != "" {
+		return filepath.Join(root, mdbrowse.TemplatesDir)
+	}
+	return ""
 }
 
 // NewMLCDocument creates the Markdown of a new document from a template.
+// A user template must lie in the document folder's _vorlagen.
 func (a *App) NewMLCDocument(p mlcext.NewParams) (string, error) {
+	if p.Template != "" {
+		dir := a.userTemplatesDir()
+		abs, err := filepath.Abs(p.Template)
+		if dir == "" || err != nil || filepath.Dir(abs) != filepath.Clean(dir) {
+			return "", fmt.Errorf("Vorlage liegt nicht im Vorlagenordner: %s", p.Template)
+		}
+	}
 	return mlcext.NewDocument(p)
 }
 
 // SuggestMLCRefNo proposes the next RefNo for kind and area from the
-// documents next to docPath (only a whitelisted directory is read). It is a
-// proposal: only the Sensor Monitor knows which RefNos are taken.
+// document folder, or else the documents next to docPath (only whitelisted
+// directories are read). It is a proposal: only the Sensor Monitor knows
+// which RefNos are taken.
 func (a *App) SuggestMLCRefNo(kind, area, docPath string) string {
-	var existing []string
-	if docPath != "" {
+	dir := a.documentRoot()
+	if dir == "" && docPath != "" {
 		if abs, err := filepath.Abs(docPath); err == nil && a.config.IsPathAllowed(filepath.Dir(abs)) {
-			existing = mlcext.RefNosInDir(filepath.Dir(abs), 2000)
+			dir = filepath.Dir(abs)
 		}
 	}
+	var existing []string
+	if dir != "" {
+		existing = mlcext.RefNosInDir(dir, 5000)
+	}
 	return mlcext.SuggestRefNo(kind, area, existing)
+}
+
+// documentRoot is the configured document folder if it still exists and
+// is whitelisted, else "".
+func (a *App) documentRoot() string {
+	dir := a.config.GetDocumentRoot()
+	if dir == "" || !a.config.IsPathAllowed(dir) {
+		return ""
+	}
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+		return ""
+	}
+	return dir
+}
+
+// GetDocumentRoot returns the document folder (the base folder of the
+// document collection), "" when none is set.
+func (a *App) GetDocumentRoot() string {
+	return a.documentRoot()
+}
+
+// ChooseDocumentRoot lets the user pick the document folder; it is
+// whitelisted and stored. Returns "" when cancelled.
+func (a *App) ChooseDocumentRoot() (string, error) {
+	dlg := application.Get().Dialog.OpenFile().
+		SetTitle("Dokumentenordner wählen").
+		CanChooseDirectories(true).
+		CanChooseFiles(false)
+	if cur := a.documentRoot(); cur != "" {
+		dlg.SetDirectory(cur)
+	}
+	dir, err := dlg.PromptForSingleSelection()
+	if err != nil || dir == "" {
+		return "", err
+	}
+	if err := a.config.AddPath(dir); err != nil {
+		return "", err
+	}
+	if err := a.config.SetDocumentRoot(dir); err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// OpenDocumentRoot opens the document folder in the browse window, asking
+// for it first when none is set.
+func (a *App) OpenDocumentRoot() {
+	dir := a.documentRoot()
+	if dir == "" {
+		var err error
+		if dir, err = a.ChooseDocumentRoot(); err != nil || dir == "" {
+			return
+		}
+	}
+	a.OpenBrowseWindow(dir, "")
 }
 
 // RenderMarkdown converts markdown string to sanitized HTML.
@@ -427,17 +515,29 @@ func (a *App) SaveFile(path string, content string) (string, error) {
 
 // SaveFileAs opens a native save dialog and saves content to the chosen path.
 func (a *App) SaveFileAs(defaultFilename string, content string) (string, error) {
+	// A document without a folder yet (e.g. new from a template) starts
+	// in the document folder.
+	startDir := ""
+	if filepath.Base(defaultFilename) == defaultFilename {
+		startDir = a.documentRoot()
+	}
 	if defaultFilename == "" {
 		defaultFilename = "document.md"
 	} else {
 		defaultFilename = filepath.Base(defaultFilename)
 	}
-	selectedPath, err := application.Get().Dialog.SaveFile().
+	if filepath.Ext(defaultFilename) == "" {
+		defaultFilename += ".md"
+	}
+	dlg := application.Get().Dialog.SaveFile().
 		SetMessage("Save Markdown File").
 		SetFilename(defaultFilename).
 		AddFilter("Markdown Files (*.md)", "*.md").
-		AddFilter("All Files (*.*)", "*.*").
-		PromptForSingleSelection()
+		AddFilter("All Files (*.*)", "*.*")
+	if startDir != "" {
+		dlg.SetDirectory(startDir)
+	}
+	selectedPath, err := dlg.PromptForSingleSelection()
 	if err != nil {
 		return "", err
 	}

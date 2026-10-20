@@ -32,6 +32,7 @@ Flags: `--path/-p` (required), `--port/-P` (default 8080),
 | `/api/search?q=` | Ranked fuzzy hits with `<mark>` snippets (max 20) |
 | `/raw?path=` | Raw file with content type (images, PDFs, …) |
 | `/md/<path>` | Raw markdown as text |
+| `/api/documents` | Documents of the MLC Markdown Extension (non-standard) with ID, kind, version and check result, for the overview |
 | `/assets/*`, `/favicon.ico` | Embedded frontend (content-hashed names, discovered at startup) |
 
 Security: everything is confined to the root directory (`ResolvePath`

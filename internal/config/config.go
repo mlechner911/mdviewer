@@ -15,6 +15,9 @@ type AppConfig struct {
 	WhitelistedPaths []string `json:"whitelisted_paths"`
 	WhitelistedURLs  []string `json:"whitelisted_urls"`
 	RecentFiles      []string `json:"recent_files"`
+	// DocumentRoot is the fixed base folder of the document collection
+	// (like an Obsidian vault); empty until the user chooses one.
+	DocumentRoot string `json:"document_root,omitempty"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.
@@ -94,6 +97,21 @@ func (m *ConfigManager) Save() error {
 	}
 
 	return os.WriteFile(m.path, data, 0644)
+}
+
+// GetDocumentRoot returns the base folder of the document collection.
+func (m *ConfigManager) GetDocumentRoot() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.config.DocumentRoot
+}
+
+// SetDocumentRoot stores the base folder of the document collection.
+func (m *ConfigManager) SetDocumentRoot(dir string) error {
+	m.mu.Lock()
+	m.config.DocumentRoot = dir
+	m.mu.Unlock()
+	return m.Save()
 }
 
 // GetRecentFiles returns the list of recently opened files.
