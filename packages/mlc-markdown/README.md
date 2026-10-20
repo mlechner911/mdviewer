@@ -24,10 +24,13 @@ const r = createRenderer({
   resolveUrl: (url, kind) => (url.startsWith('/api/') ? base + url : url),
   linkify: (text) => splitEventRefs(text),
 });
-const { html, frontMatter } = r.render(markdown);
+const { html, frontMatter, meta, signature } = r.render(markdown);
 el.innerHTML = html;                       // sanitized by DOMPurify
 await enhance(el, { katex, mermaid });     // formulas and diagrams, lazily loaded by the host
 ```
+
+`npm install mlc-markdown` — dependencies: `marked`, `marked-footnote`,
+`dompurify`. KaTeX, Mermaid and a highlighter are up to the host.
 
 | Feature | Output |
 | --- | --- |
@@ -40,8 +43,19 @@ await enhance(el, { katex, mermaid });     // formulas and diagrams, lazily load
 | Tables | full width with column shares when the separator row is longer than 72 characters (like mlcdoc) |
 | Every block | `data-line` = line in the source file (scroll sync) |
 | Math, Mermaid | `.mlc-md-math[data-tex]`, `pre.mlc-md-mermaid` → `enhance()` |
+| Front matter | not shown; `frontMatter` (raw), `frontMatterEntries()` for a key/value display |
+| `doc_id`, `version`, `title` | `meta` (front matter first, the legacy header line `**Dokumenten-ID:** …` as a fallback) |
+| Variables `{{doc_id}}`, `{{version}}`, `{{title}}` | replaced with the front matter values (not inside code); unknown names stay visible |
+| Signature `<!--mlc-signature … -->` (end of file; old form: `signature:` block in front) | not shown; `signature` = `{ form, fields }` (`signed_by`, `signed_at` …), not verified |
 | Other raw HTML | dropped (`rawHtml: 'sanitize'` keeps it, cleaned by DOMPurify; its `href`/`src` go through `resolveUrl`, `srcset` is removed) — MarkSafe uses `sanitize` |
 
 Styling: put `class="mlc-md"` on the container and set the `--mlc-md-*`
 variables to your design; `data-theme="dark"` switches the defaults. No
 Tailwind needed.
+
+Also exported: `documentMeta`, `expandVariables`, `splitSignature`,
+`kindFromRef`, `scanFields`, `headingSlug`, `labelsFor`. The Go module
+`mlcext` and this package run the same test cases
+(`mlcext/testdata/fields.json`, `mlcext/testdata/meta.json`).
+
+License: MIT.

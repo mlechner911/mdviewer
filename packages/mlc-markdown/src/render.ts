@@ -13,9 +13,9 @@
 import createDOMPurify from 'dompurify';
 import { Marked, type Token, type Tokens } from 'marked';
 import markedFootnote from 'marked-footnote';
-import { headingSlug, scanFields, type Field } from './fields';
-import { labelsFor } from './labels';
-import { documentMeta, expandVariables, frontMatterBlock, splitSignature, type DocMeta, type Signature } from './meta';
+import { headingSlug, scanFields, type Field } from './fields.js';
+import { labelsFor } from './labels.js';
+import { documentMeta, expandVariables, frontMatterBlock, splitSignature, type DocMeta, type Signature } from './meta.js';
 
 export interface RenderOptions {
   /** Language of the document: alert titles, "Ausfülltipp" … (default de). */

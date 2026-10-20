@@ -2,16 +2,39 @@
   "name": "mlc-markdown-svelte",
   "version": "0.1.0",
   "description": "Svelte 5 component <MlcMarkdown> for Markdown with the MLC Markdown Extension (non-standard), built on mlc-markdown.",
+  "keywords": [
+    "svelte",
+    "svelte5",
+    "markdown",
+    "mlc",
+    "component"
+  ],
   "type": "module",
   "svelte": "./src/index.js",
   "types": "./src/index.d.ts",
   "exports": {
-    ".": { "types": "./src/index.d.ts", "svelte": "./src/index.js", "default": "./src/index.js" }
+    ".": {
+      "types": "./src/index.d.ts",
+      "svelte": "./src/index.js",
+      "default": "./src/index.js"
+    }
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/mlechner911/mdviewer", "directory": "packages/mlc-markdown-svelte" },
-  "scripts": { "test": "vitest run" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlechner911/mdviewer",
+    "directory": "packages/mlc-markdown-svelte"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "prepublishOnly": "npm test"
+  },
   "peerDependencies": {
     "mlc-markdown": "^0.1.0",
     "svelte": "^5.0.0"
@@ -22,5 +45,13 @@
     "mlc-markdown": "file:../mlc-markdown",
     "svelte": "^5.0.0",
     "vitest": "^3.0.0"
+  },
+  "homepage": "https://github.com/mlechner911/mdviewer/blob/main/docs/MLC-EXTENSIONS.md",
+  "bugs": {
+    "url": "https://github.com/mlechner911/mdviewer/issues"
+  },
+  "author": "Michael Lechner",
+  "publishConfig": {
+    "access": "public"
   }
 }
