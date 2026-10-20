@@ -3,6 +3,8 @@ package mlcdoc
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"os/exec"
@@ -167,5 +169,55 @@ func TestParseError(t *testing.T) {
 	var re *RenderError
 	if !errors.As(err, &re) || re.Line != 7 || re.Message != "field name `x` is used twice" {
 		t.Errorf("got %#v", err)
+	}
+}
+
+// Header with id and version, watermark and the signature note reach the
+// PDF through the layout file and Prepare (needs mlcdoc; pdftotext reads
+// the text back when installed).
+func TestLayoutWatermarkAndSignatureInPDF(t *testing.T) {
+	c := client(t)
+	content := "---\ndoc_id: SOP-QM-007\nversion: \"2.0\"\ntitle: Kühlkette\nevent_kinds: [DEVIATION]\n---\n# {{title}}\n\nFassung {{version}}.\n"
+	sum := sha256.Sum256([]byte(content))
+	signed := content + "<!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: " + hex.EncodeToString(sum[:]) + "\nalg: ed25519\nkey_id: k1\nsig: s1\n-->\n"
+	layout := mlcext.LayoutYAML(signed, mlcext.LayoutOptions{Watermark: "DRAFT"})
+	doc, err := c.RenderPDF(context.Background(), Request{Markdown: signed, Layout: layout})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Warnings) > 0 {
+		t.Errorf("warnings: %v", doc.Warnings)
+	}
+	if _, err := exec.LookPath("pdftotext"); err != nil {
+		t.Skip("pdftotext not installed")
+	}
+	f := filepath.Join(t.TempDir(), "d.pdf")
+	_ = os.WriteFile(f, doc.PDF, 0o600)
+	out, err := exec.Command("pdftotext", f, "-").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(out)
+	if !strings.Contains(strings.Join(strings.Fields(text), ""), "DRAFT") { // diagonal: letter by letter
+		t.Errorf("PDF text lacks the watermark:\n%s", text)
+	}
+	for _, want := range []string{"Standardarbeitsanweisung", "SOP-QM-007 · Version 2.0", "Kühlkette", "Fassung 2.0.", "Elektronische Signatur", "Dr. Anna Berger"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("PDF text lacks %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "{{") || strings.Contains(text, "mlc-signature") {
+		t.Errorf("PDF text has leftovers:\n%s", text)
+	}
+	// An edited signed document gets no signature note.
+	edited := strings.Replace(signed, "Fassung", "Geändert", 1)
+	doc, err = c.RenderPDF(context.Background(), Request{Markdown: edited, Layout: layout})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(f, doc.PDF, 0o600)
+	out, _ = exec.Command("pdftotext", f, "-").Output()
+	if strings.Contains(string(out), "Dr. Anna Berger") {
+		t.Errorf("edited document must not carry the signature note:\n%s", out)
 	}
 }

@@ -125,14 +125,24 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   their lines, and offers the building blocks after `[@` and in the editor's
   "MLC" menu. It appears only for documents that use the extension.
 
-- **PDF preview and export** (`mlcext/mlcdoc`, File → "Export as PDF…",
-  `Ctrl+Shift+E`): for every document, rendered by the MLC PDF toolkit
-  `mlcdoc`, which MarkSafe ships. Fields of the MLC extension look exactly as
-  printed; MarkSafe does not re-implement the PDF layout. Front matter keys
-  `mlcdoc` does not know (tags, event_kinds …) are left out and listed.
-  Header, footer and logo of the Sensor Monitor's PDFs come from the server
-  and are not part of the local PDF. Formulas are not typeset by `mlcdoc`
-  yet; they appear as text, and MarkSafe says so.
+- **PDF preview, export and printing** (`mlcext/mlcdoc`; File → Export →
+  "As PDF…", `Ctrl+Shift+E`; File → "Print…", `Ctrl+P`): for every
+  document, rendered by the MLC PDF toolkit `mlcdoc`, which MarkSafe ships.
+  Fields of the MLC extension look exactly as printed; MarkSafe does not
+  re-implement the PDF layout.
+  - Documents of the MLC extension get a page header with kind, id and
+    version (`mlcext.LayoutYAML`, passed to mlcdoc as a layout file; the
+    document stays unchanged). Variables are replaced. A signature that
+    still matches the content is printed as mlcdoc's note "Elektronische
+    Signatur"; an edited document gets none.
+  - **Watermark:** a text of the user's setting (empty by default), set in
+    the bar of the PDF preview; it applies to preview, export and printing.
+  - **Printing** renders the same PDF and opens it in the system's PDF
+    viewer, which prints it, so the paper looks like the export.
+  - Front matter keys `mlcdoc` does not know (tags, event_kinds …) are left
+    out and listed. Organization and logo in the Sensor Monitor's PDFs come
+    from the server. Formulas are not typeset by `mlcdoc` yet; they appear
+    as text, and MarkSafe says so.
 - **Templates** (File → "New from Template…", `Ctrl+Shift+N`): a template
   is data, not code: a schema `<id>.json` (name, input fields, output file
   name) plus a Markdown body with `{{placeholders}}`. The dialog is built

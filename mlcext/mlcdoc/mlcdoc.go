@@ -111,6 +111,10 @@ type Request struct {
 	// copied next to the temporary copy (mlcdoc reads only inside its
 	// root). Empty for unsaved documents.
 	BaseDir string
+	// Layout is a YAML layout file (mlcext.LayoutYAML: header with id and
+	// version, watermark …) that mlcdoc lays over the document's front
+	// matter; the document stays unchanged. Empty for none.
+	Layout string
 }
 
 // Document is a rendered PDF.
@@ -136,8 +140,8 @@ type Pages struct {
 func (c *Client) RenderPDF(ctx context.Context, req Request) (*Document, error) {
 	md, ignored := Prepare(req.Markdown)
 	var doc *Document
-	err := c.run(ctx, md, req.BaseDir, []map[string]any{
-		{"tool": "md_to_pdf", "args": map[string]any{"input": "doc.md", "output": "doc.pdf"}},
+	err := c.run(ctx, md, req.BaseDir, req.Layout, []map[string]any{
+		{"tool": "md_to_pdf", "args": mdToPDFArgs(req.Layout)},
 	}, func(dir string, info stepInfo) error {
 		b, err := os.ReadFile(filepath.Join(dir, "doc.pdf"))
 		if err != nil {
@@ -156,8 +160,8 @@ func (c *Client) RenderPages(ctx context.Context, req Request, dpi int) (*Pages,
 	}
 	md, ignored := Prepare(req.Markdown)
 	var pages *Pages
-	err := c.run(ctx, md, req.BaseDir, []map[string]any{
-		{"tool": "md_to_pdf", "args": map[string]any{"input": "doc.md", "output": "doc.pdf"}},
+	err := c.run(ctx, md, req.BaseDir, req.Layout, []map[string]any{
+		{"tool": "md_to_pdf", "args": mdToPDFArgs(req.Layout)},
 		{"tool": "doc_open", "args": map[string]any{"path": "doc.pdf"}},
 		{"tool": "doc_export_images", "args": map[string]any{"doc": 1, "folder": "pages", "dpi": dpi}},
 	}, func(dir string, info stepInfo) error {
@@ -184,9 +188,18 @@ type stepInfo struct {
 	Warnings []string `json:"warnings"`
 }
 
-// run writes md into a fresh directory, runs the script there and hands
-// the directory to collect before removing it.
-func (c *Client) run(ctx context.Context, md, baseDir string, script []map[string]any, collect func(string, stepInfo) error) error {
+// mdToPDFArgs: the md_to_pdf step, with the layout file when there is one.
+func mdToPDFArgs(layout string) map[string]any {
+	args := map[string]any{"input": "doc.md", "output": "doc.pdf"}
+	if layout != "" {
+		args["layout"] = "layout.yaml"
+	}
+	return args
+}
+
+// run writes md (and the layout file) into a fresh directory, runs the
+// script there and hands the directory to collect before removing it.
+func (c *Client) run(ctx context.Context, md, baseDir, layout string, script []map[string]any, collect func(string, stepInfo) error) error {
 	select {
 	case c.sem <- struct{}{}:
 		defer func() { <-c.sem }()
@@ -203,6 +216,11 @@ func (c *Client) run(ctx context.Context, md, baseDir string, script []map[strin
 	defer os.RemoveAll(dir)
 	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte(md), 0o600); err != nil {
 		return err
+	}
+	if layout != "" {
+		if err := os.WriteFile(filepath.Join(dir, "layout.yaml"), []byte(layout), 0o600); err != nil {
+			return err
+		}
 	}
 	copyImages(md, baseDir, dir)
 	sj, _ := json.Marshal(script)

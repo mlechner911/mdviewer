@@ -19,7 +19,7 @@ type LayoutOptions struct {
 	// relative to the document or a data: URL) to its left.
 	Organization string
 	Logo         string
-	// Lang of mlcdoc's built-in texts; default "de".
+	// Lang of mlcdoc's built-in texts; empty keeps the document's.
 	Lang string
 }
 
@@ -46,9 +46,6 @@ type layoutFile struct {
 func LayoutYAML(md string, opt LayoutOptions) string {
 	m := DocumentMeta(md)
 	l := layoutFile{Lang: opt.Lang, Title: m.Title, Watermark: watermarkText(opt.Watermark)}
-	if l.Lang == "" {
-		l.Lang = "de"
-	}
 	h := layoutHeader{Logo: opt.Logo, Center: opt.Organization}
 	if m.Kind != "" {
 		h.Left = kindShort(m.Kind)
@@ -64,6 +61,9 @@ func LayoutYAML(md string, opt LayoutOptions) string {
 			h.Left = m.Title // replaces "MLC DOCUMENTATION"
 		}
 		l.Header = &h
+	}
+	if l == (layoutFile{}) {
+		return ""
 	}
 	b, err := yaml.Marshal(l)
 	if err != nil {

@@ -17,6 +17,13 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    watermarkHelp: 'Text across every page of PDFs from MarkSafe (preview, export, print), e.g. DRAFT. A setting, not part of the document.',
+    watermarkNone: 'none',
+    watermark: 'Watermark',
+    printOpened: 'PDF opened in the PDF viewer: print from there.',
+    printPreparing: 'Preparing PDF for printing…',
+    printNeedsMlcdoc: 'Printing goes through the PDF and needs mlcdoc (installed with MarkSafe).',
+    menuPrint: 'Print…',
     menuExportHtml: 'As HTML…',
     menuExport: 'Export',
     tplOpenFolder: 'Open template folder',
@@ -132,6 +139,13 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    watermarkHelp: 'Text quer über jeder Seite der PDFs aus MarkSafe (Vorschau, Export, Drucken), z. B. ENTWURF. Eine Einstellung, nicht Teil des Dokuments.',
+    watermarkNone: 'keins',
+    watermark: 'Wasserzeichen',
+    printOpened: 'PDF im PDF-Programm geöffnet: dort drucken.',
+    printPreparing: 'PDF zum Drucken wird erzeugt…',
+    printNeedsMlcdoc: 'Drucken läuft über das PDF und braucht mlcdoc (wird mit MarkSafe installiert).',
+    menuPrint: 'Drucken…',
     menuExportHtml: 'Als HTML…',
     menuExport: 'Exportieren',
     tplOpenFolder: 'Vorlagenordner öffnen',
@@ -247,6 +261,13 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    watermarkHelp: 'Texto sobre cada página de los PDF de MarkSafe (vista previa, exportación, impresión), p. ej. BORRADOR. Un ajuste, no parte del documento.',
+    watermarkNone: 'ninguna',
+    watermark: 'Marca de agua',
+    printOpened: 'PDF abierto en el visor de PDF: imprima desde allí.',
+    printPreparing: 'Generando PDF para imprimir…',
+    printNeedsMlcdoc: 'La impresión pasa por el PDF y necesita mlcdoc (se instala con MarkSafe).',
+    menuPrint: 'Imprimir…',
     menuExportHtml: 'Como HTML…',
     menuExport: 'Exportar',
     tplOpenFolder: 'Abrir carpeta de plantillas',
@@ -362,6 +383,13 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    watermarkHelp: 'Texte sur chaque page des PDF de MarkSafe (aperçu, export, impression), p. ex. BROUILLON. Un réglage, pas une partie du document.',
+    watermarkNone: 'aucun',
+    watermark: 'Filigrane',
+    printOpened: 'PDF ouvert dans le lecteur PDF : imprimez depuis celui-ci.',
+    printPreparing: 'Préparation du PDF pour l’impression…',
+    printNeedsMlcdoc: "L'impression passe par le PDF et nécessite mlcdoc (installé avec MarkSafe).",
+    menuPrint: 'Imprimer…',
     menuExportHtml: 'En HTML…',
     menuExport: 'Exporter',
     tplOpenFolder: 'Ouvrir le dossier des modèles',

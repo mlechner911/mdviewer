@@ -238,6 +238,7 @@
       menuThemeAuto: tMap.menuThemeAuto,
       menuNewTab: tMap.menuNewTab,
       menuNewFromTemplate: tMap.menuNewFromTemplate,
+      menuPrint: tMap.menuPrint,
       menuExport: tMap.menuExport,
       menuExportPdf: tMap.menuExportPdf,
       menuExportHtml: tMap.menuExportHtml,
@@ -460,8 +461,30 @@
     }
   }
 
-  function handlePrint() {
-    window.print();
+  // Printing goes through the PDF (mlcdoc, opened in the system's PDF
+  // viewer): it looks exactly like the export. window.print() did not work
+  // in the Windows app and never looked like the PDF.
+  async function handlePrint() {
+    const tab = tabs[activeTabIndex];
+    if (!tab) return;
+    if (!mlcdocVersion) {
+      showToast($t('printNeedsMlcdoc'), 5000, 'error');
+      return;
+    }
+    showToast($t('printPreparing'), 2000, 'info');
+    const res = await backend.printPDF(tab.content, tab.path ?? '');
+    if (res.error) {
+      showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
+      return;
+    }
+    showToast($t('printOpened'), 3000, 'info');
+  }
+
+  // Watermark for PDFs (setting; changed in the PDF preview bar).
+  let pdfWatermark = $state('');
+  async function changeWatermark(text: string) {
+    await backend.setPDFWatermark(text);
+    pdfWatermark = text.trim();
   }
 
   function adjustFontSize(delta: number) {
@@ -502,6 +525,7 @@
       const version = await backend.getVersion();
       appVersion.set(version);
       backend.mlcdocVersion().then((v) => (mlcdocVersion = v));
+      backend.getPDFWatermark().then((w) => (pdfWatermark = w));
       const wailsReady = checkWailsReady();
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
@@ -514,6 +538,7 @@
           EventsOn("menu-new-from-template", () => (showTemplateModal = true));
           EventsOn("menu-export-pdf", handleExportPdf);
           EventsOn("menu-export-html", handleExport);
+          EventsOn("menu-print", handlePrint);
           EventsOn("format-bold", () => wrapSelection('**', '**'));
           EventsOn("format-italic", () => wrapSelection('*', '*'));
           EventsOn("format-h1", () => prefixSelection('# '));
@@ -599,7 +624,7 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html");
+      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html"); EventsOff("menu-print");
       EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
@@ -682,6 +707,13 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (browseParams) return; // browse window has its own shortcuts
+    // Ctrl+P prints through the PDF; the webview's own print dialog stays
+    // closed. On macOS the menu handles Cmd+P.
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      if (!/mac/i.test(navigator.platform)) handlePrint();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
       e.preventDefault();
       toggleBrowseMode();
@@ -998,7 +1030,7 @@
         {/if}
       </div>
       {#if showPdfPreview}
-        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} />
+        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} />
       {/if}
       <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview}>
       <Preview 

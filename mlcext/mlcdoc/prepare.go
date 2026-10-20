@@ -2,6 +2,7 @@ package mlcdoc
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/mlechner911/mdviewer/mlcext"
@@ -29,9 +30,50 @@ var Keys = []string{
 // too; title stays as the PDF title. A document without front matter, or
 // with invalid YAML (mlcdoc reports that), is returned unchanged.
 func Prepare(md string) (string, []string) {
-	// Document variables ({{doc_id}} …) are replaced, a signature block is
-	// not part of the content (mlcext).
-	md = mlcext.ExpandVariables(mlcext.RemoveSignature(md))
+	// Document variables ({{doc_id}} …) are replaced; a signature block is
+	// not part of the content (mlcext). A signature that still matches the
+	// content is printed as mlcdoc's closing note "Elektronische Signatur":
+	// mlcdoc knows only the old form (block in front), so it is put there.
+	sigBlock := ""
+	if sig, _ := mlcext.SplitSignature(md); sig != nil && mlcext.CheckSignature(md).Intact {
+		sigBlock = frontSignatureBlock(sig.Fields)
+	}
+	out, ignored := prepareContent(mlcext.ExpandVariables(mlcext.RemoveSignature(md)))
+	return sigBlock + out, ignored
+}
+
+// frontSignatureBlock writes fields in the old front form, as the Sensor
+// Monitor did: "---\nsignature:\n  key: value\n---\n".
+func frontSignatureBlock(fields map[string]string) string {
+	order := []string{"doc_no", "meaning", "signed_by", "signed_at", "sha256", "alg", "key_id", "sig"}
+	var keys []string
+	for _, k := range order {
+		if _, ok := fields[k]; ok {
+			keys = append(keys, k)
+		}
+	}
+	var rest []string
+	for k := range fields {
+		if !slices.Contains(order, k) {
+			rest = append(rest, k)
+		}
+	}
+	slices.Sort(rest)
+	var b strings.Builder
+	b.WriteString("---\nsignature:\n")
+	for _, k := range append(keys, rest...) {
+		v := fields[k]
+		if strings.ContainsAny(v, ":#\"'{}[],&*?|<>=!%@`") || strings.TrimSpace(v) != v {
+			v = strconv.Quote(v)
+		}
+		b.WriteString("  " + k + ": " + v + "\n")
+	}
+	b.WriteString("---\n")
+	return b.String()
+}
+
+// prepareContent removes front matter keys mlcdoc does not know.
+func prepareContent(md string) (string, []string) {
 	text := strings.TrimPrefix(md, "\xEF\xBB\xBF")
 	lines := strings.Split(text, "\n")
 	if len(lines) < 2 || strings.TrimRight(lines[0], "\r") != "---" {

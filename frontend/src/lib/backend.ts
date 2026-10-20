@@ -31,7 +31,10 @@ import {
   MLCSignatureState,
   MLCRemoveSignature,
   OpenTemplatesFolder,
-  TemplatesFolder
+  TemplatesFolder,
+  PrintPDF,
+  GetPDFWatermark,
+  SetPDFWatermark
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -116,6 +119,27 @@ export async function previewPDF(md: string, docPath: string): Promise<PDFResult
 }
 
 /** Render with mlcdoc and save via a dialog; path "" when cancelled. */
+/** Print through the PDF: rendered like the export, opened in the system's PDF viewer. */
+export async function printPDF(md: string, docPath: string): Promise<PDFResult> {
+  if (!isWailsReady()) return pdfFailure('Wails not ready');
+  try {
+    return (await PrintPDF(md, docPath)) as PDFResult;
+  } catch (err) {
+    return pdfFailure(err);
+  }
+}
+
+/** Watermark for PDFs from MarkSafe (a user setting; "" for none). */
+export async function getPDFWatermark(): Promise<string> {
+  if (!isWailsReady()) return '';
+  try { return (await GetPDFWatermark()) ?? ''; } catch { return ''; }
+}
+
+export async function setPDFWatermark(text: string): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await SetPDFWatermark(text); } catch (err) { console.error('setPDFWatermark failed:', err); }
+}
+
 export async function exportPDF(md: string, docPath: string): Promise<PDFResult> {
   if (!isWailsReady()) return pdfFailure('Wails not ready');
   try {

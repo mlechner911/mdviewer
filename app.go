@@ -147,6 +147,12 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.Add(label(t, "menuSaveAs", "Save As...")).SetAccelerator("CmdOrCtrl+Shift+s").OnClick(func(*application.Context) {
 		a.MenuSaveAsFile()
 	})
+	// Print goes through the PDF (system PDF viewer), like the export.
+	// Outside macOS Ctrl+P is handled by the page (as the edit keys, see
+	// editItem): through the menu WebView2 would open its own print dialog
+	// as well.
+	fileMenu.Append(application.NewMenuFromItems(editItem(application.NewMenuItem(label(t, "menuPrint", "Print…")).
+		SetAccelerator("CmdOrCtrl+p").OnClick(func(*application.Context) { emit("menu-print") }), "")))
 	// Submenu: Export (PDF from mlcdoc, HTML from the preview)
 	exportMenu := fileMenu.AddSubmenu(label(t, "menuExport", "Export"))
 	exportMenu.Add(label(t, "menuExportPdf", "As PDF…")).SetAccelerator("CmdOrCtrl+Shift+e").OnClick(func(*application.Context) {

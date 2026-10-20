@@ -76,13 +76,34 @@ func (a *App) baseDirOf(docPath string) string {
 	return filepath.Dir(abs)
 }
 
+// pdfRequest is md for mlcdoc: a layout file with the page header (kind,
+// id and version of documents of the MLC extension) and the watermark of
+// the user's setting.
+func (a *App) pdfRequest(md, docPath string) mlcdoc.Request {
+	return mlcdoc.Request{
+		Markdown: md,
+		BaseDir:  a.baseDirOf(docPath),
+		Layout:   mlcext.LayoutYAML(md, mlcext.LayoutOptions{Watermark: a.config.GetPDFWatermark()}),
+	}
+}
+
+// GetPDFWatermark is the watermark for PDFs from MarkSafe ("" for none).
+func (a *App) GetPDFWatermark() string {
+	return a.config.GetPDFWatermark()
+}
+
+// SetPDFWatermark stores the watermark for PDFs (export, preview, print).
+func (a *App) SetPDFWatermark(text string) error {
+	return a.config.SetPDFWatermark(strings.TrimSpace(text))
+}
+
 // PreviewPDF renders md into page images, exactly as the exported PDF.
 func (a *App) PreviewPDF(md string, docPath string) PDFResult {
 	c, err := a.pdf.get()
 	if err != nil {
 		return pdfError(err)
 	}
-	res, err := c.RenderPages(context.Background(), mlcdoc.Request{Markdown: md, BaseDir: a.baseDirOf(docPath)}, 110)
+	res, err := c.RenderPages(context.Background(), a.pdfRequest(md, docPath), 110)
 	if err != nil {
 		return pdfError(err)
 	}
@@ -100,7 +121,7 @@ func (a *App) ExportPDF(md string, docPath string) PDFResult {
 	if err != nil {
 		return pdfError(err)
 	}
-	doc, err := c.RenderPDF(context.Background(), mlcdoc.Request{Markdown: md, BaseDir: a.baseDirOf(docPath)})
+	doc, err := c.RenderPDF(context.Background(), a.pdfRequest(md, docPath))
 	if err != nil {
 		return pdfError(err)
 	}
@@ -139,6 +160,40 @@ func (a *App) ExportPDF(md string, docPath string) PDFResult {
 	}
 	res.Path = path
 	return res
+}
+
+// PrintPDF prints through the PDF: md is rendered like the export and
+// opened in the system's PDF viewer, which prints it. The page then looks
+// exactly like the exported PDF (and like the Sensor Monitor's).
+func (a *App) PrintPDF(md string, docPath string) PDFResult {
+	c, err := a.pdf.get()
+	if err != nil {
+		return pdfError(err)
+	}
+	doc, err := c.RenderPDF(context.Background(), a.pdfRequest(md, docPath))
+	if err != nil {
+		return pdfError(err)
+	}
+	dir := filepath.Join(os.TempDir(), "marksafe-print")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return pdfError(err)
+	}
+	name := mlcext.SuggestFileName(md, ".pdf", true)
+	if name == "" {
+		name = "Dokument.pdf"
+		if docPath != "" {
+			base := filepath.Base(docPath)
+			name = strings.TrimSuffix(base, filepath.Ext(base)) + ".pdf"
+		}
+	}
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, doc.PDF, 0o600); err != nil {
+		return pdfError(err)
+	}
+	if err := application.Get().Browser.OpenFile(path); err != nil {
+		return pdfError(err)
+	}
+	return PDFResult{Pages: []string{}, Path: path, Warnings: doc.Warnings, Ignored: nonNil(doc.Ignored)}
 }
 
 func nonNil(s []string) []string {

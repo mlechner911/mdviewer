@@ -18,6 +18,10 @@ type AppConfig struct {
 	// DocumentRoot is the fixed base folder of the document collection
 	// (like an Obsidian vault); empty until the user chooses one.
 	DocumentRoot string `json:"document_root,omitempty"`
+	// PDFWatermark is printed across every page of PDFs from MarkSafe
+	// (export, preview, print); empty for none. A setting of the user,
+	// never part of a document.
+	PDFWatermark string `json:"pdf_watermark,omitempty"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.
@@ -99,16 +103,31 @@ func (m *ConfigManager) Save() error {
 	return os.WriteFile(m.path, data, 0644)
 }
 
-// GetDocumentRoot returns the base folder of the document collection.
 // Dir is the folder of the configuration file (<user config>/marksafe).
 func (m *ConfigManager) Dir() string {
 	return filepath.Dir(m.path)
 }
 
+// GetDocumentRoot returns the base folder of the document collection.
 func (m *ConfigManager) GetDocumentRoot() string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.config.DocumentRoot
+}
+
+// GetPDFWatermark returns the watermark text for PDFs ("" for none).
+func (m *ConfigManager) GetPDFWatermark() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.config.PDFWatermark
+}
+
+// SetPDFWatermark stores the watermark text for PDFs.
+func (m *ConfigManager) SetPDFWatermark(text string) error {
+	m.mu.Lock()
+	m.config.PDFWatermark = text
+	m.mu.Unlock()
+	return m.Save()
 }
 
 // SetDocumentRoot stores the base folder of the document collection.

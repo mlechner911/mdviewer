@@ -170,11 +170,11 @@ func TestSplitSignatureBothForms(t *testing.T) {
 func TestLayoutYAML(t *testing.T) {
 	md := "---\ndoc_id: INFO-QM-001\nversion: \"1.0\"\ntitle: test info\n---\nText\n"
 	got := LayoutYAML(md, LayoutOptions{Watermark: "  DRAFT  ", Organization: "Demo GmbH"})
-	want := "lang: de\ntitle: test info\nwatermark: DRAFT\nheader:\n    left: Information\n    center: Demo GmbH\n    right: INFO-QM-001 · Version 1.0\n"
+	want := "title: test info\nwatermark: DRAFT\nheader:\n    left: Information\n    center: Demo GmbH\n    right: INFO-QM-001 · Version 1.0\n"
 	if got != want {
 		t.Errorf("LayoutYAML:\n%s\nwant:\n%s", got, want)
 	}
-	if got := LayoutYAML("# Nur Text\n", LayoutOptions{}); got != "lang: de\n" {
+	if got := LayoutYAML("# Nur Text\n", LayoutOptions{}); got != "" {
 		t.Errorf("plain Markdown: %q", got)
 	}
 	if got := LayoutYAML(md, LayoutOptions{Watermark: strings.Repeat("x", 80)}); !strings.Contains(got, "watermark: "+strings.Repeat("x", 60)+"\n") {
