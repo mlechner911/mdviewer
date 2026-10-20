@@ -1,0 +1,26 @@
+{
+  "name": "mlc-markdown-svelte",
+  "version": "0.1.0",
+  "description": "Svelte 5 component <MlcMarkdown> for Markdown with the MLC Markdown Extension (non-standard), built on mlc-markdown.",
+  "type": "module",
+  "svelte": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": { "types": "./src/index.d.ts", "svelte": "./src/index.js", "default": "./src/index.js" }
+  },
+  "files": ["src", "README.md", "LICENSE"],
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/mlechner911/mdviewer", "directory": "packages/mlc-markdown-svelte" },
+  "scripts": { "test": "vitest run" },
+  "peerDependencies": {
+    "mlc-markdown": "^0.1.0",
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "jsdom": "^26.0.0",
+    "mlc-markdown": "file:../mlc-markdown",
+    "svelte": "^5.0.0",
+    "vitest": "^3.0.0"
+  }
+}

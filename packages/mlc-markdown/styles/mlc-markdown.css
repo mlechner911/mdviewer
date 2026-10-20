@@ -171,3 +171,11 @@
   .mlc-md h1, .mlc-md h2, .mlc-md h3, .mlc-md h4 { break-after: avoid; }
   .mlc-md pre, .mlc-md table, .mlc-md .mlc-md-alert, .mlc-md .mlc-md-field-multiline, .mlc-md .mlc-md-diagram, .mlc-md img { break-inside: avoid; }
 }
+
+/* ---------- Front matter box (mlc-markdown-svelte, frontMatter="box") ---------- */
+.mlc-md .mlc-md-frontmatter { margin: 0 0 1.25em; font-size: 0.8em; border: 1px solid var(--mlc-md-border); border-radius: var(--mlc-md-radius); background: var(--mlc-md-surface); }
+.mlc-md .mlc-md-frontmatter > summary { padding: 0.4em 0.8em; cursor: pointer; font-weight: 600; color: var(--mlc-md-muted); }
+.mlc-md .mlc-md-frontmatter table { margin: 0; border: none; }
+.mlc-md .mlc-md-frontmatter td { border: none; padding: 0.15em 0.8em; background: none !important; }
+.mlc-md .mlc-md-frontmatter td:first-child { color: var(--mlc-md-muted); white-space: nowrap; }
+@media print { .mlc-md .mlc-md-frontmatter { display: none; } }
