@@ -82,6 +82,27 @@ describe('Markdown features', () => {
     expect(h).not.toMatch(/<script|onclick|<span>s/);
   });
 
+  it('rawHtml sanitize keeps harmless HTML, removes the dangerous parts', () => {
+    const d = doc(html('<details><summary>Mehr</summary>\n\nInhalt\n\n</details>\n\nText <a href="x.md" onclick="y()">Link</a> <kbd>Strg</kbd> und <a id="ziel"></a> danach\n\n<script>alert(1)</script>\n', { rawHtml: 'sanitize' }));
+    expect(d.querySelector('details summary')!.textContent).toBe('Mehr');
+    const a = d.querySelector('a[href="x.md"]')!;
+    expect(a.textContent).toBe('Link');
+    expect(a.hasAttribute('onclick')).toBe(false);
+    expect(d.querySelector('kbd')!.textContent).toBe('Strg');
+    expect(d.querySelector('#ziel')).not.toBeNull();
+    expect(d.innerHTML).not.toMatch(/<script|alert/);
+  });
+
+  it('rawHtml sanitize: URLs in embedded HTML go through resolveUrl', () => {
+    const seen: string[] = [];
+    const resolveUrl = (u: string, k: string) => (seen.push(`${k}:${u}`), `/r/${u}`);
+    const d = doc(html('<img src="a.png" srcset="b.png 2x"> <a href=\'x.md?a=1&amp;b=2\'>L</a>\n\n![m](c.png)\n', { rawHtml: 'sanitize', resolveUrl }));
+    expect(seen).toEqual(expect.arrayContaining(['image:a.png', 'link:x.md?a=1&b=2', 'image:c.png']));
+    expect(d.querySelector('img')!.getAttribute('src')).toBe('/r/a.png');
+    expect(d.querySelector('img')!.hasAttribute('srcset')).toBe(false);
+    expect(d.querySelector('a')!.getAttribute('href')).toBe('/r/x.md?a=1&b=2');
+  });
+
   it('tables: wide separator row gives column widths', () => {
     const wide = `| A | B |\n| ${'-'.repeat(60)} | ${'-'.repeat(20)} |\n| 1 | 2 |\n`;
     const d = doc(html(wide));

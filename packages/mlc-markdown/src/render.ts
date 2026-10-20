@@ -124,7 +124,22 @@ export function createRenderer(opts: RenderOptions = {}) {
       ADD_ATTR: ['data-line', 'data-tex', 'data-field', 'data-mlc-style', 'target'],
       ADD_TAGS: ['details', 'summary'],
       FORBID_TAGS: ['style', 'form', 'textarea', 'select', 'button'],
+      FORBID_ATTR: ['srcset'],
     }) as unknown as string;
+
+  // URLs in embedded HTML take the same way as Markdown links and images
+  // (the host's checks: whitelist, local resources); srcset is removed.
+  const RAW_URL_RE = /(\s)((?:xlink:)?href|src|poster)(\s*=\s*)("[^"]*"|'[^']*'|[^\s"'>]+)/gi;
+  const resolveRawUrls = (html: string) =>
+    !opts.resolveUrl
+      ? html
+      : html.replace(RAW_URL_RE, (_m, sp: string, attr: string, eq: string, val: string) => {
+          const q = val[0] === '"' || val[0] === "'" ? val[0] : '';
+          const raw = q ? val.slice(1, -1) : val;
+          const url = raw.replace(/&amp;/g, '&');
+          const kind = /href$/i.test(attr) ? 'link' : 'image';
+          return `${sp}${attr}${eq}"${escapeHtml(opts.resolveUrl!(url, kind))}"`;
+        });
 
   let ids = new Set<string>();
   const explicitId = (text: string) => /\s*\{#([\p{L}\p{N}_-]+)\}\s*$/u.exec(text);
@@ -196,8 +211,8 @@ export function createRenderer(opts: RenderOptions = {}) {
         if (PAGE_BREAK_RE.test(t)) return `<div class="mlc-md-page-break"><span>${escapeHtml(labels.pageBreak)}</span></div>\n`;
         const a = ANCHOR_RE.exec(t);
         if (a) return `<a id="${escapeHtml(a[1])}"></a>`;
+        if (opts.rawHtml === 'sanitize') return resolveRawUrls(text); // DOMPurify cleans it
         if (t === '</a>' && !block) return '';
-        if (opts.rawHtml === 'sanitize') return text;
         return ''; // other raw HTML is not shown (comments, scripts, styling)
       },
       code({ text, lang }: Tokens.Code) {

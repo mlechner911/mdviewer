@@ -60,8 +60,12 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 
 ### Rules
 
-- Raw HTML: only the two forms above (page break, anchor target). MarkSafe
-  drops any other raw HTML.
+- Raw HTML: the extension itself only defines the two forms above (page
+  break, anchor target). MarkSafe shows other embedded HTML (e.g.
+  `<details>`, `<kbd>`) after sanitizing it: scripts, event handlers, styles
+  and form elements are removed. The PDF conversion (mlcdoc) may render
+  embedded HTML differently or not at all; use it sparingly in documents
+  meant for PDF or the Sensor Monitor.
 - Escape a literal `[@` as `\[@`.
 - Fields cannot be placed in headings or image captions, and a field cannot
   span a blank line.

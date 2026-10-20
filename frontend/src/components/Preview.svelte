@@ -190,6 +190,7 @@
       theme={theme.id}
       frontMatter={mlcDoc ? 'hide' : 'box'}
       debounce={150}
+      rawHtml="sanitize"
       {highlight}
       {resolveUrl}
       {onNavigate}

@@ -40,7 +40,7 @@ await enhance(el, { katex, mermaid });     // formulas and diagrams, lazily load
 | Tables | full width with column shares when the separator row is longer than 72 characters (like mlcdoc) |
 | Every block | `data-line` = line in the source file (scroll sync) |
 | Math, Mermaid | `.mlc-md-math[data-tex]`, `pre.mlc-md-mermaid` → `enhance()` |
-| Other raw HTML | dropped (`rawHtml: 'sanitize'` passes it through DOMPurify instead) |
+| Other raw HTML | dropped (`rawHtml: 'sanitize'` keeps it, cleaned by DOMPurify; its `href`/`src` go through `resolveUrl`, `srcset` is removed) — MarkSafe uses `sanitize` |
 
 Styling: put `class="mlc-md"` on the container and set the `--mlc-md-*`
 variables to your design; `data-theme="dark"` switches the defaults. No
