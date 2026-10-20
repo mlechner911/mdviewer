@@ -9,6 +9,7 @@ let tFn = $derived(get(t));
 
 interface HamburgerMenuProps {
 	onFileNew?: () => void;
+	onFileNewTemplate?: () => void;
 	onFileOpenLocal?: () => void;
 	onFileOpenRecent?: (path?: string) => void;
 	onFileSave?: () => void;
@@ -33,6 +34,7 @@ interface HamburgerMenuProps {
 
 let {
 	onFileNew,
+	onFileNewTemplate,
 	onFileOpenLocal,
 	onFileOpenRecent,
 	onFileSave,
@@ -68,6 +70,9 @@ function handleMenuEvent(action: string) {
 	switch(action) {
 		case 'file-new':
 			onFileNew?.();
+			break;
+		case 'file-new-template':
+			onFileNewTemplate?.();
 			break;
 		case 'file-open-local':
 			onFileOpenLocal?.();
@@ -140,6 +145,7 @@ const menuSections = [
 		label: 'datei',
 		items: [
 			{ action: 'file-new', icon: 'file-plus', label: 'neu' },
+			{ action: 'file-new-template', icon: 'file-plus', label: 'menuNewFromTemplate' },
 			{ action: 'file-open-local', icon: 'folder-open', label: 'lokale-datei-open' },
 			{ action: 'file-open-recent', icon: 'clock', label: 'zuletzt-offen' },
 			{ action: 'file-save', icon: 'save', label: 'save' },

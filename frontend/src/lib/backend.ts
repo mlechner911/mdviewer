@@ -22,7 +22,10 @@ import {
   CheckExternalURL,
   AnalyzeMLC,
   MLCDocVersion,
-  PreviewMLCDoc
+  PreviewMLCDoc,
+  MLCTemplates,
+  NewMLCDocument,
+  SuggestMLCRefNo
 } from '../../bindings/marksafe/app'
 import type { Analysis as MLCAnalysis, Diagnostic as MLCDiagnostic } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
 import { get } from 'svelte/store';
@@ -90,6 +93,36 @@ export async function previewMLCDoc(md: string, docPath: string) {
   } catch (err) {
     console.error('previewMLCDoc failed:', err);
     return null;
+  }
+}
+
+/** Built-in templates of the MLC Markdown Extension. */
+export async function mlcTemplates() {
+  if (!isWailsReady()) return [];
+  try {
+    return (await MLCTemplates()) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** A new document from a template, or the reason it cannot be created. */
+export async function newMLCDocument(p: { kind: string; title: string; refNo: string; version: string }): Promise<{ content: string; error: string }> {
+  if (!isWailsReady()) return { content: '', error: 'Wails not ready' };
+  try {
+    return { content: await NewMLCDocument(p), error: '' };
+  } catch (err: any) {
+    return { content: '', error: String(err?.message ?? err) };
+  }
+}
+
+/** RefNo proposal from the files next to docPath (only a proposal). */
+export async function suggestMLCRefNo(kind: string, area: string, docPath: string): Promise<string> {
+  if (!isWailsReady()) return '';
+  try {
+    return (await SuggestMLCRefNo(kind, area, docPath)) ?? '';
+  } catch {
+    return '';
   }
 }
 

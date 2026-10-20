@@ -27,6 +27,10 @@ if mlcext.Detect(md) {
 | `ParseHeader`, `ParseFrontMatter` | Header lines (`**Dokumenten-ID:**`, `**Version:**`) and front matter |
 | `EventKinds`, `PrefillFields`, `FrontMatterKeys` | The shared lists; change them here first |
 | `HeadingSlug` | Heading anchors exactly like GitHub and mlcmd2pdf |
+| `Analyze` | Everything an editor needs: findings, field and hint positions, lists |
+| `Templates`, `NewDocument`, `SuggestRefNo` | New documents from the built-in templates (SOP, VA, FB, INFO) |
+| `StoredText` | The text as the Sensor Monitor stores and renders it (upload front matter removed) |
+| `mlcdoc.Preview` | Page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`) |
 
 Severity: **error** means the Sensor Monitor rejects the document or mlcdoc
 cannot render it; **warning** means it is accepted but probably not intended;

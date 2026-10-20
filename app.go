@@ -106,6 +106,9 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.Add(t["menuNewTab"]).SetAccelerator("CmdOrCtrl+t").OnClick(func(*application.Context) {
 		a.MenuNewTab()
 	})
+	fileMenu.Add(t["menuNewFromTemplate"]).SetAccelerator("CmdOrCtrl+Shift+n").OnClick(func(*application.Context) {
+		emit("menu-new-from-template")
+	})
 	fileMenu.Add(t["menuOpen"]).SetAccelerator("CmdOrCtrl+o").OnClick(func(*application.Context) {
 		a.MenuOpenFile()
 	})
@@ -308,6 +311,30 @@ func (a *App) PreviewMLCDoc(md string, docPath string) MLCDocPreview {
 		out.Pages[i] = "data:image/png;base64," + base64.StdEncoding.EncodeToString(p)
 	}
 	return out
+}
+
+// MLCTemplates lists the built-in templates for new documents of the MLC
+// Markdown Extension (SOP, VA, form, info).
+func (a *App) MLCTemplates() []mlcext.Template {
+	return mlcext.Templates()
+}
+
+// NewMLCDocument creates the Markdown of a new document from a template.
+func (a *App) NewMLCDocument(p mlcext.NewParams) (string, error) {
+	return mlcext.NewDocument(p)
+}
+
+// SuggestMLCRefNo proposes the next RefNo for kind and area from the
+// documents next to docPath (only a whitelisted directory is read). It is a
+// proposal: only the Sensor Monitor knows which RefNos are taken.
+func (a *App) SuggestMLCRefNo(kind, area, docPath string) string {
+	var existing []string
+	if docPath != "" {
+		if abs, err := filepath.Abs(docPath); err == nil && a.config.IsPathAllowed(filepath.Dir(abs)) {
+			existing = mlcext.RefNosInDir(filepath.Dir(abs), 2000)
+		}
+	}
+	return mlcext.SuggestRefNo(kind, area, existing)
 }
 
 // RenderMarkdown converts markdown string to sanitized HTML.

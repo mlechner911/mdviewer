@@ -85,6 +85,13 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   installed the button is hidden. Header, footer and logo of the final PDF
   come from the Sensor Monitor and are not part of the local preview.
 
+- **Templates** (File → "New from Template…", `Ctrl+Shift+N`): new SOP,
+  VA, form or information sheet with title, document ID and version. The
+  document ID is suggested from the files next to the current document;
+  whether it is free among the approved documents only the Sensor Monitor
+  can tell, on upload. Every template passes the checker and renders in
+  `mlcdoc` without warnings.
+
 ## Roadmap
 
 1. A readable document header instead of the generic front matter table.

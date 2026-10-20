@@ -21,6 +21,7 @@
   import TabsBar from './components/TabsBar.svelte';
   import StatusBar from './components/StatusBar.svelte';
   import PdfPreview from './components/PdfPreview.svelte';
+  import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
 
   // State & Config
   import { getTheme } from './themes';
@@ -110,6 +111,15 @@
       content,
       isDirty: false
     };
+  }
+
+  // New document of the MLC Markdown Extension from a template.
+  let showTemplateModal = $state(false);
+  function createFromTemplate(content: string, refNo: string) {
+    const newTab = createNewTab(refNo || $t('untitled'), content);
+    tabs = [...tabs, newTab];
+    activeTabIndex = tabs.length - 1;
+    showTemplateModal = false;
   }
 
   function addNewTab() {
@@ -227,6 +237,7 @@
       menuThemeLight: tMap.menuThemeLight,
       menuThemeAuto: tMap.menuThemeAuto,
       menuNewTab: tMap.menuNewTab,
+      menuNewFromTemplate: tMap.menuNewFromTemplate,
       menuOpen: tMap.menuOpen,
       menuRecentFiles: tMap.menuRecentFiles,
       menuNoRecentFiles: tMap.menuNoRecentFiles,
@@ -449,6 +460,7 @@
           EventsOn("menu-save-file", handleSave);
           EventsOn("menu-save-file-as", handleSaveAs);
           EventsOn("menu-new-tab", addNewTab);
+          EventsOn("menu-new-from-template", () => (showTemplateModal = true));
           EventsOn("format-bold", () => wrapSelection('**', '**'));
           EventsOn("format-italic", () => wrapSelection('*', '*'));
           EventsOn("format-h1", () => prefixSelection('# '));
@@ -535,7 +547,7 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab");
+      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template");
       EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
@@ -668,6 +680,14 @@
   theme={$effectiveAppTheme}
 />
 
+<NewFromTemplateModal
+  show={showTemplateModal}
+  theme={$effectiveAppTheme}
+  docPath={tabs[activeTabIndex]?.path}
+  onCreate={createFromTemplate}
+  onCancel={() => (showTemplateModal = false)}
+/>
+
 <WhitelistModal 
   show={showSecurityModal} 
   type={securityType} 
@@ -692,6 +712,7 @@
   {#if SHOW_HTML_TOOLBAR}
     <HamburgerMenu 
       onFileNew={addNewTab}
+      onFileNewTemplate={() => (showTemplateModal = true)}
       onFileOpenLocal={handleOpen}
       onFileOpenRecent={(p) => p && handleOpenRecent(p)}
       onFileSave={handleSave}
