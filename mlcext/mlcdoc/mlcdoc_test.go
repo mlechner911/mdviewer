@@ -1,6 +1,8 @@
 package mlcdoc
 
 import (
+	"github.com/mlechner911/mdviewer/mlcext"
+
 	"bytes"
 	"context"
 	"os"
@@ -68,5 +70,41 @@ func TestCopyImagesStaysInsideBaseDir(t *testing.T) {
 	entries, _ := os.ReadDir(dir)
 	if len(entries) != 1 {
 		t.Errorf("only a.png expected, got %v", entries)
+	}
+}
+
+// Every built-in template renders in mlcdoc without warnings.
+func TestTemplatesRenderWithoutWarnings(t *testing.T) {
+	if Binary("") == "" {
+		t.Skip("mlcdoc not installed")
+	}
+	for _, tpl := range mlcext.Templates() {
+		md, err := mlcext.NewDocument(mlcext.NewParams{Kind: tpl.Kind, Title: "Test", RefNo: tpl.Prefix + "-QM-001"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := Preview(context.Background(), Request{Markdown: mlcext.StoredText(md)})
+		if err != nil {
+			t.Errorf("%s: %v", tpl.Kind, err)
+			continue
+		}
+		if len(res.Warnings) > 0 || len(res.Pages) == 0 {
+			t.Errorf("%s: %d pages, warnings %v", tpl.Kind, len(res.Pages), res.Warnings)
+		}
+	}
+}
+
+// mlcdoc rejects the upload front matter (event_kinds); StoredText removes
+// it like the Sensor Monitor does on upload.
+func TestUploadFrontMatterNeedsStoredText(t *testing.T) {
+	if Binary("") == "" {
+		t.Skip("mlcdoc not installed")
+	}
+	md := "---\ntitle: X\nevent_kinds: [DEVIATION]\n---\n# A\n"
+	if _, err := Preview(context.Background(), Request{Markdown: md}); err == nil || !strings.Contains(err.Error(), "event_kinds") {
+		t.Errorf("mlcdoc accepted event_kinds (behavior changed?): %v", err)
+	}
+	if _, err := Preview(context.Background(), Request{Markdown: mlcext.StoredText(md)}); err != nil {
+		t.Errorf("stored text: %v", err)
 	}
 }

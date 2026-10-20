@@ -3,6 +3,7 @@ package mlcext
 import (
 	"bytes"
 	"regexp"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -166,4 +167,25 @@ func KindLabel(kind string) string {
 		return "Information (INFO)"
 	}
 	return ""
+}
+
+// StoredText is md as the Sensor Monitor stores and renders it: an upload
+// front matter (only title, version, description, event_kinds) is removed,
+// as on upload. mlcdoc rejects those keys, so a preview must render this
+// text. Front matter with other keys (mlcdoc layout such as header or
+// footer) is kept.
+func StoredText(md string) string {
+	fm, body, node, err := parseFrontMatter(md)
+	if !fm.Present || err != nil || node == nil {
+		return md
+	}
+	if len(node.Content) > 0 {
+		m := node.Content[0]
+		for i := 0; i+1 < len(m.Content); i += 2 {
+			if !slices.Contains(FrontMatterKeys, m.Content[i].Value) {
+				return md
+			}
+		}
+	}
+	return body
 }

@@ -207,3 +207,17 @@ func TestPrefillMarkersAreValidFields(t *testing.T) {
 		}
 	}
 }
+
+func TestStoredText(t *testing.T) {
+	upload := "---\ntitle: X\nevent_kinds: []\n---\n# A\n"
+	if got := StoredText(upload); got != "# A\n" {
+		t.Errorf("upload front matter not removed: %q", got)
+	}
+	layout := "---\ntitle: X\nheader: {left: A}\n---\n# A\n"
+	if got := StoredText(layout); got != layout {
+		t.Errorf("layout front matter must stay: %q", got)
+	}
+	if got := StoredText("# A\n"); got != "# A\n" {
+		t.Errorf("no front matter: %q", got)
+	}
+}

@@ -294,7 +294,9 @@ func (a *App) PreviewMLCDoc(md string, docPath string) MLCDocPreview {
 			baseDir = filepath.Dir(abs)
 		}
 	}
-	res, err := mlcdoc.Preview(context.Background(), mlcdoc.Request{Markdown: md, BaseDir: baseDir})
+	// Render what the Sensor Monitor stores: without the upload front
+	// matter, which mlcdoc rejects.
+	res, err := mlcdoc.Preview(context.Background(), mlcdoc.Request{Markdown: mlcext.StoredText(md), BaseDir: baseDir})
 	if err != nil {
 		return MLCDocPreview{Pages: []string{}, Warnings: []string{}, Error: err.Error()}
 	}
