@@ -146,3 +146,14 @@ func TestStandaloneHTMLEmbedsKatexOnlyWithMath(t *testing.T) {
 		t.Errorf("KaTeX fonts missing for a document with math")
 	}
 }
+
+func TestOneLineDisplayMathKeepsItsContent(t *testing.T) {
+	r := NewRenderer()
+	html, _ := r.Render("$$x^2$$\n\n```\n$$nicht anfassen$$\n```\n", "github")
+	if !strings.Contains(html, `\[x^2`) {
+		t.Errorf("display math lost: %s", html)
+	}
+	if !strings.Contains(html, "$$nicht anfassen$$") {
+		t.Errorf("code block changed: %s", html)
+	}
+}

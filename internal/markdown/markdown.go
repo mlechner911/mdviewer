@@ -260,6 +260,7 @@ func (r *Renderer) Render(input string, chromaStyle string) (string, error) {
 		),
 	)
 
+	input = splitOneLineDisplayMath(input)
 	context := parser.NewContext(parser.WithIDs(newHeadingIDs()))
 	if err := md.Convert([]byte(input), &buf, parser.WithContext(context)); err != nil {
 		return "", fmt.Errorf("goldmark conversion error: %w", err)
