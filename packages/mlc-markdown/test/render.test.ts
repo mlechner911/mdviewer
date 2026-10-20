@@ -151,7 +151,9 @@ describe('front matter', () => {
     const r = renderMarkdown('---\ntitle: "CAPA"\nevent_kinds: [DEVIATION]\n---\n# A\n');
     expect(r.frontMatter).toContain('event_kinds');
     expect(r.html).not.toContain('event_kinds');
-    expect(frontMatterEntries(r.frontMatter)).toEqual([['title', 'CAPA'], ['event_kinds', '[DEVIATION]']]);
+    expect(frontMatterEntries(r.frontMatter)).toEqual([['title', 'CAPA'], ['event_kinds', 'DEVIATION']]);
+    expect(frontMatterEntries('event_kinds: [OUT_OF_RANGE, "NO_DATA"]')).toEqual([['event_kinds', 'OUT_OF_RANGE, NO_DATA']]);
+    expect(frontMatterEntries('event_kinds:\n  - OUT_OF_RANGE\n  - NO_DATA')).toEqual([['event_kinds', 'OUT_OF_RANGE, NO_DATA']]);
   });
 });
 

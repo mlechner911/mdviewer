@@ -4,6 +4,8 @@
 export { createRenderer, renderMarkdown, splitFrontMatter, frontMatterEntries, escapeHtml } from './render';
 export type { RenderOptions, Rendered } from './render';
 export { scanFields, headingSlug, unescape } from './fields';
+export { documentMeta, expandVariables, splitSignature, frontMatterBlock, kindFromRef, VARIABLES } from './meta';
+export type { DocMeta, Signature } from './meta';
 export type { Field, FieldKind, FieldError, Hint, Scan } from './fields';
 export { labelsFor, LABELS } from './labels';
 export type { Labels, Locale } from './labels';

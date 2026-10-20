@@ -4,7 +4,8 @@
 // the mlcdoc PDF as HTML allows, but nothing is checked here — malformed
 // fields stay text, diagnostics come from the Go checker mlcext.
 //
-// Pipeline: front matter off → fields and hints become placeholders (so
+// Pipeline: variables {{doc_id}} … replaced, signature block and front
+// matter off → fields and hints become placeholders (so
 // underscores are no emphasis) → marked, block by block with data-line →
 // DOMPurify (only what the extension and Markdown produce) → placeholders
 // become field HTML (escaped, built here) → linkify on text nodes.
@@ -13,7 +14,8 @@ import createDOMPurify from 'dompurify';
 import { Marked, type Token, type Tokens } from 'marked';
 import markedFootnote from 'marked-footnote';
 import { headingSlug, scanFields, type Field } from './fields';
-import { labelsFor, type Labels } from './labels';
+import { labelsFor } from './labels';
+import { documentMeta, expandVariables, frontMatterBlock, splitSignature, type DocMeta, type Signature } from './meta';
 
 export interface RenderOptions {
   /** Language of the document: alert titles, "Ausfülltipp" … (default de). */
@@ -40,6 +42,10 @@ export interface Rendered {
   frontMatter: string;
   /** Number of lines the front matter occupied (data-line is relative to the file). */
   frontMatterLines: number;
+  /** Id, version and title (front matter first, legacy header lines as a fallback). */
+  meta: DocMeta;
+  /** The Sensor Monitor's signature, null when unsigned (shown, not verified). */
+  signature: Signature | null;
 }
 
 const PH_START = '';
@@ -54,13 +60,19 @@ export function splitFrontMatter(md: string): { frontMatter: string; body: strin
   return { frontMatter: m[1], body: text.slice(m[0].length), lines: m[0].split('\n').length - (m[0].endsWith('\n') ? 1 : 0) };
 }
 
-/** Front matter as key/value pairs, one level (for a simple display). */
+/** Front matter as key/value pairs, one level (for a simple display); lists such as event_kinds become "A, B". */
 export function frontMatterEntries(raw: string): Array<[string, string]> {
   const out: Array<[string, string]> = [];
   for (const line of raw.split(/\r?\n/)) {
     const m = /^([A-Za-z0-9_-]+)\s*:\s*(.*)$/.exec(line);
-    if (m) out.push([m[1], m[2].replace(/^["']|["']$/g, '')]);
-    else if (/^\s+\S/.test(line) && out.length) out[out.length - 1][1] += (out[out.length - 1][1] ? ' ' : '') + line.trim();
+    if (m) {
+      let v = m[2].trim();
+      if (/^\[.*\]$/.test(v)) v = v.slice(1, -1).split(',').map((x) => x.trim().replace(/^["']|["']$/g, '')).filter(Boolean).join(', ');
+      out.push([m[1], v.replace(/^["']|["']$/g, '')]);
+    } else if (/^\s*-\s+\S/.test(line) && out.length) {
+      const last = out[out.length - 1];
+      last[1] += (last[1] ? ', ' : '') + line.trim().replace(/^-\s+/, '').replace(/^["']|["']$/g, '');
+    } else if (/^\s+\S/.test(line) && out.length) out[out.length - 1][1] += (out[out.length - 1][1] ? ' ' : '') + line.trim();
   }
   return out;
 }
@@ -189,7 +201,7 @@ export function createRenderer(opts: RenderOptions = {}) {
       blockquote(this: { parser: { parse(t: Token[]): string } }, { tokens }: Tokens.Blockquote) {
         const first = tokens[0];
         if (first?.type === 'paragraph' && ALERT_RE.test((first as Tokens.Paragraph).raw)) {
-          const kind = ALERT_RE.exec((first as Tokens.Paragraph).raw)![1].toLowerCase() as keyof Labels;
+          const kind = ALERT_RE.exec((first as Tokens.Paragraph).raw)![1].toLowerCase() as 'note' | 'tip' | 'important' | 'warning' | 'caution';
           const p = first as Tokens.Paragraph;
           const rest = marked.lexer(p.raw.replace(ALERT_RE, '')) as Token[];
           const body = this.parser.parse([...rest, ...tokens.slice(1)]);
@@ -330,11 +342,16 @@ export function createRenderer(opts: RenderOptions = {}) {
 
   /** Render a document (with or without front matter). */
   function render(md: string): Rendered {
-    const fm = splitFrontMatter(md ?? '');
+    md = md ?? '';
+    const meta = documentMeta(md);
+    // Variables keep the line count; a signature at the end is cut off, one
+    // of the old form in front is skipped together with the front matter.
+    const { signature, content } = splitSignature(expandVariables(md));
+    const fm = frontMatterBlock(signature?.form === 'end' ? content : expandVariables(md));
     ids = new Set<string>();
     for (const m of fm.body.matchAll(/^#{1,6}[ \t].*\{#([\p{L}\p{N}_-]+)\}[ \t]*$/gmu)) ids.add(m[1]); // explicit ids first, like mlcmd2pdf
-    const html = linkifyHtml(renderBody(fm.body, fm.lines + 1));
-    return { html, frontMatter: fm.frontMatter, frontMatterLines: fm.lines };
+    const html = linkifyHtml(renderBody(fm.body, fm.bodyLine + 1));
+    return { html, frontMatter: fm.raw, frontMatterLines: fm.bodyLine, meta, signature };
   }
 
   return { render, sanitize };

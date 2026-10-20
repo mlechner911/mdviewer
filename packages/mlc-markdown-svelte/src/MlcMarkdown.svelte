@@ -5,7 +5,7 @@
   // Hooks connect what only the app knows (base paths, local resources,
   // event numbers, navigation); styling goes through --mlc-md-* variables.
   import { onDestroy, tick, untrack, type Snippet } from 'svelte';
-  import { createRenderer, enhance, frontMatterEntries, type RenderOptions } from 'mlc-markdown';
+  import { createRenderer, enhance, frontMatterEntries, kindFromRef, labelsFor, type DocMeta, type RenderOptions, type Signature } from 'mlc-markdown';
 
   type NavTarget = { href: string; kind: 'anchor' | 'external' | 'link' | 'ref'; event: MouseEvent };
 
@@ -14,6 +14,8 @@
     locale = 'de',
     theme,
     frontMatter = 'hide',
+    docHeader = true,
+    watermark = '',
     debounce = 0,
     breaks = false,
     rawHtml = 'drop',
@@ -37,6 +39,10 @@
     theme?: 'light' | 'dark';
     /** Front matter: hidden, or a small key/value box. */
     frontMatter?: 'hide' | 'box';
+    /** Header from the front matter (title, doc_id, version, signature); only for documents with a doc_id. */
+    docHeader?: boolean;
+    /** Watermark text across the document (set by the host, e.g. by the version's status); empty for none. */
+    watermark?: string;
     /** Wait this long (ms) after the last change of source before rendering. */
     debounce?: number;
     breaks?: boolean;
@@ -57,7 +63,7 @@
     /** The scrolling element; default: the nearest scrollable ancestor. */
     scrollContainer?: HTMLElement;
     /** Own header above the content, e.g. "how the Sensor Monitor reads it". */
-    header?: Snippet<[{ frontMatter: string; entries: Array<[string, string]> }]>;
+    header?: Snippet<[{ frontMatter: string; entries: Array<[string, string]>; meta: DocMeta; signature: Signature | null }]>;
     class?: string;
   } = $props();
 
@@ -65,7 +71,33 @@
   let content = $state<HTMLElement>();
   let html = $state('');
   let fm = $state('');
+  let meta = $state<DocMeta>({ docId: '', version: '', title: '' });
+  let signature = $state<Signature | null>(null);
   const entries = $derived(frontMatterEntries(fm));
+  const labels = $derived(labelsFor(locale));
+  const kind = $derived(kindFromRef(meta.docId));
+
+  function fmtDate(iso: string): string {
+    const d = new Date(iso);
+    if (!iso || isNaN(d.getTime())) return iso;
+    return d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  }
+  const signedText = $derived(
+    !signature
+      ? ''
+      : signature.fields.signed_by
+        ? labels.signedBy.replace('{by}', signature.fields.signed_by).replace('{at}', fmtDate(signature.fields.signed_at ?? ''))
+        : labels.signed.replace('{at}', fmtDate(signature.fields.signed_at ?? '')),
+  );
+
+  // Diagonal text as a repeated SVG background: covers every screen and print page.
+  const watermarkUrl = $derived.by(() => {
+    const t = watermark.trim().slice(0, 60);
+    if (!t) return '';
+    const esc = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><text x="300" y="300" text-anchor="middle" dominant-baseline="middle" transform="rotate(-35 300 300)" font-family="Helvetica, Arial, sans-serif" font-size="${Math.max(28, Math.min(110, 900 / t.length))}" font-weight="700" fill="#808080">${esc}</text></svg>`;
+    return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+  });
 
   const renderer = $derived(createRenderer({ locale, breaks, rawHtml, highlight, math, resolveUrl, linkify }));
 
@@ -82,9 +114,11 @@
     } else timer = setTimeout(run, debounce);
   });
 
-  async function update(res: { html: string; frontMatter: string }) {
+  async function update(res: { html: string; frontMatter: string; meta: DocMeta; signature: Signature | null }) {
     html = res.html;
     fm = res.frontMatter;
+    meta = res.meta;
+    signature = res.signature;
     await tick();
     if (!content) return;
     const needsMath = !math && content.querySelector('.mlc-md-math[data-tex]');
@@ -210,8 +244,21 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div bind:this={root} class="mlc-md {className}" data-theme={theme} lang={locale} onclick={onClick}>
+  {#if watermarkUrl}
+    <div class="mlc-md-watermark" aria-hidden="true" data-text={watermark.trim().slice(0, 60)} style="background-image: {watermarkUrl}"></div>
+  {/if}
+  {#if docHeader && meta.docId}
+    <header class="mlc-md-docheader">
+      {#if kind}<div class="mlc-md-docheader-kind">{labels.kinds[kind]}</div>{/if}
+      {#if meta.title}<div class="mlc-md-docheader-title">{meta.title}</div>{/if}
+      <div class="mlc-md-docheader-meta">
+        <span class="mlc-md-docheader-id">{meta.docId}</span>{#if meta.version}{` · ${labels.version} ${meta.version}`}{/if}
+      </div>
+      {#if signature}<div class="mlc-md-docheader-signed">{signedText}</div>{/if}
+    </header>
+  {/if}
   {#if header}
-    {@render header({ frontMatter: fm, entries })}
+    {@render header({ frontMatter: fm, entries, meta, signature })}
   {/if}
   {#if frontMatter === 'box' && entries.length}
     <details class="mlc-md-frontmatter" open>

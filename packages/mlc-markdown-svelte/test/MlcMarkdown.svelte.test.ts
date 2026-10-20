@@ -23,6 +23,35 @@ describe('<MlcMarkdown>', () => {
     done();
   });
 
+  it('document header from the front matter, variables, signature, watermark', async () => {
+    const source =
+      '---\ndoc_id: FB-QM-001\nversion: "2.0"\ntitle: CAPA-Bericht\n---\nGehört zu {{doc_id}}.\n' +
+      '<!--mlc-signature\nsigned_by: "Dr. Anna Berger"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: x\n-->\n';
+    const { target, done } = setup({ source, locale: 'de', watermark: 'DRAFT' });
+    await tick();
+    const h = target.querySelector('.mlc-md-docheader')!;
+    expect(h.querySelector('.mlc-md-docheader-kind')!.textContent).toBe('Formblatt');
+    expect(h.querySelector('.mlc-md-docheader-title')!.textContent).toBe('CAPA-Bericht');
+    expect(h.querySelector('.mlc-md-docheader-meta')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('FB-QM-001 · Version 2.0');
+    expect(h.querySelector('.mlc-md-docheader-signed')!.textContent).toContain('Signiert von Dr. Anna Berger am');
+    expect(target.querySelector('.mlc-md-content')!.textContent).toContain('Gehört zu FB-QM-001.');
+    expect(target.querySelector('.mlc-md-content')!.textContent).not.toContain('sha256');
+    expect(target.querySelector('.mlc-md-watermark')!.getAttribute('data-text')).toBe('DRAFT');
+    done();
+  });
+
+  it('no header without doc_id or when switched off, no watermark by default', async () => {
+    const a = setup({ source: '---\ntitle: X\n---\nText' });
+    await tick();
+    expect(a.target.querySelector('.mlc-md-docheader')).toBeNull();
+    expect(a.target.querySelector('.mlc-md-watermark')).toBeNull();
+    a.done();
+    const b = setup({ source: '---\ndoc_id: SOP-QM-001\n---\nText', docHeader: false });
+    await tick();
+    expect(b.target.querySelector('.mlc-md-docheader')).toBeNull();
+    b.done();
+  });
+
   it('front matter as a box', async () => {
     const { target, done } = setup({ source: '---\ntitle: X\nversion: 1\n---\nText', frontMatter: 'box' });
     await tick();

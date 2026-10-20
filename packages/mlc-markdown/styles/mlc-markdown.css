@@ -179,3 +179,18 @@
 .mlc-md .mlc-md-frontmatter td { border: none; padding: 0.15em 0.8em; background: none !important; }
 .mlc-md .mlc-md-frontmatter td:first-child { color: var(--mlc-md-muted); white-space: nowrap; }
 @media print { .mlc-md .mlc-md-frontmatter { display: none; } }
+
+/* Document header: title, id and version from the front matter (the
+   author writes no header in the text). */
+.mlc-md .mlc-md-docheader { margin: 0 0 1.5em; padding: 0 0 0.75em; border-bottom: 2px solid var(--mlc-md-accent); }
+.mlc-md .mlc-md-docheader-kind { font-family: var(--mlc-md-font-mono); font-size: 0.72em; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mlc-md-muted); }
+.mlc-md .mlc-md-docheader-title { margin: 0.1em 0 0.15em; font-family: var(--mlc-md-font-heading); font-size: 1.7em; font-weight: 700; line-height: 1.2; color: var(--mlc-md-heading); }
+.mlc-md .mlc-md-docheader-meta { font-size: 0.9em; color: var(--mlc-md-muted); }
+.mlc-md .mlc-md-docheader-id { font-family: var(--mlc-md-font-mono); color: var(--mlc-md-text); }
+.mlc-md .mlc-md-docheader-signed { margin-top: 0.35em; font-size: 0.85em; color: var(--mlc-md-alert-tip); }
+
+/* Watermark (set by the host, never by the document): diagonal text over
+   the whole document, also in print. */
+.mlc-md { position: relative; }
+.mlc-md .mlc-md-watermark { position: absolute; inset: 0; pointer-events: none; z-index: 1; background-repeat: repeat-y; background-position: center top; background-size: 100% 36em; opacity: 0.11; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.mlc-md[data-theme='dark'] .mlc-md-watermark { opacity: 0.2; }
