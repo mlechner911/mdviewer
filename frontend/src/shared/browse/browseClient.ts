@@ -49,6 +49,8 @@ export interface MlcDocument {
   fields: number;
   errors: number;
   warnings: number;
+  /** File name is not the RefNo (a hint, nothing is renamed). */
+  nameMismatch?: boolean;
 }
 
 export type BrowseTheme = 'dark' | 'light';

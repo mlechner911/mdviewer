@@ -28,7 +28,7 @@ type Header struct {
 	// Kind from the RefNo prefix: sop | va | form | info, empty if unknown.
 	Kind string
 
-	refLine, versionLine, validLine int
+	refLine, versionLine, validLine, titleLine int
 }
 
 var hdrField = regexp.MustCompile(`\*\*\s*(Titel|Dokumenten-ID|Dokument-ID|Version|Gültig ab)\s*:\s*\*\*\s*([^|\n*]*)`)
@@ -61,7 +61,7 @@ func ParseHeader(md string) Header {
 			switch m[1] {
 			case "Titel":
 				if h.Title == "" {
-					h.Title = v
+					h.Title, h.titleLine = v, line
 				}
 			case "Dokumenten-ID", "Dokument-ID":
 				if h.RefNo == "" {

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/mlechner911/mdviewer/mlcext"
 	"github.com/mlechner911/mdviewer/mlcext/mlcdoc"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -110,6 +111,10 @@ func (a *App) ExportPDF(md string, docPath string) PDFResult {
 		if d := a.baseDirOf(docPath); d != "" {
 			dir = d
 		}
+	}
+	// Passed-on exports carry id and version: INFO-QM-001_v1.0.pdf.
+	if s := mlcext.SuggestFileName(md, ".pdf", true); s != "" {
+		name = s
 	}
 	dlg := application.Get().Dialog.SaveFile().
 		SetMessage("Als PDF exportieren").

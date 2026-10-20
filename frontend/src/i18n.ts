@@ -17,6 +17,11 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    signatureDropTitle: 'Signature no longer valid',
+    signatureDropBody: 'This file was signed by %s on %s. It has been changed since, so the signature no longer holds: it is removed on saving, and the file becomes a new version to be released again in the Sensor Monitor.',
+    signatureDropConfirm: 'Save without signature',
+    cancel: 'Cancel',
+    fixMoveHeader: 'Move id and version into the front matter',
     open: 'Open',
     save: 'Save',
     saveAs: 'Save As...',
@@ -122,6 +127,11 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    signatureDropTitle: 'Signatur gilt nicht mehr',
+    signatureDropBody: 'Diese Datei war signiert von %s am %s. Sie wurde seitdem geändert, deshalb gilt die Signatur nicht mehr: Sie wird beim Speichern entfernt, und die Datei wird eine neue Fassung, die im Sensor Monitor neu freigegeben werden muss.',
+    signatureDropConfirm: 'Ohne Signatur speichern',
+    cancel: 'Abbrechen',
+    fixMoveHeader: 'Kennung und Version ins Front Matter übernehmen',
     open: 'Öffnen',
     save: 'Speichern',
     saveAs: 'Speichern unter...',
@@ -227,6 +237,11 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    signatureDropTitle: 'La firma ya no es válida',
+    signatureDropBody: 'Este archivo fue firmado por %s el %s. Se ha modificado desde entonces, por lo que la firma ya no es válida: se elimina al guardar y el archivo pasa a ser una nueva versión que debe aprobarse de nuevo en el Sensor Monitor.',
+    signatureDropConfirm: 'Guardar sin firma',
+    cancel: 'Cancelar',
+    fixMoveHeader: 'Pasar identificador y versión al front matter',
     open: 'Abrir',
     save: 'Guardar',
     saveAs: 'Guardar como...',
@@ -332,6 +347,11 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    signatureDropTitle: "La signature n'est plus valable",
+    signatureDropBody: "Ce fichier a été signé par %s le %s. Il a été modifié depuis, la signature n'est donc plus valable : elle est supprimée à l'enregistrement et le fichier devient une nouvelle version à valider à nouveau dans le Sensor Monitor.",
+    signatureDropConfirm: 'Enregistrer sans signature',
+    cancel: 'Annuler',
+    fixMoveHeader: "Déplacer l'identifiant et la version dans le front matter",
     open: 'Ouvrir',
     save: 'Enregistrer',
     saveAs: 'Enregistrer sous...',

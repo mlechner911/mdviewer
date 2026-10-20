@@ -38,8 +38,18 @@ func TestDocumentsListsOnlyMLCDocuments(t *testing.T) {
 	if d := docs[1]; d.RefNo != "SOP-KAL-001" || d.Title != "Kalibrierung" || d.Version != "1.1" || d.Path != "sop/kal.md" {
 		t.Errorf("doc 1: %+v", d)
 	}
-	if d := docs[2]; d.RefNo != "" || d.Path != "ohne.md" || d.Warnings != 2 {
+	if d := docs[2]; d.RefNo != "" || d.Path != "ohne.md" || d.Warnings != 2 || d.NameMismatch {
 		t.Errorf("doc 2 (no RefNo, last): %+v", d)
+	}
+	if !docs[0].NameMismatch {
+		t.Errorf("capa.md with FB-QM-002: name mismatch expected")
+	}
+	write("neu/INFO-QM-001.md", "---\ndoc_id: INFO-QM-001\nversion: \"1.0\"\n---\nText\n")
+	docs, _ = root.Documents()
+	for _, d := range docs {
+		if d.RefNo == "INFO-QM-001" && (d.NameMismatch || d.Version != "1.0") {
+			t.Errorf("doc_id from the front matter, matching name: %+v", d)
+		}
 	}
 }
 

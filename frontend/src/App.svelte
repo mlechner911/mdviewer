@@ -16,6 +16,7 @@
   import { mlcSnippets } from '../../packages/mlcext-editor/src/index';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
+  import ConfirmModal from './components/ConfirmModal.svelte';
   import AboutModal from './components/AboutModal.svelte';
   import HamburgerMenu from './components/HamburgerMenu.svelte';
   import TabsBar from './components/TabsBar.svelte';
@@ -273,7 +274,12 @@
   // MLC Markdown Extension (non-standard) analysis of the active document:
   // status bar, editor menu. The editor gets its own via mlcSource.
   let mlcAnalysis = $state<backend.MLCAnalysis | null>(null);
-  const mlcSource = { analyze: (md: string) => backend.analyzeMLC(md) };
+  const mlcSource = {
+    analyze: (md: string) => backend.analyzeMLC(md),
+    // Quick fix for the legacy header line (mlcext.MoveHeaderToFrontMatter).
+    fixLabel: (code: string) => (code === 'header-in-body' ? $t('fixMoveHeader') : null),
+    fix: (code: string, md: string) => (code === 'header-in-body' ? backend.mlcMoveHeader(md) : Promise.resolve(null)),
+  };
   const mlcMenu = $derived(mlcAnalysis?.detected ? mlcSnippets(mlcAnalysis.lists) : []);
 
   // PDF preview rendered by mlcdoc, offered for MLC documents when mlcdoc
@@ -344,6 +350,33 @@
 
   let isSaving = false;
 
+  // A yes/no question as a promise (ConfirmModal below).
+  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; resolve: (ok: boolean) => void } | null>(null);
+  function askConfirm(title: string, message: string, confirmLabel: string): Promise<boolean> {
+    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, resolve }));
+  }
+  function answerConfirm(ok: boolean) {
+    confirmAsk?.resolve(ok);
+    confirmAsk = null;
+  }
+
+  // An edited signed document no longer matches its signature: saved as a
+  // new version without the block, after asking (else it would look signed).
+  // Returns the text to save, or null when the user cancels.
+  async function contentToSave(index: number): Promise<string | null> {
+    const content = tabs[index].content;
+    const sig = await backend.mlcSignatureState(content);
+    if (!sig.signed || sig.intact) return content;
+    let at = sig.signedAt;
+    const d = new Date(at);
+    if (at && !isNaN(d.getTime())) at = d.toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' });
+    const ok = await askConfirm($t('signatureDropTitle'), $t('signatureDropBody', sig.signedBy || '?', at || '?'), $t('signatureDropConfirm'));
+    if (!ok) return null;
+    const stripped = await backend.mlcRemoveSignature(content);
+    tabs[index].content = stripped;
+    return stripped;
+  }
+
   async function handleSave() {
     if (!isReady || !checkWailsReady() || isSaving) return;
     const tab = activeTab;
@@ -357,7 +390,9 @@
 
     try {
       isSaving = true;
-      const savedPath = await backend.saveFile(tab.path, tab.content);
+      const content = await contentToSave(activeTabIndex);
+      if (content === null) return;
+      const savedPath = await backend.saveFile(tab.path, content);
       if (savedPath) {
         tabs[activeTabIndex].isDirty = false;
         showToast($t('fileSaved'), 2000, 'info');
@@ -385,7 +420,9 @@
         defaultName = tab.title.endsWith('.md') ? tab.title : `${tab.title}.md`;
       }
 
-      const savedPath = await backend.saveFileAs(defaultName, tab.content);
+      const content = await contentToSave(activeTabIndex);
+      if (content === null) return;
+      const savedPath = await backend.saveFileAs(defaultName, content);
       if (savedPath) {
         tabs[activeTabIndex].path = savedPath;
         tabs[activeTabIndex].title = await backend.getFileTitle(savedPath);
@@ -414,7 +451,7 @@
       // file shows offline exactly what the preview shows.
       const article = (await previewComponent?.getExportHTML()) ?? '';
       if (!article) return;
-      await backend.exportHTML(article, mlcMarkdownCSS + '\n' + pageCSS + '\n' + (previewComponent?.codeCSS() ?? ''));
+      await backend.exportHTML(article, mlcMarkdownCSS + '\n' + pageCSS + '\n' + (previewComponent?.codeCSS() ?? ''), activeTab?.content ?? '');
     } catch (err) {
       console.error("Failed to export HTML:", err);
       showToast($t('exportFailed'), 3000, 'error');
@@ -706,6 +743,18 @@
   onCreate={createFromTemplate}
   onCancel={() => (showTemplateModal = false)}
 />
+
+{#if confirmAsk}
+  <ConfirmModal
+    title={confirmAsk.title}
+    message={confirmAsk.message}
+    confirmLabel={confirmAsk.confirmLabel}
+    cancelLabel={$t('cancel')}
+    theme={$effectiveAppTheme}
+    onConfirm={() => answerConfirm(true)}
+    onCancel={() => answerConfirm(false)}
+  />
+{/if}
 
 <WhitelistModal 
   show={showSecurityModal} 

@@ -28,6 +28,9 @@ type DocumentInfo struct {
 	Fields    int    `json:"fields"`
 	Errors    int    `json:"errors"`
 	Warnings  int    `json:"warnings"`
+	// NameMismatch: the file name is not the RefNo ("INFO-QM-001.md"). A
+	// hint only; nothing is renamed.
+	NameMismatch bool `json:"nameMismatch"`
 }
 
 // Documents lists the MLC documents below the root, ordered by RefNo
@@ -62,6 +65,10 @@ func (r *Root) Documents() ([]DocumentInfo, error) {
 		}
 		if d.Title == "" {
 			d.Title, _ = ExtractTitle(f)
+		}
+		if d.RefNo != "" {
+			base := filepath.Base(f)
+			d.NameMismatch = !strings.EqualFold(strings.TrimSuffix(base, filepath.Ext(base)), d.RefNo)
 		}
 		fields, _ := mlcext.ExtractFields(md)
 		d.Fields = len(fields)

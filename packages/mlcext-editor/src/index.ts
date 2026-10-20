@@ -73,6 +73,12 @@ export interface MlcAnalysis {
 /** Where the analysis comes from: the host calls mlcext.Analyze. */
 export interface MlcSource {
   analyze(markdown: string): Promise<MlcAnalysis | null>;
+  /**
+   * Quick fixes, also from the host (mlcext): the label for a diagnostic
+   * code, or null when there is none, and the fixed document.
+   */
+  fixLabel?(code: string): string | null;
+  fix?(code: string, markdown: string): Promise<string | null>;
 }
 
 export interface MlcOptions {
@@ -165,9 +171,24 @@ export function currentAnalysis(state: EditorState): MlcAnalysis | null {
   return state.field(mlcField, false)?.analysis ?? null;
 }
 
-function toCMDiagnostics(doc: Text, a: MlcAnalysis): CMDiagnostic[] {
+function toCMDiagnostics(doc: Text, a: MlcAnalysis, source?: MlcSource): CMDiagnostic[] {
   if (!a.detected) return [];
   return (a.diagnostics ?? []).map((d) => {
+    const label = source?.fix && d.code ? source.fixLabel?.(d.code) : null;
+    const actions = label
+      ? [
+          {
+            name: label,
+            apply(view: EditorView) {
+              const text = view.state.doc.toString();
+              void source!.fix!(d.code, text).then((fixed) => {
+                if (fixed == null || view.state.doc.toString() !== text) return;
+                view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: fixed } });
+              });
+            },
+          },
+        ]
+      : undefined;
     const from = toPos(doc, d.line, d.col);
     const field = (a.fields ?? []).find((f) => f.line === d.line && f.col === d.col);
     const to = field ? toPos(doc, field.endLine, field.endCol) : doc.lineAt(from).to;
@@ -177,6 +198,7 @@ function toCMDiagnostics(doc: Text, a: MlcAnalysis): CMDiagnostic[] {
       severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
       source: 'MLC-Erweiterung',
       message: d.message,
+      actions,
     };
   });
 }
@@ -201,7 +223,7 @@ function analyzer(source: MlcSource, opt: MlcOptions) {
         // A stale answer (the text changed meanwhile) is dropped; the
         // pending run brings the fresh one.
         if (!a || this.view.state.doc.toString() !== text) return;
-        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(this.view.state.doc, a)));
+        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(this.view.state.doc, a, source)));
         this.view.dispatch({ effects: setAnalysis.of(a) });
         opt.onAnalysis?.(a);
       }
@@ -300,6 +322,19 @@ function mlcCompletions(context: CompletionContext): CompletionResult | null {
       };
     }
     return null;
+  }
+
+  const variable = context.matchBefore(/\{\{\s*\w*/);
+  if (variable) {
+    return {
+      from: variable.from,
+      options: [
+        { label: '{{doc_id}}', detail: 'Kennung aus dem Front Matter' },
+        { label: '{{version}}', detail: 'Version aus dem Front Matter' },
+        { label: '{{title}}', detail: 'Titel aus dem Front Matter' },
+      ].map((o) => ({ ...o, type: 'variable' })),
+      filter: false,
+    };
   }
 
   const field = context.matchBefore(/\[@[#\w-]*/);

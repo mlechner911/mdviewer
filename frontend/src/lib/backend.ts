@@ -26,7 +26,10 @@ import {
   ExportPDF,
   MLCTemplates,
   RenderMLCTemplate,
-  SuggestMLCRefNo
+  SuggestMLCRefNo,
+  MLCMoveHeader,
+  MLCSignatureState,
+  MLCRemoveSignature
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -187,9 +190,28 @@ export async function saveFileAs(defaultFilename: string, content: string): Prom
   try { return await SaveFileAs(defaultFilename, content); } catch (err) { console.error('saveFileAs failed:', err); return undefined; }
 }
 
-export async function exportHTML(html: string, css: string): Promise<void> {
+/** md (the source) only names the file after its doc_id. */
+export async function exportHTML(html: string, css: string, md = ''): Promise<void> {
   if (!isWailsReady()) return;
-  try { await ExportHTML(html, css); } catch (err) { console.error('exportHTML failed:', err); }
+  try { await ExportHTML(html, css, md); } catch (err) { console.error('exportHTML failed:', err); }
+}
+
+/** Quick fix: legacy header lines into the front matter; null when there is nothing to move. */
+export async function mlcMoveHeader(md: string): Promise<string | null> {
+  if (!isWailsReady()) return null;
+  try { return (await MLCMoveHeader(md)) || null; } catch (err) { console.error('mlcMoveHeader failed:', err); return null; }
+}
+
+/** Signed, and does the content still match the signed checksum? */
+export async function mlcSignatureState(md: string): Promise<{ signed: boolean; intact: boolean; signedBy: string; signedAt: string }> {
+  const none = { signed: false, intact: false, signedBy: '', signedAt: '' };
+  if (!isWailsReady()) return none;
+  try { return (await MLCSignatureState(md)) ?? none; } catch (err) { console.error('mlcSignatureState failed:', err); return none; }
+}
+
+export async function mlcRemoveSignature(md: string): Promise<string> {
+  if (!isWailsReady()) return md;
+  try { return await MLCRemoveSignature(md); } catch (err) { console.error('mlcRemoveSignature failed:', err); return md; }
 }
 
 export async function getInitialContent(): Promise<FileResult | undefined> {

@@ -299,6 +299,28 @@ func (a *App) AnalyzeMLC(md string) mlcext.Analysis {
 	return mlcext.Analyze(md)
 }
 
+// MLCMoveHeader is the quick fix "Kopf ins Front Matter übernehmen": the
+// legacy header lines become doc_id, version and title. "" when there is
+// nothing to move.
+func (a *App) MLCMoveHeader(md string) string {
+	out, ok := mlcext.MoveHeaderToFrontMatter(md)
+	if !ok {
+		return ""
+	}
+	return out
+}
+
+// MLCSignatureState tells whether md is signed and still matches its
+// checksum (an edit voids the signature).
+func (a *App) MLCSignatureState(md string) mlcext.SignatureState {
+	return mlcext.CheckSignature(md)
+}
+
+// MLCRemoveSignature returns md without its signature block.
+func (a *App) MLCRemoveSignature(md string) string {
+	return mlcext.RemoveSignature(md)
+}
+
 // MLCTemplates lists the templates for new documents of the MLC Markdown
 // Extension: the built-in starting set, replaced or extended by the
 // schemas (*.json + Markdown body) in <document folder>/_vorlagen. New
@@ -529,6 +551,10 @@ func (a *App) SaveFileAs(defaultFilename string, content string) (string, error)
 	if filepath.Ext(defaultFilename) == "" {
 		defaultFilename += ".md"
 	}
+	// A document with a doc_id is named after it (INFO-QM-001.md).
+	if name := mlcext.SuggestFileName(content, ".md", false); name != "" {
+		defaultFilename = name
+	}
 	dlg := application.Get().Dialog.SaveFile().
 		SetMessage("Save Markdown File").
 		SetFilename(defaultFilename).
@@ -552,11 +578,17 @@ func (a *App) SaveFileAs(defaultFilename string, content string) (string, error)
 	return absPath, nil
 }
 
-// ExportHTML saves the rendered markdown as a standalone HTML file.
-func (a *App) ExportHTML(htmlContent string, cssContent string) (string, error) {
+// ExportHTML saves the rendered markdown as a standalone HTML file. md (the
+// source) only names the file: <doc_id>_v<version>.html when it has a
+// doc_id.
+func (a *App) ExportHTML(htmlContent string, cssContent string, md string) (string, error) {
+	name := "exported.html"
+	if s := mlcext.SuggestFileName(md, ".html", true); s != "" {
+		name = s
+	}
 	path, err := application.Get().Dialog.SaveFile().
 		SetMessage("Export to HTML").
-		SetFilename("exported.html").
+		SetFilename(name).
 		AddFilter("HTML Files (*.html)", "*.html").
 		PromptForSingleSelection()
 	if err != nil {

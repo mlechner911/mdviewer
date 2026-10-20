@@ -66,6 +66,7 @@
                 {#if d.errors}<span class="bad">{d.errors} Fehler</span>{/if}
                 {#if d.warnings}<span class="warn">{d.warnings} Warnung{d.warnings > 1 ? 'en' : ''}</span>{/if}
                 {#if !d.errors && !d.warnings}<span class="ok">in Ordnung</span>{/if}
+                {#if d.nameMismatch}<span class="hint" title="Dateiname und Kennung passen nicht zusammen; üblich ist {d.refNo}.md">Dateiname ≠ Kennung</span>{/if}
               </td>
             </tr>
           {:else}
@@ -111,6 +112,7 @@
   .num { text-align: right; font-family: var(--font-mono); }
   .bad { color: #dc2626; font-weight: 600; margin-right: 0.5rem; }
   .warn { color: #d97706; font-weight: 600; }
+  .hint { display: inline-block; margin-left: 0.4rem; color: var(--muted, #64748b); font-size: 0.85em; font-style: italic; }
   .ok { color: var(--muted); }
   .empty { text-align: center; color: var(--muted); padding: 1.5rem; }
   .docs-footer { padding: 0.5rem 1rem; font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--border); }
