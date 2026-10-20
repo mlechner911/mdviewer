@@ -1,5 +1,6 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   // NOTE: spread the array svelte() returns — svelte-check only finds the
@@ -16,9 +17,17 @@ export default defineConfig({
   },
   resolve: {
     conditions: ['browser'],
+    // Shared packages from ../../packages, used from source (as in the
+    // MarkSafe frontend).
+    alias: [
+      { find: /^mlc-markdown\/styles\.css$/, replacement: fileURLToPath(new URL('../../packages/mlc-markdown/styles/mlc-markdown.css', import.meta.url)) },
+      { find: /^mlc-markdown$/, replacement: fileURLToPath(new URL('../../packages/mlc-markdown/src/index.ts', import.meta.url)) },
+      { find: /^mlc-markdown-svelte$/, replacement: fileURLToPath(new URL('../../packages/mlc-markdown-svelte/src/index.js', import.meta.url)) },
+    ],
     // Single svelte runtime: libs/browse resolves its own node_modules,
-    // dedupe keeps component state consistent across the bundle.
-    dedupe: ['svelte'],
+    // dedupe keeps component state consistent across the bundle; the
+    // renderer's dependencies likewise come from this project.
+    dedupe: ['svelte', 'marked', 'dompurify', 'marked-footnote', 'highlight.js', 'katex', 'mermaid'],
   },
   build: {
     outDir: '../internal/browse/frontend/dist',

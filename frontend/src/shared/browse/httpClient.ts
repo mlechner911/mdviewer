@@ -1,7 +1,8 @@
-import type { BrowseClient, BrowseDoc, BrowseHit, TocEntry, BrowseTheme, MlcDocument } from './browseClient';
+import type { BrowseClient, BrowseDoc, BrowseHit, TocEntry, BrowseTheme, MlcDocument, DocSource, LinkTarget } from './browseClient';
 
 // BrowseClient over the marksafe_browse HTTP server
-// (GET /tree, /render?path=&theme=, /api/search?q=).
+// (GET /tree, /render?path=&theme=, /source?path=, /api/search?q=,
+// POST /api/links).
 export function createHttpClient(): BrowseClient {
   return {
     async getTree(): Promise<TocEntry[]> {
@@ -28,6 +29,30 @@ export function createHttpClient(): BrowseClient {
         size: typeof data.size === 'number' ? data.size : 0,
         modified: typeof data.modified === 'string' ? data.modified : '',
       };
+    },
+
+    async getSource(path: string, signal?: AbortSignal): Promise<DocSource | null> {
+      const resp = await fetch(`/source?path=${encodeURIComponent(path)}`, { signal });
+      if (resp.status === 204) return null;
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!data) throw new Error('Empty response');
+      return data as DocSource;
+    },
+
+    async resolveLinks(docPath: string, hrefs: string[]): Promise<Record<string, LinkTarget>> {
+      if (!hrefs.length) return {};
+      const resp = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: docPath, hrefs }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return (await resp.json()) ?? {};
+    },
+
+    rawUrl(path: string): string {
+      return '/raw?path=' + encodeURIComponent(path);
     },
 
     async search(q: string): Promise<BrowseHit[]> {

@@ -2,12 +2,14 @@
 // hit the Go service from Phase 1 directly. Rendered HTML rewrites
 // /raw?path= targets to the /local-resource asset handler (absolute
 // paths, whitelist-checked like the main preview).
-import { BrowseTree, BrowseRender, BrowseSearch, BrowseDocuments, GetVersion, GetStyleCSS } from '../../bindings/marksafe/app';
+import { BrowseTree, BrowseRender, BrowseSource, BrowseLinks, BrowseSearch, BrowseDocuments, GetVersion, GetStyleCSS } from '../../bindings/marksafe/app';
 import type {
   BrowseClient,
   BrowseDoc,
   BrowseHit,
   BrowseTheme,
+  DocSource,
+  LinkTarget,
   MlcDocument,
   TocEntry,
 } from '../shared/browse/browseClient';
@@ -78,6 +80,24 @@ export function createWailsClient(rootDir: string): BrowseClient {
         size: doc.size ?? 0,
         modified: doc.modified ?? '',
       };
+    },
+
+    async getSource(path: string): Promise<DocSource | null> {
+      await ensureReady();
+      const doc = await BrowseSource(rootDir, path);
+      return doc ? (doc as DocSource) : null;
+    },
+
+    async resolveLinks(docPath: string, hrefs: string[]): Promise<Record<string, LinkTarget>> {
+      if (!hrefs.length) return {};
+      await ensureReady();
+      return ((await BrowseLinks(rootDir, docPath, hrefs)) ?? {}) as Record<string, LinkTarget>;
+    },
+
+    // No /raw server here: the local-resource handler with absolute
+    // paths (whitelist-checked like the main preview).
+    rawUrl(path: string): string {
+      return '/local-resource?path=' + encodeURIComponent(joinAbs(rootDir, path));
     },
 
     async search(q: string): Promise<BrowseHit[]> {

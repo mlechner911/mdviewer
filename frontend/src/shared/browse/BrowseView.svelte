@@ -34,7 +34,12 @@
 
   // Reactive view state ($state: shared with both hosts, runes-safe)
   let tabs = $state<any[]>([]);
+  // A document is rendered from its source (docSource, read from
+  // docPath); directory listings arrive as HTML (htmlContent).
   let htmlContent = $state('');
+  let docSource = $state<string | null>(null);
+  let docPath = $state('');
+  let docPlain = $state('');
   let pageTitle = $state('MarkSafe Browse');
   let isReady = $state(false);
   let lastTheme = $state<BrowseTheme | null>(null);
@@ -97,7 +102,7 @@
       .trim();
   }
   $effect(() => {
-    const _t = docText(htmlContent);
+    const _t = docSource !== null ? docPlain.replace(/\s+/g, ' ').trim() : docText(htmlContent);
     docWords = _t ? _t.split(' ').length : 0;
     docChars = _t.length;
   });
@@ -227,7 +232,13 @@
   function onPopState(e: PopStateEvent) {
     const p = (e.state as { path?: string } | null)?.path ?? urlPath();
     if (p) loadMarkdown(p, false);
-    else loadFirstDoc();
+    else loadStart();
+  }
+
+  // Back to the entry without ?path=: the landing page (index.md) like at
+  // startup, not whatever comes first in the tree.
+  async function loadStart(): Promise<void> {
+    if (!(await loadMarkdown(initialPath ?? 'index.md', false))) await loadFirstDoc();
   }
 
   // Ctrl/Cmd+K opens the search; Alt+Left / Alt+Right = back / forward.
@@ -284,8 +295,9 @@
   $effect(() => {
     if (isReady && currentPath && theme !== lastTheme) {
       lastTheme = theme;
+      // Documents re-render in Content (theme prop); listings reload.
       loadChroma().then(() => {
-        if (currentPath) loadMarkdown(currentPath, false);
+        if (currentPath && docSource === null) loadMarkdown(currentPath, false);
       });
     }
   });
@@ -303,8 +315,8 @@
     }
   }
 
-  // Re-run KaTeX + Mermaid on the rendered document (same behavior as
-  // the Wails preview; markup comes from the shared Go renderer).
+  // Copy buttons etc. on a host-rendered listing (documents get theirs
+  // from Content after <MlcMarkdown> rendered them).
   async function refreshEnhancements() {
     await tick();
     const el = document.querySelector('.browse-view .doc') as HTMLElement | null;
@@ -326,9 +338,27 @@
     loadAbort = ctrl;
     loadError = null;
     try {
+      const src = await client.getSource(path, ctrl.signal);
+      if (seq !== loadSeq) return false; // superseded
+      if (src) {
+        htmlContent = '';
+        docPlain = '';
+        docSource = src.source;
+        docPath = src.path;
+        pageTitle = src.title;
+        currentPath = path;
+        docSize = src.size ?? 0;
+        docModified = src.modified ?? '';
+        if (push) pushUrl(path);
+        console.debug(`[browse] source ${src.path} (${src.source.length} chars, seq ${seq})`);
+        return true;
+      }
+      // A directory without index.md: the host's virtual listing.
       const doc = await client.renderDoc(path, theme, ctrl.signal);
       if (seq !== loadSeq) return false; // superseded
       if (doc) {
+        docSource = null;
+        docPath = path;
         htmlContent = doc.html;
         pageTitle = doc.title;
         currentPath = path;
@@ -381,7 +411,7 @@
     if (!text) return 'MarkSafe Browse – Markdown-Verzeichnis im Browser lesen.';
     return text.length > 160 ? text.slice(0, 157).trimEnd() + '…' : text;
   }
-  let pageDescription = $derived(excerpt(htmlContent));
+  let pageDescription = $derived(excerpt(docSource !== null ? docPlain : htmlContent));
 
   // Theme ownership lives with the host: flip there, this view follows
   // via the theme prop (re-render handled by the reactive guard above).
@@ -518,7 +548,16 @@
       </div>
     {:else}
       {#key currentPath}
-        <Content {htmlContent} on:open={handleSelectEntry} on:external={handleExternal} />
+        <Content
+          {htmlContent}
+          source={docSource}
+          {docPath}
+          {client}
+          {theme}
+          on:open={handleSelectEntry}
+          on:external={handleExternal}
+          on:rendered={(e) => (docPlain = e.detail.text)}
+        />
       {/key}
 
   {#if externalUrl}

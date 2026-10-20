@@ -3,7 +3,9 @@ package browse
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -81,6 +83,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/raw", s.handleRaw)
 	mux.HandleFunc("/api/search", s.handleSearch)
 	mux.HandleFunc("/api/documents", s.handleDocuments)
+	mux.HandleFunc("/source", s.handleSource)
+	mux.HandleFunc("/api/links", s.handleLinks)
 	mux.HandleFunc("/assets/chroma-dark.css", s.serveText("text/css; charset=utf-8", s.chromaDark))
 	mux.HandleFunc("/assets/chroma-light.css", s.serveText("text/css; charset=utf-8", s.chromaLight))
 
@@ -261,6 +265,58 @@ func (s *Server) handleDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(docs)
+}
+
+// handleSource answers GET /source?path=... with the Markdown source
+// (mdbrowse.DocSource) for clients that render themselves. A directory
+// without index.md answers 204: the client shows /render's listing.
+func (s *Server) handleSource(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Query().Get("path")
+	if path == "" {
+		http.Error(w, "Missing path parameter", http.StatusBadRequest)
+		return
+	}
+	if _, err := s.root.Resolve(path); err != nil {
+		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
+		return
+	}
+	doc, ok, err := s.root.Source(path)
+	switch {
+	case errors.Is(err, os.ErrInvalid):
+		http.Error(w, "Not a markdown file", http.StatusBadRequest)
+		return
+	case err != nil:
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	case !ok:
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(doc)
+}
+
+// handleLinks answers POST /api/links {"path": doc, "hrefs": [...]} with
+// how each target is treated (mdbrowse.LinkTarget), keyed by href.
+func (s *Server) handleLinks(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Path  string   `json:"path"`
+		Hrefs []string `json:"hrefs"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	if _, err := s.root.Resolve(req.Path); err != nil {
+		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.root.ResolveLinks(req.Path, req.Hrefs))
 }
 
 // handleSearch answers GET /api/search?q=... with ranked JSON hits.

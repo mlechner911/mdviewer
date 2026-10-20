@@ -97,6 +97,34 @@ func (a *App) BrowseDocuments(rootDir string) ([]mdbrowse.DocumentInfo, error) {
 	return root.Documents()
 }
 
+// BrowseSource returns relPath under rootDir as Markdown source for the
+// shared renderer (<MlcMarkdown>). A directory yields its index.md; nil
+// for a directory without one (the client shows BrowseRender's listing).
+func (a *App) BrowseSource(rootDir, relPath string) (*mdbrowse.DocSource, error) {
+	root, err := mdbrowse.NewRoot(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	doc, ok, err := root.Source(relPath)
+	if err != nil || !ok {
+		return nil, err
+	}
+	return &doc, nil
+}
+
+// BrowseLinks classifies the link and image targets of a document
+// (in-app, file, broken, keep), keyed by href as written.
+func (a *App) BrowseLinks(rootDir, docPath string, hrefs []string) (map[string]mdbrowse.LinkTarget, error) {
+	root, err := mdbrowse.NewRoot(rootDir)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := root.Resolve(docPath); err != nil {
+		return nil, err
+	}
+	return root.ResolveLinks(docPath, hrefs), nil
+}
+
 // OpenBrowseWindow opens the standalone browse window for rootDir,
 // starting at relPath. At most one browse window ever exists: an
 // existing one is focused and navigated instead of opening another.

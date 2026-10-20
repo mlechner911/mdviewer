@@ -7,7 +7,12 @@
     "strict": true,
     "paths": {
       "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"]
+      "$lib/*": ["./src/lib/*"],
+      "mlc-markdown": ["../../packages/mlc-markdown/src/index.ts"],
+      "mlc-markdown-svelte": ["../../packages/mlc-markdown-svelte/src/index.d.ts"],
+      "marked": ["./node_modules/marked"],
+      "dompurify": ["./node_modules/dompurify"],
+      "marked-footnote": ["./node_modules/marked-footnote"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"]

@@ -4,7 +4,7 @@ import renderMathInElement from 'katex/dist/contrib/auto-render';
 // Mermaid diagrams, code copy buttons). Markup comes from the shared Go
 // renderer (internal/markdown); this file only finishes it client-side.
 
-const MERMAID_VARS = {
+export const MERMAID_VARS = {
   dark: {
     lineColor: '#adbac7',
     textColor: '#f3f4f6',
@@ -47,7 +47,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-function addCopyButtons(root: HTMLElement): void {
+export function addCopyButtons(root: HTMLElement): void {
   root.querySelectorAll('pre').forEach((pre) => {
     if (pre.querySelector(':scope > .copy-btn')) return;
     const code = pre.querySelector('code');

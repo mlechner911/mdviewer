@@ -14,6 +14,23 @@ export interface BrowseDoc {
   modified?: string;
 }
 
+/** A document as Markdown source; path is the file read (a directory: its index.md). */
+export interface DocSource {
+  path: string;
+  title: string;
+  source: string;
+  size?: number;
+  modified?: string;
+}
+
+/** How a link or image target is treated (decided by the host, see mdbrowse.LinkTarget). */
+export interface LinkTarget {
+  kind: 'md' | 'file' | 'broken' | 'keep';
+  path?: string;
+  image?: boolean;
+  reason?: string;
+}
+
 export interface BrowseHit {
   path: string;
   title: string;
@@ -45,6 +62,15 @@ export interface BrowseClient {
    * implementations that cannot cancel may ignore it.
    */
   renderDoc(path: string, theme: BrowseTheme, signal?: AbortSignal): Promise<BrowseDoc>;
+  /**
+   * Markdown source for client-side rendering (<MlcMarkdown>); null for a
+   * directory without index.md (renderDoc shows its listing).
+   */
+  getSource(path: string, signal?: AbortSignal): Promise<DocSource | null>;
+  /** Classify the link/image targets of docPath, keyed by href as written. */
+  resolveLinks(docPath: string, hrefs: string[]): Promise<Record<string, LinkTarget>>;
+  /** URL that serves a root-relative file (images, downloads). */
+  rawUrl(path: string): string;
   /** Ranked full-text hits. Rejects on transport errors. */
   search(q: string): Promise<BrowseHit[]>;
   /** MLC documents below the root (never throws: [] on failure). */
