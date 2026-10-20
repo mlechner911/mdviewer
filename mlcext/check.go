@@ -196,7 +196,8 @@ func checkVariables(md string, meta Meta, add func(int, int, Severity, string, s
 // which then count as unknown variables, also an error).
 func isTemplateFieldName(name string) bool {
 	templateFieldsOnce.Do(func() {
-		templateFields = map[string]bool{}
+		// Field names of the old template format, still in circulation.
+		templateFields = map[string]bool{"kennung": true, "titel": true, "anlass": true, "bereich": true}
 		for _, t := range LoadTemplates() {
 			for _, f := range t.Fields {
 				templateFields[f.ID] = true

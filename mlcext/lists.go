@@ -67,7 +67,7 @@ func IsPrefillField(name string) bool {
 // doc_id, version and title identify it (DocumentMeta). Everything else is
 // rejected: validity, review dates, status and the watermark are set by the
 // Sensor Monitor (approval, printing), never by the author.
-var FrontMatterKeys = []string{"doc_id", "title", "version", "description", "event_kinds"}
+var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds"}
 
 // serverOwnedKeys are keys authors tend to write that belong to the
 // approval; they get a dedicated message.

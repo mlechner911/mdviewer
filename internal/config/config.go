@@ -100,6 +100,11 @@ func (m *ConfigManager) Save() error {
 }
 
 // GetDocumentRoot returns the base folder of the document collection.
+// Dir is the folder of the configuration file (<user config>/marksafe).
+func (m *ConfigManager) Dir() string {
+	return filepath.Dir(m.path)
+}
+
 func (m *ConfigManager) GetDocumentRoot() string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

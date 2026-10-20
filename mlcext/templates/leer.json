@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "Leeres Dokument",
+  "description": "Nur eine Überschrift.",
+  "category": "general",
+  "body": "leer.md",
+  "file": "{{titel}}.md",
+  "fields": [
+    { "id": "titel", "label": "Titel", "type": "text", "required": true, "placeholder": "Notizen" }
+  ]
+}

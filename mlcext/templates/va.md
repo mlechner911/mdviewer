@@ -1,13 +1,4 @@
----
-title: {{titel|yaml}}
-# Bei welchen Ereignissen das Dokument zuerst angezeigt wird ([] = allgemein)
-event_kinds: {{anlass|list}}
----
-# Verfahrensanweisung: {{titel}}
-
-**Dokumenten-ID:** {{kennung}} | **Version:** {{version}}
-
----
+# {{title}}
 
 ### 1. Zweck
 

@@ -29,7 +29,9 @@ import {
   SuggestMLCRefNo,
   MLCMoveHeader,
   MLCSignatureState,
-  MLCRemoveSignature
+  MLCRemoveSignature,
+  OpenTemplatesFolder,
+  TemplatesFolder
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -298,4 +300,15 @@ export async function setWindowTitle(title: string): Promise<void> {
       console.error('setWindowTitle failed:', err);
     }
   }
+}
+
+/** Show the user's template folder (JSON + Markdown, editable without a release). */
+export async function openTemplatesFolder(): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await OpenTemplatesFolder(); } catch (err) { console.error('openTemplatesFolder failed:', err); }
+}
+
+export async function templatesFolder(): Promise<string> {
+  if (!isWailsReady()) return '';
+  try { return (await TemplatesFolder()) ?? ''; } catch { return ''; }
 }

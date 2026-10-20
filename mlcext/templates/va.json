@@ -1,15 +1,17 @@
 {
   "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
   "name": "Verfahrensanweisung (VA)",
-  "description": "Kurzes Verfahren: Zweck, Geltungsbereich, Vorgehen.",
+  "description": "Verfahren mit Zweck, Geltungsbereich und Vorgehen.",
+  "category": "mlc",
   "body": "va.md",
-  "file": "{{kennung}}.md",
+  "file": "{{doc_id}}.md",
   "fields": [
     {
-      "id": "titel",
+      "id": "title",
       "label": "Titel",
       "type": "text",
       "required": true,
+      "target": "frontmatter",
       "placeholder": "Lagerung kühlkettenpflichtiger Arzneimittel"
     },
     {
@@ -20,12 +22,13 @@
       "help": "Kürzel in der Kennung, z. B. QM, KAL, LAG"
     },
     {
-      "id": "kennung",
+      "id": "doc_id",
       "label": "Dokumenten-ID",
       "type": "refno",
       "prefix": "VA",
       "area": "bereich",
       "required": true,
+      "target": "frontmatter",
       "help": "Vorschlag aus dem Dokumentenordner; ob sie frei ist, prüft der Sensor Monitor beim Hochladen."
     },
     {
@@ -33,13 +36,22 @@
       "label": "Version",
       "type": "text",
       "default": "1.0",
-      "required": true
+      "required": true,
+      "target": "frontmatter"
     },
     {
-      "id": "anlass",
+      "id": "description",
+      "label": "Beschreibung",
+      "type": "text",
+      "target": "frontmatter",
+      "help": "Ein Satz für die Dokumentenliste; optional."
+    },
+    {
+      "id": "event_kinds",
       "label": "Gilt bei",
       "type": "multiselect",
       "options": "event_kinds",
+      "target": "frontmatter",
       "help": "Bei welchen Ereignissen das Dokument zuerst angezeigt wird; leer = allgemein."
     }
   ]

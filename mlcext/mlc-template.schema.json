@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
-  "title": "MLC document template",
-  "description": "Template for new documents of the MLC Markdown Extension (non-standard, docs/MLC-EXTENSIONS.md): input fields for the form, a Markdown body with {{placeholders}} and the output file name. Placeholders: {{id}}, {{id|yaml}} (YAML-safe scalar) {{id|list}} (YAML list, for multiselect) and {{id|ref}} (docref: \"ID (Titel)\").",
+  "title": "MarkSafe document template",
+  "description": "Template for new documents: input fields for the form, a Markdown body with {{placeholders}} and the output file name. Placeholders: {{id}}, {{id|yaml}} (YAML-safe scalar), {{id|list}} (YAML list, for multiselect) and {{id|ref}} (docref: \"ID (Titel)\"). Fields with \"target\": \"frontmatter\" are written into the front matter. For documents of the MLC Markdown Extension (category \"mlc\") id, version and title live there (doc_id, version, title); the body uses the document variables {{doc_id}}, {{version}}, {{title}}, which stay in the file.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -29,7 +29,14 @@
     },
     "file": {
       "type": "string",
-      "description": "Suggested output file name, with placeholders, e.g. \"{{kennung}}.md\"."
+      "description": "Suggested output file name, with placeholders, e.g. \"{{doc_id}}.md\"."
+    },
+    "category": {
+      "enum": [
+        "mlc",
+        "general"
+      ],
+      "description": "Group in the dialog: documents of the MLC Markdown Extension or general Markdown. Default: mlc when a field writes doc_id or is a refno."
     },
     "fields": {
       "type": "array",
@@ -51,7 +58,7 @@
         "id": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "Name of the placeholder {{id}}."
+          "description": "Name of the placeholder {{id}}, or the front matter key with target \"frontmatter\"."
         },
         "label": {
           "type": "string",
@@ -134,6 +141,10 @@
         "multiple": {
           "type": "boolean",
           "description": "docref: several documents may be chosen."
+        },
+        "target": {
+          "const": "frontmatter",
+          "description": "The value goes into the front matter under the field id (MLC documents: doc_id, version, title, description, event_kinds) instead of a placeholder."
         }
       },
       "allOf": [

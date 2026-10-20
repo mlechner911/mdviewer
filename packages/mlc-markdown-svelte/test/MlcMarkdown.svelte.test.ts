@@ -40,6 +40,15 @@ describe('<MlcMarkdown>', () => {
     done();
   });
 
+  it('title not twice: with an H1 in the document the header leaves it out', async () => {
+    const { target, done } = setup({ source: '---\ndoc_id: SOP-QM-001\ntitle: Kühlkette\n---\n# {{title}}\n\nText' });
+    await tick();
+    expect(target.querySelector('.mlc-md-docheader-title')).toBeNull();
+    expect(target.querySelector('h1')!.textContent).toBe('Kühlkette');
+    expect(target.querySelector('.mlc-md-docheader-meta')!.textContent).toContain('SOP-QM-001');
+    done();
+  });
+
   it('no header without doc_id or when switched off, no watermark by default', async () => {
     const a = setup({ source: '---\ntitle: X\n---\nText' });
     await tick();

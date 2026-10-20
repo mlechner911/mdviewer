@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/mlechner911/mdviewer/mlcext"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,13 +21,17 @@ var Keys = []string{
 	"allow-http", "meta",
 }
 
-// Prepare makes md acceptable for mlcdoc: front matter keys mlcdoc does
+// Prepare makes md acceptable for mlcdoc: variables replaced, signature
+// removed, and front matter keys mlcdoc does
 // not know are removed and returned. That covers documents of other tools
 // (tags, aliases …) as well as the Sensor Monitor's upload keys
 // (event_kinds, version, description), which the server strips on upload
 // too; title stays as the PDF title. A document without front matter, or
 // with invalid YAML (mlcdoc reports that), is returned unchanged.
 func Prepare(md string) (string, []string) {
+	// Document variables ({{doc_id}} …) are replaced, a signature block is
+	// not part of the content (mlcext).
+	md = mlcext.ExpandVariables(mlcext.RemoveSignature(md))
 	text := strings.TrimPrefix(md, "\xEF\xBB\xBF")
 	lines := strings.Split(text, "\n")
 	if len(lines) < 2 || strings.TrimRight(lines[0], "\r") != "---" {

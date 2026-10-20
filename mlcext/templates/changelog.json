@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "CHANGELOG",
+  "description": "Änderungsprotokoll nach „Keep a Changelog“ mit Semantic Versioning.",
+  "category": "general",
+  "body": "changelog.md",
+  "file": "CHANGELOG.md",
+  "fields": [
+    { "id": "version", "label": "Erste Version", "type": "text", "default": "0.1.0", "required": true },
+    { "id": "datum", "label": "Datum", "type": "date", "format": "JJJJ-MM-TT", "required": true }
+  ]
+}

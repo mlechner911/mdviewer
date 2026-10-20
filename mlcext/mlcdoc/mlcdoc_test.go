@@ -103,6 +103,7 @@ func TestPrepare(t *testing.T) {
 		{"---\ntitle: X\ntags: [a, b]\naliases: [c]\n---\n# A\n", "---\ntitle: X\n---\n# A\n", "tags,aliases"},
 		{"---\nevent_kinds: [DEVIATION]\n---\n\n# A\n", "# A\n", "event_kinds"},
 		{"---\ntitle: [kaputt\n---\n# A\n", "---\ntitle: [kaputt\n---\n# A\n", ""},
+		{"---\ndoc_id: SOP-QM-001\ntitle: K\n---\n# {{title}} {{doc_id}}\n<!--mlc-signature\nsha256: x\n-->\n", "---\ntitle: K\n---\n# K SOP-QM-001\n", "doc_id"},
 	} {
 		got, ignored := Prepare(c.in)
 		if got != c.want || strings.Join(ignored, ",") != c.ignored {
@@ -116,7 +117,10 @@ func TestTemplatesRenderWithoutWarnings(t *testing.T) { // needs mlcdoc
 	c := client(t)
 	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "info": "INFO"}
 	for _, tpl := range mlcext.LoadTemplates() {
-		r := tpl.Render(map[string]any{"titel": "Test", "bereich": "QM", "kennung": prefix[tpl.ID] + "-QM-001", "version": "1.0", "anlass": []any{"DEVIATION"}})
+		r := tpl.Render(map[string]any{
+			"title": "Test", "bereich": "QM", "doc_id": prefix[tpl.ID] + "-QM-001", "version": "1.0", "event_kinds": []any{"DEVIATION"},
+			"name": "P", "kurz": "K", "datum": "20.10.2026", "titel": "T", "thema": "T",
+		})
 		if len(r.FieldErrors) > 0 {
 			t.Fatalf("%s: %v", tpl.ID, r.FieldErrors)
 		}

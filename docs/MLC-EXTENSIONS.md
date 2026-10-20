@@ -137,9 +137,26 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   is data, not code: a schema `<id>.json` (name, input fields, output file
   name) plus a Markdown body with `{{placeholders}}`. The dialog is built
   from the schema, so new kinds, fields or choice lists need a new file, not
-  a new program. Built-in templates (SOP, VA, form, information sheet) are a
-  starting set; a template with the same id in `_vorlagen/` of the document
-  folder replaces it. Field types: `text`, `multiline`, `number`, `date`,
+  a new program.
+  - **Where they live:** MarkSafe copies the built-in templates once into
+    the user's template folder (`%APPDATA%\marksafe\vorlagen`, on Linux
+    `~/.config/marksafe/vorlagen`; the dialog has "Open template folder").
+    There they can be changed, deleted or added to without a new release.
+    An update never overwrites them; a template that is new in the program
+    is added, a deleted one stays deleted. A template with the same id in
+    `_vorlagen/` of the document folder replaces the one from the user
+    folder (shared in a team).
+  - **Built-in:** documents of the MLC extension (SOP, VA, form,
+    information sheet) and general Markdown (README, CHANGELOG after "Keep a
+    Changelog", empty document, minutes). `"category": "mlc"` or
+    `"general"` groups them in the dialog.
+  - **Front matter:** fields with `"target": "frontmatter"` are written into
+    the front matter; MLC templates put `doc_id`, `version`, `title`,
+    `description` and `event_kinds` there, and their body uses
+    `{{doc_id}}`, `{{version}}`, `{{title}}`, which stay in the document. A
+    template in the old form (header line in the text) still works and gets
+    a warning.
+  - Field types: `text`, `multiline`, `number`, `date`,
   `time` (also `hour`), `select`, `multiselect`, `refno` (document ID with
   prefix and a suggested next number), `docref` (other documents of the
   document folder, optional prefix filter, `multiple`). Options can be a
@@ -154,8 +171,8 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   collection, like an Obsidian vault. It is a workspace only: status,
   versions and approval stay in the Sensor Monitor. The browse window shows
   a "Dokumente" overview (ID, kind, title, version, fields, check result).
-  Own templates (schema + body, see above) go into `_vorlagen/` in that
-  folder.
+  Templates for the team (schema + body, see above) go into `_vorlagen/`
+  in that folder.
 
 ## Roadmap
 

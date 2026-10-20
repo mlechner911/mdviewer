@@ -1,13 +1,4 @@
----
-title: {{titel|yaml}}
-# Bei welchen Ereignissen das Dokument zuerst angezeigt wird ([] = allgemein)
-event_kinds: {{anlass|list}}
----
-# Standardarbeitsanweisung (SOP): {{titel}}
-
-**Dokumenten-ID:** {{kennung}} | **Version:** {{version}}
-
----
+# {{title}}
 
 ### 1. Ziel und Geltungsbereich
 

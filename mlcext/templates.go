@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,20 +24,33 @@ import (
 // never a new program. The JSON Schema of the schema file is
 // mlc-template.schema.json; editors validate templates with it.
 //
-// Built-in templates (SOP, VA, form, info) ship embedded as a starting set;
-// a template of the same id in a user folder replaces it.
+// Built-in templates ship embedded as a starting set: the documents of the
+// MLC extension (SOP, VA, form, info) and general ones (README, CHANGELOG,
+// empty document, minutes). SeedTemplates copies them into a user folder
+// where they can be changed without a new release; a template of the same
+// id in a later folder replaces an earlier one.
+//
+// Documents of the MLC extension keep id, version and title in the front
+// matter: fields with "target": "frontmatter" are written there, and the
+// body uses the document variables {{doc_id}}, {{version}}, {{title}},
+// which stay in the file (see Variables). Other placeholders are replaced
+// when the document is created.
 //
 //go:embed templates/*.json templates/*.md
 var builtinTemplates embed.FS
 
 // TemplateSchema is one template file.
 type TemplateSchema struct {
-	Schema      string          `json:"$schema,omitempty"`
-	Name        string          `json:"name"`
-	Description string          `json:"description,omitempty"`
-	Body        string          `json:"body"`           // Markdown file next to the schema
-	File        string          `json:"file,omitempty"` // output file name, with placeholders
-	Fields      []TemplateField `json:"fields"`
+	Schema      string `json:"$schema,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Body        string `json:"body"`           // Markdown file next to the schema
+	File        string `json:"file,omitempty"` // output file name, with placeholders
+	// Category: "mlc" (document of the MLC extension) or "general";
+	// default "mlc" when a field writes doc_id or is a refno, else
+	// "general".
+	Category string          `json:"category,omitempty"`
+	Fields   []TemplateField `json:"fields"`
 }
 
 // TemplateField is one input of a template.
@@ -71,6 +85,10 @@ type TemplateField struct {
 	Step        *float64 `json:"step,omitempty"`
 	Format      string   `json:"format,omitempty"`
 	Multiple    bool     `json:"multiple,omitempty"`
+	// Target "frontmatter": the value goes into the front matter under the
+	// field's id (doc_id, version, title, description, event_kinds for
+	// documents of the MLC extension) instead of a placeholder.
+	Target string `json:"target,omitempty"`
 }
 
 // FieldTypes are the known field types.
@@ -83,8 +101,11 @@ type TemplateInfo struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Source      string          `json:"source"` // "builtin" or the folder
+	Category    string          `json:"category"`
 	Fields      []TemplateInput `json:"fields"`
 	Problems    []string        `json:"problems"`
+	// Warnings: the template works but should be updated (old format).
+	Warnings []string `json:"warnings"`
 
 	schema TemplateSchema
 	body   string
@@ -144,10 +165,19 @@ var (
 // template with the same id (file name without .json) replaces an earlier
 // one. Sorted by name.
 func LoadTemplates(dirs ...string) []TemplateInfo {
+	return LoadTemplatesFrom(true, dirs...)
+}
+
+// LoadTemplatesFrom is LoadTemplates with the built-in set optional: a
+// seeded user folder (SeedTemplates) replaces it, so that a template the
+// user deleted stays deleted.
+func LoadTemplatesFrom(builtin bool, dirs ...string) []TemplateInfo {
 	byID := map[string]TemplateInfo{}
-	sub, _ := fs.Sub(builtinTemplates, "templates")
-	for _, t := range loadFrom(sub, "builtin") {
-		byID[t.ID] = t
+	if builtin {
+		sub, _ := fs.Sub(builtinTemplates, "templates")
+		for _, t := range loadFrom(sub, "builtin") {
+			byID[t.ID] = t
+		}
 	}
 	for _, d := range dirs {
 		if d == "" {
@@ -161,7 +191,12 @@ func LoadTemplates(dirs ...string) []TemplateInfo {
 	for _, t := range byID {
 		out = append(out, t)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Category != out[j].Category {
+			return out[i].Category == "mlc" // MLC documents first
+		}
+		return out[i].Name < out[j].Name
+	})
 	return out
 }
 
@@ -173,10 +208,10 @@ func loadFrom(fsys fs.FS, source string) []TemplateInfo {
 	var out []TemplateInfo
 	for _, e := range entries {
 		name := e.Name()
-		if e.IsDir() || filepath.Ext(name) != ".json" || strings.HasSuffix(name, ".schema.json") {
+		if e.IsDir() || filepath.Ext(name) != ".json" || strings.HasSuffix(name, ".schema.json") || strings.HasPrefix(name, ".") {
 			continue
 		}
-		t := TemplateInfo{ID: strings.TrimSuffix(name, ".json"), Source: source, Problems: []string{}}
+		t := TemplateInfo{ID: strings.TrimSuffix(name, ".json"), Source: source, Problems: []string{}, Warnings: []string{}, Category: "general"}
 		raw, err := fs.ReadFile(fsys, name)
 		if err == nil {
 			dec := json.NewDecoder(strings.NewReader(string(raw)))
@@ -200,7 +235,9 @@ func loadFrom(fsys fs.FS, source string) []TemplateInfo {
 				t.Problems = append(t.Problems, fmt.Sprintf("Text %q nicht gefunden", t.schema.Body))
 			}
 		}
+		t.Category = templateCategory(t.schema)
 		t.Problems = append(t.Problems, validateSchema(t.schema, t.body)...)
+		t.Warnings = append(t.Warnings, templateWarnings(t.schema, t.body, t.Category)...)
 		for _, f := range t.schema.Fields {
 			in := TemplateInput{TemplateField: f, OptionList: optionList(f.Options), OptionLabels: []string{}, DefaultStr: defaultString(f.Default)}
 			if in.Type == "hour" {
@@ -283,6 +320,23 @@ func validateSchema(s TemplateSchema, body string) []string {
 		if typ == "date" && f.Format != "" && f.Format != "TT.MM.JJJJ" && f.Format != "JJJJ-MM-TT" {
 			p = append(p, where+": „format“ ist TT.MM.JJJJ oder JJJJ-MM-TT")
 		}
+		if f.Target != "" && f.Target != "frontmatter" {
+			p = append(p, where+": „target“ ist „frontmatter“ oder fehlt")
+		}
+	}
+	mlc := templateCategory(s) == "mlc"
+	if s.Category != "" && s.Category != "mlc" && s.Category != "general" {
+		p = append(p, "„category“ ist „mlc“ oder „general“")
+	}
+	if mlc {
+		for _, f := range s.Fields {
+			switch {
+			case f.Target == "frontmatter" && !slices.Contains(FrontMatterKeys, f.ID):
+				p = append(p, fmt.Sprintf("Feld %s: kein erlaubter Front-Matter-Schlüssel (erlaubt: %s)", f.ID, strings.Join(FrontMatterKeys, ", ")))
+			case f.Target != "frontmatter" && isVariable(f.ID):
+				p = append(p, fmt.Sprintf("Feld %s: braucht „target“: „frontmatter“, denn {{%s}} ist eine Variable des Dokuments", f.ID, f.ID))
+			}
+		}
 	}
 	for _, f := range s.Fields {
 		if f.Area != "" {
@@ -291,8 +345,11 @@ func validateSchema(s TemplateSchema, body string) []string {
 			}
 		}
 	}
-	for _, src := range []string{body, s.File} {
+	for i, src := range []string{body, s.File} {
 		for _, m := range placeholderRe.FindAllStringSubmatch(src, -1) {
+			if mlc && i == 0 && isVariable(m[1]) && m[2] == "" {
+				continue // document variable, stays in the file
+			}
 			if _, ok := ids[m[1]]; !ok {
 				p = append(p, fmt.Sprintf("Platzhalter {{%s}} hat kein Feld", m[1]))
 			}
@@ -302,6 +359,37 @@ func validateSchema(s TemplateSchema, body string) []string {
 		}
 	}
 	return p
+}
+
+// templateCategory is the schema's category, or the default from its
+// fields: "mlc" when one writes doc_id or is a refno.
+func templateCategory(s TemplateSchema) string {
+	if s.Category != "" {
+		return s.Category
+	}
+	for _, f := range s.Fields {
+		if f.Type == "refno" || f.ID == "doc_id" || f.ID == "event_kinds" {
+			return "mlc"
+		}
+	}
+	return "general"
+}
+
+// templateWarnings: usable, but in the old form (id and version as a
+// header line in the text instead of the front matter).
+func templateWarnings(s TemplateSchema, body, category string) []string {
+	if category != "mlc" {
+		return nil
+	}
+	for _, f := range s.Fields {
+		if f.Target == "frontmatter" {
+			return nil
+		}
+	}
+	if strings.Contains(body, "**Dokumenten-ID:**") || strings.Contains(body, "**Version:**") {
+		return []string{"altes Vorlagenformat: Kennung und Version stehen als Kopfzeile im Text; besser Felder mit „target“: „frontmatter“ (doc_id, version, title) und im Text {{doc_id}}, {{version}}, {{title}}"}
+	}
+	return nil
 }
 
 func contains(list []string, s string) bool {
@@ -343,10 +431,17 @@ func (t TemplateInfo) Render(values map[string]any) RenderResult {
 	if len(res.FieldErrors) > 0 {
 		return res
 	}
-	subst := func(src string) string {
+	mlc := t.Category == "mlc"
+	subst := func(src string, keepVariables bool) string {
 		return placeholderRe.ReplaceAllStringFunc(src, func(m string) string {
 			sm := placeholderRe.FindStringSubmatch(m)
-			v := filled[sm[1]]
+			if keepVariables && isVariable(sm[1]) && sm[2] == "" {
+				return m // document variable: replaced when rendered, not now
+			}
+			v, ok := filled[sm[1]]
+			if !ok {
+				return m
+			}
 			switch sm[2] {
 			case "ref":
 				items := make([]string, len(v))
@@ -369,12 +464,62 @@ func (t TemplateInfo) Render(values map[string]any) RenderResult {
 			return strings.Join(v, ", ")
 		})
 	}
-	res.Content = subst(t.body)
+	res.Content = withFrontMatter(subst(t.body, mlc), t.frontMatterLines(filled, mlc))
 	if t.schema.File != "" {
-		res.FileName = sanitizeFileName(subst(t.schema.File))
+		res.FileName = sanitizeFileName(subst(t.schema.File, false))
 	}
 	res.Diagnostics = Check(res.Content, Options{RequireHeader: Detect(res.Content)})
 	return res
+}
+
+// frontMatterLines are "key: value" lines of the fields with target
+// "frontmatter"; for MLC documents in the order of FrontMatterKeys. Empty
+// optional values are left out, except lists ("event_kinds: []" means
+// "applies always").
+func (t TemplateInfo) frontMatterLines(filled map[string][]string, mlc bool) []string {
+	var fields []TemplateInput
+	for _, f := range t.Fields {
+		if f.Target == "frontmatter" {
+			fields = append(fields, f)
+		}
+	}
+	if mlc {
+		sort.SliceStable(fields, func(i, j int) bool {
+			return slices.Index(FrontMatterKeys, fields[i].ID) < slices.Index(FrontMatterKeys, fields[j].ID)
+		})
+	}
+	var lines []string
+	for _, f := range fields {
+		v := filled[f.ID]
+		if multi(f) {
+			items := make([]string, len(v))
+			for i, x := range v {
+				items[i] = yamlScalar(x)
+			}
+			lines = append(lines, f.ID+": ["+strings.Join(items, ", ")+"]")
+			continue
+		}
+		s := strings.Join(v, ", ")
+		if s == "" {
+			continue
+		}
+		lines = append(lines, f.ID+": "+yamlScalar(s))
+	}
+	return lines
+}
+
+// withFrontMatter puts lines at the top of body's front matter, or starts
+// one.
+func withFrontMatter(body string, lines []string) string {
+	if len(lines) == 0 {
+		return body
+	}
+	block := strings.Join(lines, "\n") + "\n"
+	if b := frontMatterBlock(body); b.present {
+		at := lineOffset(body, b.yamlLine-1)
+		return body[:at] + block + body[at:]
+	}
+	return "---\n" + block + "---\n" + strings.TrimLeft(body, "\r\n")
 }
 
 // normalize validates one value and returns it as a list of strings.
@@ -591,3 +736,92 @@ func RefNosInDir(dir string, maxFiles int) []string {
 	})
 	return refs
 }
+
+// seedManifest lists the built-in template files already copied into a
+// user folder, so that a file the user deleted is not copied again.
+const seedManifest = ".mlc-vorlagen.json"
+
+// SeedTemplates copies the built-in templates into dir, the user's own
+// template folder, where they can be changed without a new release: files
+// copied before (also deleted ones) and files that exist are left alone, so
+// an update never overwrites the user's changes; a template that is new in
+// the program is added. It returns the files it wrote. Load the folder with
+// LoadTemplatesFrom(false, dir, …) afterwards.
+func SeedTemplates(dir string) ([]string, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, err
+	}
+	seeded := map[string]bool{}
+	manifest := filepath.Join(dir, seedManifest)
+	if b, err := os.ReadFile(manifest); err == nil {
+		var names []string
+		if json.Unmarshal(b, &names) == nil {
+			for _, n := range names {
+				seeded[n] = true
+			}
+		}
+	}
+	entries, err := fs.ReadDir(builtinTemplates, "templates")
+	if err != nil {
+		return nil, err
+	}
+	var written []string
+	for _, e := range entries {
+		name := e.Name()
+		if seeded[name] {
+			continue
+		}
+		seeded[name] = true
+		target := filepath.Join(dir, name)
+		if _, err := os.Stat(target); err == nil {
+			continue // the user's file wins
+		}
+		b, err := fs.ReadFile(builtinTemplates, "templates/"+name)
+		if err != nil {
+			return written, err
+		}
+		if err := os.WriteFile(target, b, 0o644); err != nil {
+			return written, err
+		}
+		written = append(written, name)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "LIESMICH.md")); err != nil && !seeded["LIESMICH.md"] {
+		if err := os.WriteFile(filepath.Join(dir, "LIESMICH.md"), []byte(templatesReadme), 0o644); err == nil {
+			written = append(written, "LIESMICH.md")
+		}
+	}
+	seeded["LIESMICH.md"] = true
+	names := make([]string, 0, len(seeded))
+	for n := range seeded {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	b, _ := json.MarshalIndent(names, "", "  ")
+	if err := os.WriteFile(manifest, append(b, '\n'), 0o644); err != nil {
+		return written, err
+	}
+	return written, nil
+}
+
+const templatesReadme = `# Vorlagen
+
+Jede Vorlage besteht aus zwei Dateien: <id>.json (Name, Eingabefelder,
+Dateiname) und dem Markdown-Text, auf den "body" verweist. Ändern, löschen
+und neue anlegen geht ohne neues Programm; "Neu aus Vorlage" liest den
+Ordner bei jedem Öffnen.
+
+- Felder mit "target": "frontmatter" landen im Front Matter (doc_id,
+  version, title, description, event_kinds bei Dokumenten der
+  MLC-Erweiterung).
+- Platzhalter im Text: {{id}}, {{id|yaml}}, {{id|list}}, {{id|ref}}.
+- {{doc_id}}, {{version}} und {{title}} bleiben im Dokument stehen und
+  werden erst beim Anzeigen und im PDF ersetzt.
+- "category": "mlc" oder "general" ordnet die Vorlage im Dialog ein.
+
+Ein Programmupdate überschreibt hier nichts; neue eingebaute Vorlagen kommen
+dazu. Eine gelöschte eingebaute Vorlage bleibt gelöscht. Vorlagen mit
+gleicher id in _vorlagen/ im Dokumentenordner ersetzen die von hier.
+
+Beschreibung des Formats: mlc-template.schema.json im MarkSafe-Repository
+(github.com/mlechner911/mdviewer, Ordner mlcext).
+`

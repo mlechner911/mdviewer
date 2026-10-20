@@ -20,13 +20,48 @@ func builtin(t *testing.T, id string) TemplateInfo {
 
 func TestBuiltinTemplatesHaveNoProblems(t *testing.T) {
 	list := LoadTemplates()
-	if len(list) != 4 {
-		t.Fatalf("want 4 built-in templates, got %d", len(list))
+	if len(list) != 8 {
+		t.Fatalf("want 8 built-in templates, got %d", len(list))
 	}
+	var order []string
 	for _, tpl := range list {
-		if len(tpl.Problems) > 0 || tpl.Source != "builtin" {
-			t.Errorf("%s: %v (source %s)", tpl.ID, tpl.Problems, tpl.Source)
+		if len(tpl.Problems) > 0 || len(tpl.Warnings) > 0 || tpl.Source != "builtin" {
+			t.Errorf("%s: %v %v (source %s)", tpl.ID, tpl.Problems, tpl.Warnings, tpl.Source)
 		}
+		order = append(order, tpl.Category+":"+tpl.ID)
+	}
+	// MLC documents first, then the general ones, each by name.
+	if got := strings.Join(order, " "); got != "mlc:form mlc:info mlc:sop mlc:va general:protokoll general:changelog general:leer general:readme" {
+		t.Errorf("order: %s", got)
+	}
+}
+
+// sampleValues fill every built-in template.
+var sampleValues = map[string]any{
+	"title": "Lagerung: Kühlkette & Co.", "bereich": "QM", "version": "1.0", "event_kinds": []any{"OUT_OF_RANGE", "NO_DATA"},
+	"name": "Projekt X", "kurz": "Tut etwas.", "lizenz": "MIT", "datum": "20.10.2026", "titel": "Notizen",
+	"thema": "Team", "uhrzeit": "9:30", "ort": "online", "teilnehmende": "A, B",
+}
+
+func TestGeneralTemplates(t *testing.T) {
+	for _, id := range []string{"readme", "changelog", "leer", "protokoll"} {
+		tpl := builtin(t, id)
+		if tpl.Category != "general" {
+			t.Errorf("%s: category %s", id, tpl.Category)
+		}
+		res := tpl.Render(sampleValues)
+		if len(res.FieldErrors) > 0 {
+			t.Fatalf("%s: %v", id, res.FieldErrors)
+		}
+		if strings.Contains(res.Content, "{{") || Detect(res.Content) || len(res.Diagnostics) > 0 {
+			t.Errorf("%s: %v\n%s", id, res.Diagnostics, res.Content)
+		}
+	}
+	if res := builtin(t, "protokoll").Render(sampleValues); res.FileName != "2026-10-20 Team.md" {
+		t.Errorf("protokoll file name %q", res.FileName)
+	}
+	if res := builtin(t, "changelog").Render(sampleValues); !strings.Contains(res.Content, "## [1.0] - 2026-10-20") || res.FileName != "CHANGELOG.md" {
+		t.Errorf("changelog:\n%s", res.Content)
 	}
 }
 
@@ -34,27 +69,34 @@ func TestEveryBuiltinTemplateCreatesAValidDocument(t *testing.T) {
 	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "info": "INFO"}
 	for id, p := range prefix {
 		tpl := builtin(t, id)
-		res := tpl.Render(map[string]any{
-			"titel": "Lagerung: Kühlkette & Co.", "bereich": "QM", "kennung": strings.ToLower(p) + "-qm-001",
-			"version": "1.0", "anlass": []any{"OUT_OF_RANGE", "NO_DATA"},
-		})
+		values := map[string]any{"doc_id": strings.ToLower(p) + "-qm-001"}
+		for k, v := range sampleValues {
+			values[k] = v
+		}
+		res := tpl.Render(values)
 		if len(res.FieldErrors) > 0 {
 			t.Fatalf("%s: %v", id, res.FieldErrors)
 		}
-		if strings.Contains(res.Content, "{{") {
+		// Only the document variables stay; they are replaced when rendered.
+		if rest := reVar.ReplaceAllStringFunc(res.Content, func(m string) string {
+			if isVariable(strings.Trim(m, "{} ")) {
+				return ""
+			}
+			return m
+		}); strings.Contains(rest, "{{") {
 			t.Errorf("%s: placeholder left:\n%s", id, res.Content)
 		}
+		if !strings.Contains(res.Content, "# {{title}}") || !strings.HasPrefix(StoredText(res.Content), "# Lagerung: Kühlkette & Co.") {
+			t.Errorf("%s: title variable:\n%s", id, res.Content)
+		}
 		for _, d := range res.Diagnostics {
-			// TODO(P-MARKS-20261020-02 Phase 4): the templates move id and
-			// version into the front matter; until then the legacy header
-			// line gives this warning.
-			if d.Severity != Info && d.Code != "header-in-body" {
+			if d.Severity != Info {
 				t.Errorf("%s: %d:%d %s %s", id, d.Line, d.Col, d.Code, d.Message)
 			}
 		}
-		h := ParseHeader(res.Content)
-		if h.RefNo != p+"-QM-001" || h.Version != "1.0" || KindFromRef(h.RefNo) != id {
-			t.Errorf("%s: header %+v", id, h)
+		m := DocumentMeta(res.Content)
+		if m.DocID != p+"-QM-001" || m.Version != "1.0" || m.Kind != id || m.DocIDSource != "frontmatter" || ParseHeader(res.Content).RefNo != "" {
+			t.Errorf("%s: meta %+v", id, m)
 		}
 		fm, _ := ParseFrontMatter(res.Content)
 		if fm.Title != "Lagerung: Kühlkette & Co." {
@@ -70,7 +112,7 @@ func TestEveryBuiltinTemplateCreatesAValidDocument(t *testing.T) {
 }
 
 func TestEmptyMultiselectMeansApplyAlways(t *testing.T) {
-	res := builtin(t, "sop").Render(map[string]any{"titel": "X", "kennung": "SOP-QM-001", "version": "1.0"})
+	res := builtin(t, "sop").Render(map[string]any{"title": "X", "doc_id": "SOP-QM-001", "version": "1.0"})
 	fm, _ := ParseFrontMatter(res.Content)
 	if !fm.EventKindsSet || len(fm.EventKinds) != 0 {
 		t.Errorf("want event_kinds: [] , got %+v\n%s", fm, res.Content)
@@ -139,16 +181,16 @@ func TestFieldTypes(t *testing.T) {
 
 func TestRefnoAndSharedLists(t *testing.T) {
 	tpl := builtin(t, "form")
-	res := tpl.Render(map[string]any{"titel": "X", "kennung": "SOP-QM-001", "version": "1"})
-	if res.FieldErrors["kennung"] == "" {
+	res := tpl.Render(map[string]any{"title": "X", "doc_id": "SOP-QM-001", "version": "1"})
+	if res.FieldErrors["doc_id"] == "" {
 		t.Errorf("refno with the wrong prefix must be an error")
 	}
-	res = tpl.Render(map[string]any{"titel": "X", "kennung": "FB-QM-001", "version": "1", "anlass": "DEVIATION, FOO"})
-	if res.FieldErrors["anlass"] == "" {
+	res = tpl.Render(map[string]any{"title": "X", "doc_id": "FB-QM-001", "version": "1", "event_kinds": "DEVIATION, FOO"})
+	if res.FieldErrors["event_kinds"] == "" {
 		t.Errorf("unknown event kind must be an error")
 	}
 	for _, f := range tpl.Fields {
-		if f.ID == "anlass" && strings.Join(f.OptionList, ",") != strings.Join(EventKinds, ",") {
+		if f.ID == "event_kinds" && strings.Join(f.OptionList, ",") != strings.Join(EventKinds, ",") {
 			t.Errorf("event_kinds not resolved: %v", f.OptionList)
 		}
 	}
@@ -199,6 +241,35 @@ func TestUserTemplateReplacesBuiltin(t *testing.T) {
 	}
 	if n != 1 {
 		t.Errorf("want one sop template, got %d", n)
+	}
+	// The old format (header line in the text) still works, with a warning.
+	for _, tpl := range LoadTemplates(dir) {
+		if tpl.ID == "sop" && (len(tpl.Problems) > 0 || len(tpl.Warnings) != 1 || tpl.Category != "mlc") {
+			t.Errorf("old format: %+v", tpl)
+		}
+	}
+}
+
+func TestTemplateFrontMatterRules(t *testing.T) {
+	dir := t.TempDir()
+	writeTemplate(t, dir, "x", `{"name": "X", "category": "mlc", "body": "x.md", "fields": [
+	  {"id": "title", "label": "Titel", "type": "text"},
+	  {"id": "farbe", "label": "Farbe", "type": "text", "target": "frontmatter"},
+	  {"id": "ort", "label": "Ort", "type": "text", "target": "kopf"}
+	]}`, "# {{title}} {{doc_id}}\n")
+	var p string
+	for _, tpl := range LoadTemplates(dir) {
+		if tpl.ID == "x" {
+			p = strings.Join(tpl.Problems, " | ")
+		}
+	}
+	for _, w := range []string{"title: braucht", "farbe: kein erlaubter Front-Matter-Schlüssel", "„target“ ist"} {
+		if !strings.Contains(p, w) {
+			t.Errorf("missing %q in %q", w, p)
+		}
+	}
+	if strings.Contains(p, "{{doc_id}} hat kein Feld") {
+		t.Errorf("a document variable needs no field: %s", p)
 	}
 }
 

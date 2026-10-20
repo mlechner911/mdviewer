@@ -1,10 +1,11 @@
 <script lang="ts">
   /**
-   * NewFromTemplateModal creates a new document of the MLC Markdown
-   * Extension (non-standard) from a template. The form is built from the
-   * template's schema (mlcext: *.json + Markdown body), so new kinds or
-   * fields need a new template file, not a new program. Values are checked
-   * by mlcext; a document with errors is not created.
+   * NewFromTemplateModal creates a new document from a template: one of
+   * the MLC Markdown Extension (non-standard) or a general one (README,
+   * CHANGELOG …). The form is built from the template's schema (mlcext:
+   * *.json + Markdown body) in the user's template folder, so templates
+   * change without a new program. Values are checked by mlcext; a document
+   * with errors is not created.
    */
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
@@ -33,11 +34,20 @@
   let diagnostics = $state<MLCDiagnostic[]>([]);
 
   const selected = $derived(templates.find((x) => x.id === selectedId));
+  const groups = $derived([
+    { label: $t('tplGroupMlc'), items: templates.filter((x) => x.category === 'mlc') },
+    { label: $t('tplGroupGeneral'), items: templates.filter((x) => x.category !== 'mlc') },
+  ].filter((g) => g.items.length));
+  let folder = $state('');
+  // Templates of the document folder (_vorlagen) are marked; the rest come
+  // from the user's template folder.
+  const fromDocFolder = (tpl: MLCTemplate) => /[\\/]_vorlagen$/.test(tpl.source ?? '');
   const fields = $derived<MLCTemplateField[]>(selected?.fields ?? []);
 
   // Reload on every opening: the document folder's templates may change.
   $effect(() => {
     if (!show) return;
+    backend.templatesFolder().then((f) => (folder = f));
     backend.mlcTemplates().then((list) => {
       templates = list;
       if (!list.some((x) => x.id === selectedId)) selectedId = list.find((x) => !x.problems?.length)?.id ?? '';
@@ -97,19 +107,30 @@
   <div class="max-w-xl w-full max-h-[90vh] flex flex-col rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <div class="p-6 flex flex-col gap-3 text-sm overflow-y-auto">
       <h3 class="text-lg font-bold">{$t('tplHeading')}</h3>
-      <p class="text-xs opacity-70">{$t('tplIntro')}</p>
+      <p class="text-xs opacity-70">
+        {$t('tplIntro')}
+        <button type="button" class="underline hover:opacity-100" title={folder} onclick={() => backend.openTemplatesFolder()}>{$t('tplOpenFolder')}</button>
+      </p>
 
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold opacity-80">{$t('tplTemplate')}</span>
         <select bind:value={selectedId} class="px-2 py-1.5 rounded border {editorClass}">
-          {#each templates as tpl}
-            <option value={tpl.id} disabled={!!tpl.problems?.length}>
-              {tpl.name}{tpl.source !== 'builtin' ? ` · ${$t('tplOwn')}` : ''}{tpl.problems?.length ? ` · ${$t('tplBroken')}` : ''}
-            </option>
+          {#each groups as g}
+            <optgroup label={g.label}>
+              {#each g.items as tpl}
+                <option value={tpl.id} disabled={!!tpl.problems?.length}>
+                  {tpl.name}{fromDocFolder(tpl) ? ` · ${$t('tplOwn')}` : ''}{tpl.problems?.length ? ` · ${$t('tplBroken')}` : ''}
+                </option>
+              {/each}
+            </optgroup>
           {/each}
         </select>
         {#if selected?.description}<span class="text-[11px] opacity-60">{selected.description}</span>{/if}
       </label>
+
+      {#if selected?.warnings?.length}
+        <div class="p-2 rounded text-[11px] bg-amber-500/10 opacity-90">{selected.warnings.join(' · ')}</div>
+      {/if}
 
       {#each templates.filter((x) => x.problems?.length) as broken}
         <div class="p-2 rounded text-[11px] bg-amber-500/15 text-amber-600">

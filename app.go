@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"marksafe/internal/config"
 	"marksafe/internal/filesystem"
@@ -44,6 +45,14 @@ type App struct {
 	config      *config.ConfigManager
 	initialFile string
 	pdf         pdfTool
+	templates   templateSeed
+}
+
+// templateSeed copies the built-in templates into the user's template
+// folder once per start (mlcext.SeedTemplates).
+type templateSeed struct {
+	once sync.Once
+	ok   bool
 }
 
 // emit broadcasts an event to the frontend (v2: runtime.EventsEmit).
@@ -327,7 +336,7 @@ func (a *App) MLCRemoveSignature(md string) string {
 // kinds or fields need a new file there, not a new program.
 func (a *App) MLCTemplates() []mlcext.TemplateInfo {
 	docs := a.documentRefs()
-	list := mlcext.LoadTemplates(a.userTemplatesDir())
+	list := a.loadTemplates()
 	for i := range list {
 		list[i] = list[i].WithDocuments(docs)
 	}
@@ -356,6 +365,57 @@ func (a *App) documentRefs() []mlcext.DocumentRef {
 	return refs
 }
 
+// appTemplatesDir is the user's own template folder
+// (<user config>/marksafe/vorlagen): the built-in templates are copied
+// there once and can be changed without a new release.
+func (a *App) appTemplatesDir() string {
+	if a.config == nil {
+		return ""
+	}
+	return filepath.Join(a.config.Dir(), "vorlagen")
+}
+
+// loadTemplates: the user's template folder (seeded from the built-in
+// set; without it the built-in set itself), then _vorlagen in the document
+// folder. A later template with the same id replaces an earlier one.
+func (a *App) loadTemplates() []mlcext.TemplateInfo {
+	dir := a.appTemplatesDir()
+	a.templates.once.Do(func() {
+		if dir == "" {
+			return
+		}
+		written, err := mlcext.SeedTemplates(dir)
+		if err != nil {
+			logger().Error("Seeding templates failed", "dir", dir, "error", err)
+			return
+		}
+		if len(written) > 0 {
+			logger().Info("Templates copied to the user folder", "dir", dir, "files", written)
+		}
+		a.templates.ok = true
+	})
+	if !a.templates.ok {
+		return mlcext.LoadTemplates(a.userTemplatesDir())
+	}
+	return mlcext.LoadTemplatesFrom(false, dir, a.userTemplatesDir())
+}
+
+// OpenTemplatesFolder shows the user's template folder in the file
+// manager (created and seeded if needed).
+func (a *App) OpenTemplatesFolder() error {
+	a.loadTemplates()
+	dir := a.appTemplatesDir()
+	if dir == "" {
+		return fmt.Errorf("no template folder")
+	}
+	return application.Get().Env.OpenFileManager(dir, false)
+}
+
+// TemplatesFolder is the path of the user's template folder, for display.
+func (a *App) TemplatesFolder() string {
+	return a.appTemplatesDir()
+}
+
 func (a *App) userTemplatesDir() string {
 	if root := a.documentRoot(); root != "" {
 		return filepath.Join(root, mdbrowse.TemplatesDir)
@@ -366,7 +426,7 @@ func (a *App) userTemplatesDir() string {
 // RenderMLCTemplate fills template id with the form values and checks the
 // result (field errors, diagnostics of the new document).
 func (a *App) RenderMLCTemplate(id string, values map[string]any) mlcext.RenderResult {
-	for _, t := range mlcext.LoadTemplates(a.userTemplatesDir()) {
+	for _, t := range a.loadTemplates() {
 		if t.ID == id {
 			return t.WithDocuments(a.documentRefs()).Render(values)
 		}

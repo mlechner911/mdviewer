@@ -1,11 +1,4 @@
----
-title: {{titel|yaml}}
-# Bei welchen Ereignissen das Dokument zuerst angezeigt wird ([] = allgemein)
-event_kinds: {{anlass|list}}
----
-# Formblatt: {{titel}}
-
-**Dokumenten-ID:** {{kennung}} | **Version:** {{version}}
+# {{title}}
 
 <!--! **So arbeiten Sie mit diesem Formblatt:** Füllen Sie die Felder am Bildschirm aus und speichern Sie das PDF. Felder mit einem Ereignis-Bezug füllt der Sensor Monitor vor. -->
 

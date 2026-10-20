@@ -1,11 +1,4 @@
----
-title: {{titel|yaml}}
----
-# Information: {{titel}}
-
-**Dokumenten-ID:** {{kennung}} | **Version:** {{version}}
-
----
+# {{title}}
 
 > [!NOTE]
 > Das Wichtigste in einem Satz.

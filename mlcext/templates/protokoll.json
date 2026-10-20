@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "Besprechungsprotokoll",
+  "description": "Datum, Teilnehmende, Tagesordnung, Beschlüsse und Aufgaben.",
+  "category": "general",
+  "body": "protokoll.md",
+  "file": "{{datum}} {{thema}}.md",
+  "fields": [
+    { "id": "thema", "label": "Thema", "type": "text", "required": true, "placeholder": "Teambesprechung" },
+    { "id": "datum", "label": "Datum", "type": "date", "format": "JJJJ-MM-TT", "required": true },
+    { "id": "uhrzeit", "label": "Uhrzeit", "type": "time" },
+    { "id": "ort", "label": "Ort", "type": "text", "placeholder": "Besprechungsraum / online" },
+    { "id": "teilnehmende", "label": "Teilnehmende", "type": "multiline", "placeholder": "Name, Name, …" }
+  ]
+}

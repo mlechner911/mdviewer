@@ -76,6 +76,9 @@
   const entries = $derived(frontMatterEntries(fm));
   const labels = $derived(labelsFor(locale));
   const kind = $derived(kindFromRef(meta.docId));
+  // The title shows in the header unless the document has its own H1 (as
+  // the templates do, for the PDF): never twice.
+  const headerTitle = $derived(meta.title && !/<h1[\s>]/.test(html) ? meta.title : '');
 
   function fmtDate(iso: string): string {
     const d = new Date(iso);
@@ -250,7 +253,7 @@
   {#if docHeader && meta.docId}
     <header class="mlc-md-docheader">
       {#if kind}<div class="mlc-md-docheader-kind">{labels.kinds[kind]}</div>{/if}
-      {#if meta.title}<div class="mlc-md-docheader-title">{meta.title}</div>{/if}
+      {#if headerTitle}<div class="mlc-md-docheader-title">{headerTitle}</div>{/if}
       <div class="mlc-md-docheader-meta">
         <span class="mlc-md-docheader-id">{meta.docId}</span>{#if meta.version}{` · ${labels.version} ${meta.version}`}{/if}
       </div>

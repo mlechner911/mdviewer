@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "README",
+  "description": "Übliche Projektbeschreibung: Kurzbeschreibung, Installation, Verwendung, Lizenz.",
+  "category": "general",
+  "body": "readme.md",
+  "file": "README.md",
+  "fields": [
+    { "id": "name", "label": "Projektname", "type": "text", "required": true, "placeholder": "Mein Projekt" },
+    { "id": "kurz", "label": "Kurzbeschreibung", "type": "multiline", "required": true, "placeholder": "Was das Projekt tut, in ein bis zwei Sätzen." },
+    { "id": "lizenz", "label": "Lizenz", "type": "select", "options": ["MIT", "Apache-2.0", "GPL-3.0", "proprietär"], "default": "MIT" }
+  ]
+}

@@ -59,15 +59,31 @@ A template is a schema plus a body, both in one folder:
   "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
   "name": "Formblatt CAPA",
   "body": "formblatt-capa.md",
-  "file": "{{kennung}}.md",
+  "category": "mlc",
+  "file": "{{doc_id}}.md",
   "fields": [
-    { "id": "titel",   "label": "Titel",         "type": "text",  "required": true },
-    { "id": "bereich", "label": "Bereich",       "type": "text",  "default": "QM" },
-    { "id": "kennung", "label": "Dokumenten-ID", "type": "refno", "prefix": "FB", "area": "bereich", "required": true },
-    { "id": "anlass",  "label": "Gilt bei",      "type": "multiselect", "options": "event_kinds" }
+    { "id": "title",       "label": "Titel",         "type": "text",  "required": true, "target": "frontmatter" },
+    { "id": "bereich",     "label": "Bereich",       "type": "text",  "default": "QM" },
+    { "id": "doc_id",      "label": "Dokumenten-ID", "type": "refno", "prefix": "FB", "area": "bereich", "required": true, "target": "frontmatter" },
+    { "id": "version",     "label": "Version",       "type": "text",  "default": "1.0", "required": true, "target": "frontmatter" },
+    { "id": "event_kinds", "label": "Gilt bei",      "type": "multiselect", "options": "event_kinds", "target": "frontmatter" }
   ]
 }
 ```
+
+Fields with `"target": "frontmatter"` go into the front matter under their
+id; for MLC templates (`"category": "mlc"`) only the keys of
+`FrontMatterKeys` are allowed there, and `doc_id`, `version`, `title` must
+be such fields. The body uses `{{doc_id}}`, `{{version}}`, `{{title}}`:
+document variables that stay in the file (`# {{title}}`). Other
+placeholders (here `{{bereich}}`) are replaced when the document is created.
+A template in the old form (`kennung`, `titel`, header line in the text)
+still renders and gets a warning in `TemplateInfo.Warnings`.
+
+`SeedTemplates(dir)` copies the built-in templates (MLC and general:
+README, CHANGELOG, empty document, minutes) into a user folder once, keeping
+the user's changes on later calls; load it with `LoadTemplatesFrom(false,
+dir, …)`.
 
 Field types: `text`, `multiline`, `number` (`min`, `max`, `step`), `date`
 (`format` TT.MM.JJJJ or JJJJ-MM-TT), `time` (also `hour`), `select`,
