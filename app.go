@@ -322,14 +322,11 @@ func (a *App) PreviewMLCDoc(md string, docPath string) MLCDocPreview {
 }
 
 // MLCTemplates lists the templates for new documents of the MLC Markdown
-// Extension: the built-in ones (SOP, VA, form, info), then the user's own
-// from <document folder>/_vorlagen.
-func (a *App) MLCTemplates() []mlcext.Template {
-	list := mlcext.Templates()
-	if dir := a.userTemplatesDir(); dir != "" {
-		list = append(list, mlcext.TemplatesInDir(dir)...)
-	}
-	return list
+// Extension: the built-in starting set, replaced or extended by the
+// schemas (*.json + Markdown body) in <document folder>/_vorlagen. New
+// kinds or fields need a new file there, not a new program.
+func (a *App) MLCTemplates() []mlcext.TemplateInfo {
+	return mlcext.LoadTemplates(a.userTemplatesDir())
 }
 
 func (a *App) userTemplatesDir() string {
@@ -339,24 +336,22 @@ func (a *App) userTemplatesDir() string {
 	return ""
 }
 
-// NewMLCDocument creates the Markdown of a new document from a template.
-// A user template must lie in the document folder's _vorlagen.
-func (a *App) NewMLCDocument(p mlcext.NewParams) (string, error) {
-	if p.Template != "" {
-		dir := a.userTemplatesDir()
-		abs, err := filepath.Abs(p.Template)
-		if dir == "" || err != nil || filepath.Dir(abs) != filepath.Clean(dir) {
-			return "", fmt.Errorf("Vorlage liegt nicht im Vorlagenordner: %s", p.Template)
+// RenderMLCTemplate fills template id with the form values and checks the
+// result (field errors, diagnostics of the new document).
+func (a *App) RenderMLCTemplate(id string, values map[string]any) mlcext.RenderResult {
+	for _, t := range mlcext.LoadTemplates(a.userTemplatesDir()) {
+		if t.ID == id {
+			return t.Render(values)
 		}
 	}
-	return mlcext.NewDocument(p)
+	return mlcext.RenderResult{FieldErrors: map[string]string{"": "Vorlage nicht gefunden: " + id}, Diagnostics: []mlcext.Diagnostic{}}
 }
 
-// SuggestMLCRefNo proposes the next RefNo for kind and area from the
+// SuggestMLCRefNo proposes the next RefNo for prefix and area from the
 // document folder, or else the documents next to docPath (only whitelisted
 // directories are read). It is a proposal: only the Sensor Monitor knows
 // which RefNos are taken.
-func (a *App) SuggestMLCRefNo(kind, area, docPath string) string {
+func (a *App) SuggestMLCRefNo(prefix, area, docPath string) string {
 	dir := a.documentRoot()
 	if dir == "" && docPath != "" {
 		if abs, err := filepath.Abs(docPath); err == nil && a.config.IsPathAllowed(filepath.Dir(abs)) {
@@ -367,7 +362,7 @@ func (a *App) SuggestMLCRefNo(kind, area, docPath string) string {
 	if dir != "" {
 		existing = mlcext.RefNosInDir(dir, 5000)
 	}
-	return mlcext.SuggestRefNo(kind, area, existing)
+	return mlcext.SuggestRefNo(prefix, area, existing)
 }
 
 // documentRoot is the configured document folder if it still exists and

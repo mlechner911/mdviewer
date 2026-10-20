@@ -1,11 +1,11 @@
 ---
-title: {{TITEL_YAML}}
-# Bei welchen Ereignissen diese Anweisung zuerst angezeigt wird, z. B.:
-# event_kinds: [OUT_OF_RANGE]
+title: {{titel|yaml}}
+# Bei welchen Ereignissen das Dokument zuerst angezeigt wird ([] = allgemein)
+event_kinds: {{anlass|list}}
 ---
-# Verfahrensanweisung: {{TITEL}}
+# Verfahrensanweisung: {{titel}}
 
-**Dokumenten-ID:** {{KENNUNG}} | **Version:** {{VERSION}}
+**Dokumenten-ID:** {{kennung}} | **Version:** {{version}}
 
 ---
 

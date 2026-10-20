@@ -78,18 +78,19 @@ func TestTemplatesRenderWithoutWarnings(t *testing.T) {
 	if Binary("") == "" {
 		t.Skip("mlcdoc not installed")
 	}
-	for _, tpl := range mlcext.Templates() {
-		md, err := mlcext.NewDocument(mlcext.NewParams{Kind: tpl.Kind, Title: "Test", RefNo: tpl.Prefix + "-QM-001"})
-		if err != nil {
-			t.Fatal(err)
+	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "info": "INFO"}
+	for _, tpl := range mlcext.LoadTemplates() {
+		r := tpl.Render(map[string]any{"titel": "Test", "bereich": "QM", "kennung": prefix[tpl.ID] + "-QM-001", "version": "1.0", "anlass": []any{"DEVIATION"}})
+		if len(r.FieldErrors) > 0 {
+			t.Fatalf("%s: %v", tpl.ID, r.FieldErrors)
 		}
-		res, err := Preview(context.Background(), Request{Markdown: mlcext.StoredText(md)})
+		res, err := Preview(context.Background(), Request{Markdown: mlcext.StoredText(r.Content)})
 		if err != nil {
-			t.Errorf("%s: %v", tpl.Kind, err)
+			t.Errorf("%s: %v", tpl.ID, err)
 			continue
 		}
 		if len(res.Warnings) > 0 || len(res.Pages) == 0 {
-			t.Errorf("%s: %d pages, warnings %v", tpl.Kind, len(res.Pages), res.Warnings)
+			t.Errorf("%s: %d pages, warnings %v", tpl.ID, len(res.Pages), res.Warnings)
 		}
 	}
 }

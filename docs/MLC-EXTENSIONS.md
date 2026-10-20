@@ -85,21 +85,28 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   installed the button is hidden. Header, footer and logo of the final PDF
   come from the Sensor Monitor and are not part of the local preview.
 
-- **Templates** (File → "New from Template…", `Ctrl+Shift+N`): new SOP,
-  VA, form or information sheet with title, document ID and version. The
-  document ID is suggested from the files next to the current document;
-  whether it is free among the approved documents only the Sensor Monitor
-  can tell, on upload. Every template passes the checker and renders in
-  `mlcdoc` without warnings.
-
+- **Templates** (File → "New from Template…", `Ctrl+Shift+N`): a template
+  is data, not code: a schema `<id>.json` (name, input fields, output file
+  name) plus a Markdown body with `{{placeholders}}`. The dialog is built
+  from the schema, so new kinds, fields or choice lists need a new file, not
+  a new program. Built-in templates (SOP, VA, form, information sheet) are a
+  starting set; a template with the same id in `_vorlagen/` of the document
+  folder replaces it. Field types: `text`, `multiline`, `number`, `date`,
+  `time` (also `hour`), `select`, `multiselect`, `refno` (document ID with
+  prefix and a suggested next number). Options can be a list or a shared
+  list (`event_kinds`). Placeholders: `{{id}}`, `{{id|yaml}}`,
+  `{{id|list}}`. The schema of the schema file is
+  [`mlcext/mlc-template.schema.json`](../mlcext/mlc-template.schema.json);
+  editors validate templates with it. A created document must pass the
+  checker; whether its ID is free among the approved documents only the
+  Sensor Monitor can tell, on upload.
 - **Document folder** (File → "Choose Document Folder…", "Open Document
   Folder", `Ctrl+Shift+D`): one fixed base folder for the document
   collection, like an Obsidian vault. It is a workspace only: status,
   versions and approval stay in the Sensor Monitor. The browse window shows
   a "Dokumente" overview (ID, kind, title, version, fields, check result).
-  Own templates go into `_vorlagen/` in that folder, named with the kind
-  prefix (`FB - Batteriewechsel.md`), with the placeholders `{{TITEL}}`,
-  `{{TITEL_YAML}}`, `{{KENNUNG}}` and `{{VERSION}}`.
+  Own templates (schema + body, see above) go into `_vorlagen/` in that
+  folder.
 
 ## Roadmap
 

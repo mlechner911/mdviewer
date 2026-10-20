@@ -1,9 +1,9 @@
 ---
-title: {{TITEL_YAML}}
+title: {{titel|yaml}}
 ---
-# Information: {{TITEL}}
+# Information: {{titel}}
 
-**Dokumenten-ID:** {{KENNUNG}} | **Version:** {{VERSION}}
+**Dokumenten-ID:** {{kennung}} | **Version:** {{version}}
 
 ---
 

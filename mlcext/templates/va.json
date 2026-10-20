@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "Verfahrensanweisung (VA)",
+  "description": "Kurzes Verfahren: Zweck, Geltungsbereich, Vorgehen.",
+  "body": "va.md",
+  "file": "{{kennung}}.md",
+  "fields": [
+    {
+      "id": "titel",
+      "label": "Titel",
+      "type": "text",
+      "required": true,
+      "placeholder": "Lagerung kühlkettenpflichtiger Arzneimittel"
+    },
+    {
+      "id": "bereich",
+      "label": "Bereich",
+      "type": "text",
+      "default": "QM",
+      "help": "Kürzel in der Kennung, z. B. QM, KAL, LAG"
+    },
+    {
+      "id": "kennung",
+      "label": "Dokumenten-ID",
+      "type": "refno",
+      "prefix": "VA",
+      "area": "bereich",
+      "required": true,
+      "help": "Vorschlag aus dem Dokumentenordner; ob sie frei ist, prüft der Sensor Monitor beim Hochladen."
+    },
+    {
+      "id": "version",
+      "label": "Version",
+      "type": "text",
+      "default": "1.0",
+      "required": true
+    },
+    {
+      "id": "anlass",
+      "label": "Gilt bei",
+      "type": "multiselect",
+      "options": "event_kinds",
+      "help": "Bei welchen Ereignissen das Dokument zuerst angezeigt wird; leer = allgemein."
+    }
+  ]
+}

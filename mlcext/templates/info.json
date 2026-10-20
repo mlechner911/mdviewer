@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "Information (INFO)",
+  "description": "Kurzes Informationsblatt.",
+  "body": "info.md",
+  "file": "{{kennung}}.md",
+  "fields": [
+    {
+      "id": "titel",
+      "label": "Titel",
+      "type": "text",
+      "required": true,
+      "placeholder": "Lagerung kühlkettenpflichtiger Arzneimittel"
+    },
+    {
+      "id": "bereich",
+      "label": "Bereich",
+      "type": "text",
+      "default": "QM",
+      "help": "Kürzel in der Kennung, z. B. QM, KAL, LAG"
+    },
+    {
+      "id": "kennung",
+      "label": "Dokumenten-ID",
+      "type": "refno",
+      "prefix": "INFO",
+      "area": "bereich",
+      "required": true,
+      "help": "Vorschlag aus dem Dokumentenordner; ob sie frei ist, prüft der Sensor Monitor beim Hochladen."
+    },
+    {
+      "id": "version",
+      "label": "Version",
+      "type": "text",
+      "default": "1.0",
+      "required": true
+    }
+  ]
+}

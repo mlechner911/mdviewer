@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "title": "MLC document template",
+  "description": "Template for new documents of the MLC Markdown Extension (non-standard, docs/MLC-EXTENSIONS.md): input fields for the form, a Markdown body with {{placeholders}} and the output file name. Placeholders: {{id}}, {{id|yaml}} (YAML-safe scalar) and {{id|list}} (YAML list, for multiselect).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "body", "fields"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "minLength": 1, "description": "Name in the template list." },
+    "description": { "type": "string" },
+    "body": { "type": "string", "minLength": 1, "description": "Markdown file next to this schema, with the document text." },
+    "file": { "type": "string", "description": "Suggested output file name, with placeholders, e.g. \"{{kennung}}.md\"." },
+    "fields": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/field" }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "Name of the placeholder {{id}}." },
+        "label": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["text", "multiline", "number", "date", "time", "hour", "select", "multiselect", "refno"], "description": "hour is the same as time (HH:MM)." },
+        "required": { "type": "boolean" },
+        "default": { "description": "Preset value; a list for multiselect.", "type": ["string", "number", "array"] },
+        "help": { "type": "string" },
+        "placeholder": { "type": "string" },
+        "options": {
+          "description": "Choices for select/multiselect: a list, or the name of a shared list (event_kinds).",
+          "oneOf": [
+            { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+            { "enum": ["event_kinds"] }
+          ]
+        },
+        "prefix": { "type": "string", "description": "refno: prefix of the document ID, e.g. FB." },
+        "area": { "type": "string", "description": "refno: id of the field holding the area (QM, KAL …) for the suggestion." },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "format": { "enum": ["TT.MM.JJJJ", "JJJJ-MM-TT"], "description": "date: output format (default TT.MM.JJJJ)." }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "enum": ["select", "multiselect"] } } }, "then": { "required": ["options"] } },
+        { "if": { "properties": { "type": { "const": "refno" } } }, "then": { "required": ["prefix"] } }
+      ]
+    }
+  }
+}

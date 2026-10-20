@@ -115,8 +115,8 @@
 
   // New document of the MLC Markdown Extension from a template.
   let showTemplateModal = $state(false);
-  function createFromTemplate(content: string, refNo: string) {
-    const newTab = createNewTab(refNo || $t('untitled'), content);
+  function createFromTemplate(content: string, fileName: string) {
+    const newTab = createNewTab(fileName || $t('untitled'), content);
     tabs = [...tabs, newTab];
     activeTabIndex = tabs.length - 1;
     showTemplateModal = false;

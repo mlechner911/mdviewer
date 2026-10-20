@@ -28,7 +28,7 @@ if mlcext.Detect(md) {
 | `EventKinds`, `PrefillFields`, `FrontMatterKeys` | The shared lists; change them here first |
 | `HeadingSlug` | Heading anchors exactly like GitHub and mlcmd2pdf |
 | `Analyze` | Everything an editor needs: findings, field and hint positions, lists |
-| `Templates`, `NewDocument`, `SuggestRefNo` | New documents from the built-in templates (SOP, VA, FB, INFO) |
+| `LoadTemplates`, `TemplateInfo.Render`, `SuggestRefNo` | Templates as data: schema (`*.json`, see `mlc-template.schema.json`) + Markdown body; built-in starting set, overridable from a folder |
 | `StoredText` | The text as the Sensor Monitor stores and renders it (upload front matter removed) |
 | `mlcdoc.Preview` | Page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`) |
 
@@ -39,3 +39,29 @@ cannot render it; **warning** means it is accepted but probably not intended;
 Tests: `go test ./...`. `MLCEXT_SEEDS=<dir> go test ./...` additionally
 checks every `.md` file in `<dir>`, for example the Sensor Monitor's template
 seeds, which must all be free of errors.
+
+## Templates
+
+A template is a schema plus a body, both in one folder:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "Formblatt CAPA",
+  "body": "formblatt-capa.md",
+  "file": "{{kennung}}.md",
+  "fields": [
+    { "id": "titel",   "label": "Titel",         "type": "text",  "required": true },
+    { "id": "bereich", "label": "Bereich",       "type": "text",  "default": "QM" },
+    { "id": "kennung", "label": "Dokumenten-ID", "type": "refno", "prefix": "FB", "area": "bereich", "required": true },
+    { "id": "anlass",  "label": "Gilt bei",      "type": "multiselect", "options": "event_kinds" }
+  ]
+}
+```
+
+Field types: `text`, `multiline`, `number` (`min`, `max`, `step`), `date`
+(`format` TT.MM.JJJJ or JJJJ-MM-TT), `time` (also `hour`), `select`,
+`multiselect`, `refno`. Placeholders in the body and in `file`: `{{id}}`,
+`{{id|yaml}}` (YAML-safe), `{{id|list}}` (YAML list). `LoadTemplates`
+reports problems per template (unknown type, missing body, placeholder
+without a field …); such a template cannot be rendered.
