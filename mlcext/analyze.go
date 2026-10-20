@@ -12,6 +12,24 @@ type Analysis struct {
 	Fields      []FieldSpan  `json:"fields"`
 	Hints       []HintSpan   `json:"hints"`
 	Lists       Lists        `json:"lists"`
+	// Document is how the Sensor Monitor reads the document (header lines
+	// and upload front matter), for a "how the server sees it" display.
+	Document DocumentInfo `json:"document"`
+}
+
+// DocumentInfo is what the Sensor Monitor takes from a document.
+type DocumentInfo struct {
+	RefNo         string   `json:"refNo"`
+	Kind          string   `json:"kind"`
+	KindLabel     string   `json:"kindLabel"`
+	Version       string   `json:"version"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description"`
+	EventKinds    []string `json:"eventKinds"`
+	EventKindsSet bool     `json:"eventKindsSet"`
+	Fields        int      `json:"fields"`
+	PrefillFields int      `json:"prefillFields"`
+	FieldErrors   int      `json:"fieldErrors"`
 }
 
 // FieldSpan locates one form field.
@@ -61,6 +79,28 @@ func Analyze(md string) Analysis {
 	a.Diagnostics = Check(md, Options{RequireHeader: true})
 	s := &scanner{src: md, section: "feld"}
 	s.run()
+	h := ParseHeader(md)
+	fm, _ := ParseFrontMatter(md)
+	d := DocumentInfo{
+		RefNo: h.RefNo, Kind: h.Kind, KindLabel: KindLabel(h.Kind), Version: h.Version,
+		Title: fm.Title, Description: fm.Description, EventKinds: fm.EventKinds, EventKindsSet: fm.EventKindsSet,
+		Fields: len(s.fields), FieldErrors: len(s.errs),
+	}
+	if d.Version == "" {
+		d.Version = fm.Version
+	}
+	if d.Title == "" {
+		d.Title = h.Title
+	}
+	if d.EventKinds == nil {
+		d.EventKinds = []string{}
+	}
+	for _, f := range s.fields {
+		if f.Named && IsPrefillField(f.Name) {
+			d.PrefillFields++
+		}
+	}
+	a.Document = d
 	for _, f := range s.fields {
 		el, ec := position(md, f.End)
 		a.Fields = append(a.Fields, FieldSpan{

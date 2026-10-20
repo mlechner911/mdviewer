@@ -6,11 +6,11 @@
   "proseClass": "prose-slate prose-headings:text-slate-900 prose-p:text-slate-700 prose-a:text-blue-600",
   "mermaidTheme": "default",
   "mermaidVars": {
-    "lineColor": "currentColor",
-    "textColor": "currentColor",
+    "lineColor": "#334155",
+    "textColor": "#0f172a",
     "background": "#ffffff",
     "mainBkg": "#ffffff",
-    "primaryColor": "currentColor",
+    "primaryColor": "#eef2ff",
     "edgeLabelBackground": "#ffffff",
     "tertiaryColor": "#ffffff"
   }

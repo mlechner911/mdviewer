@@ -1,4 +1,5 @@
 import {defineConfig} from 'vite'
+import { fileURLToPath } from 'node:url'
 import {svelte} from '@sveltejs/vite-plugin-svelte'
 import wails from '@wailsio/runtime/plugins/vite'
 
@@ -6,9 +7,15 @@ import wails from '@wailsio/runtime/plugins/vite'
 export default defineConfig({
   plugins: [svelte(), wails('./bindings')],
   resolve: {
-    // ../packages/mlcext-editor imports CodeMirror; one instance for the app
-    // and the package (two copies break CodeMirror's instanceof checks).
-    dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language', '@codemirror/lint', '@codemirror/autocomplete'],
+    // Shared packages from ../packages, used from source. One instance of
+    // their dependencies for the app and the packages (two copies break
+    // CodeMirror's instanceof checks and Svelte's runtime).
+    alias: [
+      { find: /^mlc-markdown\/styles\.css$/, replacement: fileURLToPath(new URL('../packages/mlc-markdown/styles/mlc-markdown.css', import.meta.url)) },
+      { find: /^mlc-markdown$/, replacement: fileURLToPath(new URL('../packages/mlc-markdown/src/index.ts', import.meta.url)) },
+      { find: /^mlc-markdown-svelte$/, replacement: fileURLToPath(new URL('../packages/mlc-markdown-svelte/src/index.js', import.meta.url)) },
+    ],
+    dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language', '@codemirror/lint', '@codemirror/autocomplete', 'svelte', 'marked', 'dompurify', 'marked-footnote'],
   },
   server: {
     host: '127.0.0.1',

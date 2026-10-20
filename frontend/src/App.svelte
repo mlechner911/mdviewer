@@ -12,7 +12,7 @@
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
   import BrowseView from './shared/browse/BrowseView.svelte';
-  import documentCSS from './shared/markdown/document.css?raw';
+  import mlcMarkdownCSS from '../../packages/mlc-markdown/styles/mlc-markdown.css?raw';
   import { mlcSnippets } from '../../packages/mlcext-editor/src/index';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
@@ -49,8 +49,6 @@
   let tabs = $state<Tab[]>([]);
   let activeTabIndex = $state(0);
   let isReady = $state(false);
-  let htmlContent = $state("");
-  let highlightingCSS = $state("");
   let fontSize = $state(DEFAULTS.fontSize);
   
   let showSecurityModal = $state(false);
@@ -62,19 +60,20 @@
   let previewComponent: any = $state();
   let scrollLock = false;
 
-  function handleEditorScroll(percentage: number) {
+  // Scroll sync by source line (data-line in the preview, line blocks in
+  // the editor), so both sides show the same passage.
+  function handleEditorScroll(line: number) {
     if (!isSyncScroll || scrollLock || !previewComponent) return;
     scrollLock = true;
-    previewComponent.setScrollPercentage(percentage);
-    setTimeout(() => { scrollLock = false; }, 50);
+    previewComponent.scrollToLine(line);
+    setTimeout(() => { scrollLock = false; }, 80);
   }
 
-  function handlePreviewScroll() {
-    if (!isSyncScroll || scrollLock || !editorComponent || !previewComponent) return;
+  function handlePreviewScroll(line: number) {
+    if (!isSyncScroll || scrollLock || !editorComponent) return;
     scrollLock = true;
-    const percentage = previewComponent.getScrollPercentage();
-    editorComponent.setScrollPercentage(percentage);
-    setTimeout(() => { scrollLock = false; }, 50);
+    editorComponent.scrollToLine(line);
+    setTimeout(() => { scrollLock = false; }, 80);
   }
 
   // --- Svelte 5 Runes: Derived ---
@@ -284,7 +283,7 @@
   // PDF via mlcdoc (shipped with MarkSafe) for every document.
   const canPdfPreview = $derived(!!mlcdocVersion);
   // Formulas are not typeset by mlcdoc yet; they appear as plain text.
-  const hasMath = $derived(htmlContent.includes('class="math'));
+  let hasMath = $state(false);
 
   async function handleExportPdf() {
     const tab = tabs[activeTabIndex];
@@ -310,21 +309,11 @@
     clearTimeout(timeout);
     timeout = setTimeout(async () => {
       try {
-        htmlContent = await backend.renderMarkdown(value, themeStyle);
         mlcAnalysis = await backend.analyzeMLC(value);
       } catch (err) {
         console.error("Failed to render markdown:", err);
       }
     }, 300);
-  }
-
-  async function updateHighlightingCSS(style: string) {
-    if (!isReady || !checkWailsReady()) return;
-    try {
-      highlightingCSS = await backend.getStyleCSS(style);
-    } catch (err) {
-      console.error("Failed to get highlighting CSS:", err);
-    }
   }
 
   async function handleOpen() {
@@ -419,13 +408,13 @@
     try {
       const theme = $effectiveAppTheme === 'dark' ? 'dark' : 'light';
       const pageCSS = `body { margin: 0; padding: 2rem; background: ${theme === 'dark' ? '#0d0e11' : '#ffffff'}; }
-        .md-doc { margin: 0 auto; }
+        .mlc-md { margin: 0 auto; }
         @media print { body { background: #ffffff; padding: 0; } }`;
       // The rendered preview (diagrams, formulas, embedded images), so the
       // file shows offline exactly what the preview shows.
-      const article = (await previewComponent?.getExportHTML())
-        || `<article class="md-doc" data-theme="${theme}" lang="${$locale}">${htmlContent}</article>`;
-      await backend.exportHTML(article, documentCSS + '\n' + pageCSS + '\n' + highlightingCSS);
+      const article = (await previewComponent?.getExportHTML()) ?? '';
+      if (!article) return;
+      await backend.exportHTML(article, mlcMarkdownCSS + '\n' + pageCSS + '\n' + (previewComponent?.codeCSS() ?? ''));
     } catch (err) {
       console.error("Failed to export HTML:", err);
       showToast($t('exportFailed'), 3000, 'error');
@@ -549,7 +538,6 @@
 
         if (import.meta.env.DEV && !wailsReady) isReady = true;
 
-        updateHighlightingCSS(currentPreviewTheme.chromaStyle);
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
         if (wailsReady) updateNativeMenu(get(locale));
       } else {
@@ -681,7 +669,6 @@
   $effect(() => {
     if (isReady && $effectiveAppTheme) {
       const theme = getTheme($effectiveAppTheme);
-      updateHighlightingCSS(theme.chromaStyle);
       debouncedUpdate(markdown, theme.chromaStyle);
     }
   });
@@ -959,14 +946,15 @@
       <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview}>
       <Preview 
         bind:this={previewComponent}
-        html={htmlContent} 
-        css={highlightingCSS} 
+        source={markdown}
         theme={currentPreviewTheme} 
         fontSize={fontSize} 
         currentFilePath={tabs[activeTabIndex]?.path}
+        analysis={mlcAnalysis}
         onsecurity_request={handleSecurityRequest}
         onopen_file={handleOpenExternalMD}
-        onscroll={handlePreviewScroll}
+        onscrollline={handlePreviewScroll}
+        onrendered={(el: HTMLElement) => (hasMath = !!el.querySelector('.mlc-md-math'))}
       />
       </div>
     </div>

@@ -4,7 +4,7 @@
   //
   // Hooks connect what only the app knows (base paths, local resources,
   // event numbers, navigation); styling goes through --mlc-md-* variables.
-  import { onDestroy, onMount, tick, untrack, type Snippet } from 'svelte';
+  import { onDestroy, tick, untrack, type Snippet } from 'svelte';
   import { createRenderer, enhance, frontMatterEntries, type RenderOptions } from 'mlc-markdown';
 
   type NavTarget = { href: string; kind: 'anchor' | 'external' | 'link' | 'ref'; event: MouseEvent };
@@ -90,11 +90,22 @@
     const needsMath = !math && content.querySelector('.mlc-md-math[data-tex]');
     const needsMermaid = content.querySelector('pre.mlc-md-mermaid');
     if ((needsMath && loadKatex) || (needsMermaid && loadMermaid)) {
-      const [katex, mermaid] = await Promise.all([
-        needsMath && loadKatex ? loadKatex() : undefined,
-        needsMermaid && loadMermaid ? loadMermaid() : undefined,
-      ]);
-      if (content) await enhance(content, { katex, mermaid });
+      // A failing loader (or library) must not stop the rest: formulas,
+      // diagrams and onRendered are independent of each other.
+      async function load<T>(f?: () => Promise<T>): Promise<T | undefined> {
+        try {
+          return f ? await f() : undefined;
+        } catch (err) {
+          console.error('mlc-markdown: loading failed', err);
+          return undefined;
+        }
+      }
+      const [katex, mermaid] = await Promise.all([needsMath ? load(loadKatex) : undefined, needsMermaid ? load(loadMermaid) : undefined]);
+      try {
+        if (content) await enhance(content, { katex, mermaid });
+      } catch (err) {
+        console.error('mlc-markdown: enhance failed', err);
+      }
     }
     if (content) onRendered?.(content);
   }
@@ -129,7 +140,7 @@
     if (scrollContainer) return scrollContainer;
     for (let el = root?.parentElement; el; el = el.parentElement) {
       const o = getComputedStyle(el).overflowY;
-      if ((o === 'auto' || o === 'scroll') && el.scrollHeight > el.clientHeight) return el;
+      if (o === 'auto' || o === 'scroll') return el;
     }
     return document.scrollingElement as HTMLElement | undefined;
   }
@@ -185,7 +196,10 @@
     });
   }
 
-  onMount(() => {
+  // (Re)attach whenever the scrolling element is known or changes.
+  $effect(() => {
+    void scrollContainer;
+    if (!root) return;
     attached = scroller();
     const target = attached === document.scrollingElement ? window : attached;
     target?.addEventListener('scroll', onScroll, { passive: true });

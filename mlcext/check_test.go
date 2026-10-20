@@ -193,6 +193,13 @@ func TestAnalyzePositions(t *testing.T) {
 	if h := a.Hints[1]; h.Kind != "fill-hint" || h.Line != 4 || h.Col != 1 || h.EndCol != 15 {
 		t.Errorf("hint 1: %+v", h)
 	}
+	if a.Document.Fields != 2 || a.Document.PrefillFields != 2 {
+		t.Errorf("document: %+v", a.Document)
+	}
+	doc := Analyze("---\ntitle: CAPA\nevent_kinds: [DEVIATION]\n---\n**Dokumenten-ID:** FB-QM-002 | **Version:** 2.1\n").Document
+	if doc.RefNo != "FB-QM-002" || doc.KindLabel != "Formblatt (FB)" || doc.Version != "2.1" || doc.Title != "CAPA" || !doc.EventKindsSet || doc.EventKinds[0] != "DEVIATION" {
+		t.Errorf("document info: %+v", doc)
+	}
 	if plain := Analyze("# README\n"); plain.Detected || len(plain.Lists.EventKinds) == 0 {
 		t.Errorf("plain: %+v", plain)
 	}

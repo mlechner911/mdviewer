@@ -76,3 +76,21 @@ describe('<MlcMarkdown>', () => {
     done();
   });
 });
+
+describe('<MlcMarkdown> robustness', () => {
+  it('a failing loader does not stop formulas or onRendered', async () => {
+    const onRendered = vi.fn();
+    const loadKatex = vi.fn(async () => ({ renderToString: (t: string) => `<b class="k">${t}</b>` }));
+    const loadMermaid = vi.fn(async () => {
+      throw new Error('Unsupported color format');
+    });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { target, done } = setup({ source: '$a$\n\n```mermaid\ngraph LR; A-->B;\n```\n', loadKatex, loadMermaid, onRendered });
+    await tick();
+    await wait(10);
+    expect(target.querySelector('.mlc-md-math b.k')).not.toBeNull();
+    expect(onRendered).toHaveBeenCalled();
+    err.mockRestore();
+    done();
+  });
+});

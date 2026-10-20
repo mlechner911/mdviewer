@@ -26,7 +26,8 @@
     theme: EffectiveTheme_t;
     placeholder?: string;
     onchange?: (val: string) => void;
-    onscroll?: (percentage: number) => void;
+    /** Top visible source line (1-based) while scrolling, for scroll sync. */
+    onscroll?: (line: number) => void;
     /** MLC Markdown Extension (non-standard) support: analysis from mlcext. */
     mlcSource?: MlcSource;
     onmlcanalysis?: (analysis: MlcAnalysis) => void;
@@ -168,6 +169,27 @@
   }
 
   /**
+   * getTopLine returns the first (1-based) source line visible at the top.
+   */
+  export function getTopLine(): number {
+    if (!editorView) return 1;
+    const block = editorView.lineBlockAtHeight(Math.max(0, editorView.scrollDOM.scrollTop - (editorView.documentPadding?.top ?? 0)));
+    return editorView.state.doc.lineAt(block.from).number;
+  }
+
+  /**
+   * scrollToLine puts the 1-based source line at the top.
+   */
+  export function scrollToLine(line: number) {
+    if (!editorView) return;
+    const n = Math.min(Math.max(1, Math.round(line)), editorView.state.doc.lines);
+    const block = editorView.lineBlockAt(editorView.state.doc.line(n).from);
+    scrollLock = true;
+    editorView.scrollDOM.scrollTop = block.top + (editorView.documentPadding?.top ?? 0);
+    setTimeout(() => { scrollLock = false; }, 50);
+  }
+
+  /**
    * wrapSelection wraps selected text with prefix/suffix (bold, italic, code).
    */
   export function wrapSelection(prefix: string, suffix: string) {
@@ -212,8 +234,7 @@
 
   function handleScroll() {
     if (scrollLock || !editorView) return;
-    const percentage = getScrollPercentage();
-    onscroll?.(percentage);
+    onscroll?.(getTopLine());
   }
 
   onMount(() => {
