@@ -93,9 +93,10 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   starting set; a template with the same id in `_vorlagen/` of the document
   folder replaces it. Field types: `text`, `multiline`, `number`, `date`,
   `time` (also `hour`), `select`, `multiselect`, `refno` (document ID with
-  prefix and a suggested next number). Options can be a list or a shared
-  list (`event_kinds`). Placeholders: `{{id}}`, `{{id|yaml}}`,
-  `{{id|list}}`. The schema of the schema file is
+  prefix and a suggested next number), `docref` (other documents of the
+  document folder, optional prefix filter, `multiple`). Options can be a
+  list or a shared list (`event_kinds`). Placeholders: `{{id}}`,
+  `{{id|yaml}}`, `{{id|list}}`, `{{id|ref}}` (docref: "ID (Titel)"). The schema of the schema file is
   [`mlcext/mlc-template.schema.json`](../mlcext/mlc-template.schema.json);
   editors validate templates with it. A created document must pass the
   checker; whether its ID is free among the approved documents only the

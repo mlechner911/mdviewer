@@ -49,6 +49,9 @@ type TemplateSchema struct {
 //	multiselect      several of options
 //	refno            document ID with prefix ("FB") and an area field;
 //	                 the editor proposes the next free number
+//	docref           reference to other documents of the document folder
+//	                 (optional prefix filter, "multiple" for several);
+//	                 {{id}} writes the IDs, {{id|ref}} "ID (Titel)"
 //
 // options is a list of strings or the name of a shared list
 // ("event_kinds").
@@ -67,10 +70,11 @@ type TemplateField struct {
 	Max         *float64 `json:"max,omitempty"`
 	Step        *float64 `json:"step,omitempty"`
 	Format      string   `json:"format,omitempty"`
+	Multiple    bool     `json:"multiple,omitempty"`
 }
 
 // FieldTypes are the known field types.
-var FieldTypes = []string{"text", "multiline", "number", "date", "time", "select", "multiselect", "refno"}
+var FieldTypes = []string{"text", "multiline", "number", "date", "time", "select", "multiselect", "refno", "docref"}
 
 // TemplateInfo is a loaded template, ready for a form: options resolved,
 // problems listed (a template with problems cannot be used).
@@ -84,13 +88,50 @@ type TemplateInfo struct {
 
 	schema TemplateSchema
 	body   string
+	titles map[string]string // docref: RefNo → title, from WithDocuments
 }
 
 // TemplateInput is a field as a form needs it.
 type TemplateInput struct {
 	TemplateField
 	OptionList []string `json:"optionList"`
-	DefaultStr string   `json:"defaultValue"`
+	// OptionLabels are display texts parallel to OptionList (docref:
+	// "SOP-QM-006 · CAPA-Prozess"); empty means the options themselves.
+	OptionLabels []string `json:"optionLabels"`
+	DefaultStr   string   `json:"defaultValue"`
+}
+
+// DocumentRef is a document a docref field can point to.
+type DocumentRef struct {
+	RefNo string `json:"refNo"`
+	Title string `json:"title"`
+}
+
+// WithDocuments fills the choices of docref fields from docs (documents of
+// the document folder; those without a RefNo are skipped).
+func (t TemplateInfo) WithDocuments(docs []DocumentRef) TemplateInfo {
+	t.titles = map[string]string{}
+	for _, d := range docs {
+		if d.RefNo != "" {
+			t.titles[d.RefNo] = d.Title
+		}
+	}
+	fields := make([]TemplateInput, len(t.Fields))
+	for i, f := range t.Fields {
+		if f.Type == "docref" {
+			f.OptionList, f.OptionLabels = []string{}, []string{}
+			for _, d := range docs {
+				if d.RefNo == "" || f.Prefix != "" && !strings.EqualFold(strings.SplitN(d.RefNo, "-", 2)[0], f.Prefix) {
+					continue
+				}
+				f.OptionList = append(f.OptionList, d.RefNo)
+				f.OptionLabels = append(f.OptionLabels, strings.TrimSpace(d.RefNo+" · "+d.Title))
+			}
+		}
+		fields[i] = f
+	}
+	t.Fields = fields
+	return t
 }
 
 var (
@@ -161,7 +202,7 @@ func loadFrom(fsys fs.FS, source string) []TemplateInfo {
 		}
 		t.Problems = append(t.Problems, validateSchema(t.schema, t.body)...)
 		for _, f := range t.schema.Fields {
-			in := TemplateInput{TemplateField: f, OptionList: optionList(f.Options), DefaultStr: defaultString(f.Default)}
+			in := TemplateInput{TemplateField: f, OptionList: optionList(f.Options), OptionLabels: []string{}, DefaultStr: defaultString(f.Default)}
 			if in.Type == "hour" {
 				in.Type = "time"
 			}
@@ -255,8 +296,8 @@ func validateSchema(s TemplateSchema, body string) []string {
 			if _, ok := ids[m[1]]; !ok {
 				p = append(p, fmt.Sprintf("Platzhalter {{%s}} hat kein Feld", m[1]))
 			}
-			if m[2] != "" && m[2] != "yaml" && m[2] != "list" {
-				p = append(p, fmt.Sprintf("Platzhalter {{%s|%s}}: Filter ist yaml oder list", m[1], m[2]))
+			if m[2] != "" && m[2] != "yaml" && m[2] != "list" && m[2] != "ref" {
+				p = append(p, fmt.Sprintf("Platzhalter {{%s|%s}}: Filter ist yaml, list oder ref", m[1], m[2]))
 			}
 		}
 	}
@@ -307,6 +348,15 @@ func (t TemplateInfo) Render(values map[string]any) RenderResult {
 			sm := placeholderRe.FindStringSubmatch(m)
 			v := filled[sm[1]]
 			switch sm[2] {
+			case "ref":
+				items := make([]string, len(v))
+				for i, x := range v {
+					items[i] = x
+					if title := t.titles[x]; title != "" {
+						items[i] = x + " (" + title + ")"
+					}
+				}
+				return strings.Join(items, ", ")
 			case "list":
 				items := make([]string, len(v))
 				for i, x := range v {
@@ -334,12 +384,12 @@ func normalize(f TemplateInput, raw any) ([]string, string) {
 		switch {
 		case f.Required:
 			return nil, "Pflichtfeld"
-		case f.Type == "multiselect":
+		case multi(f):
 			return []string{}, ""
 		}
 		return []string{""}, ""
 	}
-	if f.Type == "multiselect" {
+	if multi(f) {
 		for _, x := range vals {
 			if !contains(f.OptionList, x) {
 				return nil, fmt.Sprintf("%q ist kein Wert aus der Liste", x)
@@ -355,6 +405,11 @@ func normalize(f TemplateInput, raw any) ([]string, string) {
 		return nil, msg
 	}
 	return []string{v}, ""
+}
+
+// multi: the field takes several values.
+func multi(f TemplateInput) bool {
+	return f.Type == "multiselect" || f.Type == "docref" && f.Multiple
 }
 
 // collectValues turns a form value (string, number or list) into trimmed
@@ -374,7 +429,7 @@ func collectValues(f TemplateInput, raw any) []string {
 		parts = []string{strconv.FormatFloat(v, 'f', -1, 64)}
 	default:
 		s := fmt.Sprint(v)
-		if f.Type == "multiselect" {
+		if multi(f) {
 			parts = strings.Split(s, ",")
 		} else {
 			parts = []string{s}
@@ -412,7 +467,7 @@ func checkValue(f TemplateInput, v string) (string, string) {
 			return "", "Uhrzeit als HH:MM"
 		}
 		return tm.Format("15:04"), ""
-	case "select":
+	case "select", "docref":
 		if !contains(f.OptionList, v) {
 			return "", "kein Wert aus der Liste"
 		}

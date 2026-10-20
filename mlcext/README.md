@@ -61,7 +61,9 @@ A template is a schema plus a body, both in one folder:
 
 Field types: `text`, `multiline`, `number` (`min`, `max`, `step`), `date`
 (`format` TT.MM.JJJJ or JJJJ-MM-TT), `time` (also `hour`), `select`,
-`multiselect`, `refno`. Placeholders in the body and in `file`: `{{id}}`,
-`{{id|yaml}}` (YAML-safe), `{{id|list}}` (YAML list). `LoadTemplates`
+`multiselect`, `refno`, `docref` (other documents, filled with
+`TemplateInfo.WithDocuments`). Placeholders in the body and in `file`:
+`{{id}}`, `{{id|yaml}}` (YAML-safe), `{{id|list}}` (YAML list),
+`{{id|ref}}` (docref: "ID (Titel)"). `LoadTemplates`
 reports problems per template (unknown type, missing body, placeholder
 without a field …); such a template cannot be rendered.

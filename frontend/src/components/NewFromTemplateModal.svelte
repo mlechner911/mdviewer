@@ -49,7 +49,7 @@
     const fs = fields;
     const v: Record<string, any> = {};
     for (const f of fs) {
-      v[f.id] = f.type === 'multiselect' ? (f.defaultValue ? f.defaultValue.split(',') : []) : f.defaultValue ?? '';
+      v[f.id] = isMulti(f) ? (f.defaultValue ? f.defaultValue.split(',') : []) : f.defaultValue ?? '';
     }
     values = v;
     edited = {};
@@ -68,6 +68,9 @@
       });
     }
   });
+
+  const isMulti = (f: MLCTemplateField) => f.type === 'multiselect' || (f.type === 'docref' && !!f.multiple);
+  const optionLabel = (f: MLCTemplateField, i: number) => f.optionLabels?.[i] || f.optionList?.[i] || '';
 
   function toggleOption(f: MLCTemplateField, opt: string) {
     const cur: string[] = values[f.id] ?? [];
@@ -138,6 +141,23 @@
                 </label>
               {/each}
             </div>
+          {:else if f.type === 'docref'}
+            {#if !(f.optionList ?? []).length}
+              <span class="text-[11px] opacity-60">{$t('tplNoDocuments')}</span>
+            {:else if f.multiple}
+              <div class="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                {#each f.optionList ?? [] as opt, i}
+                  <label class="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={(values[f.id] ?? []).includes(opt)} onchange={() => toggleOption(f, opt)} />{optionLabel(f, i)}
+                  </label>
+                {/each}
+              </div>
+            {:else}
+              <select bind:value={values[f.id]} class="px-2 py-1.5 rounded border {editorClass}">
+                <option value="">—</option>
+                {#each f.optionList ?? [] as opt, i}<option value={opt}>{optionLabel(f, i)}</option>{/each}
+              </select>
+            {/if}
           {:else if f.type === 'refno'}
             <input bind:value={values[f.id]} oninput={() => (edited[f.id] = true)} placeholder="{f.prefix}-QM-001" class="px-2 py-1.5 rounded border font-mono {editorClass}" />
           {:else}

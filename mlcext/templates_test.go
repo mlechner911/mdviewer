@@ -232,3 +232,38 @@ func TestRefNosInDir(t *testing.T) {
 		t.Errorf("RefNosInDir = %s", got)
 	}
 }
+
+func TestDocref(t *testing.T) {
+	dir := t.TempDir()
+	writeTemplate(t, dir, "va", `{"name": "VA", "body": "va.md", "fields": [
+	  {"id": "sop", "label": "Zugehörig zu", "type": "docref", "prefix": "SOP", "multiple": true, "required": true},
+	  {"id": "eine", "label": "Ein Formblatt", "type": "docref", "prefix": "FB"}
+	]}`, "Zugehörig zu: {{sop|ref}}\nKennungen: {{sop}}\nFormblatt: {{eine|ref}}\n")
+	var tpl TemplateInfo
+	for _, x := range LoadTemplates(dir) {
+		if x.ID == "va" {
+			tpl = x
+		}
+	}
+	if len(tpl.Problems) > 0 {
+		t.Fatal(tpl.Problems)
+	}
+	tpl = tpl.WithDocuments([]DocumentRef{
+		{RefNo: "SOP-QM-006", Title: "CAPA-Prozess"}, {RefNo: "FB-QM-002", Title: "CAPA-Bericht"},
+		{RefNo: "SOP-KAL-001", Title: "Kalibrierung"}, {Title: "ohne Kennung"},
+	})
+	if got := strings.Join(tpl.Fields[0].OptionList, ","); got != "SOP-QM-006,SOP-KAL-001" {
+		t.Errorf("prefix filter: %s", got)
+	}
+	if tpl.Fields[0].OptionLabels[0] != "SOP-QM-006 · CAPA-Prozess" {
+		t.Errorf("labels: %v", tpl.Fields[0].OptionLabels)
+	}
+	res := tpl.Render(map[string]any{"sop": []any{"SOP-QM-006", "SOP-KAL-001"}, "eine": "FB-QM-002"})
+	want := "Zugehörig zu: SOP-QM-006 (CAPA-Prozess), SOP-KAL-001 (Kalibrierung)\nKennungen: SOP-QM-006, SOP-KAL-001\nFormblatt: FB-QM-002 (CAPA-Bericht)\n"
+	if len(res.FieldErrors) > 0 || res.Content != want {
+		t.Errorf("render: %v\n%q", res.FieldErrors, res.Content)
+	}
+	if bad := tpl.Render(map[string]any{"sop": "SOP-XX-999"}); bad.FieldErrors["sop"] == "" {
+		t.Errorf("unknown document must be an error")
+	}
+}

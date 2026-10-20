@@ -326,7 +326,34 @@ func (a *App) PreviewMLCDoc(md string, docPath string) MLCDocPreview {
 // schemas (*.json + Markdown body) in <document folder>/_vorlagen. New
 // kinds or fields need a new file there, not a new program.
 func (a *App) MLCTemplates() []mlcext.TemplateInfo {
-	return mlcext.LoadTemplates(a.userTemplatesDir())
+	docs := a.documentRefs()
+	list := mlcext.LoadTemplates(a.userTemplatesDir())
+	for i := range list {
+		list[i] = list[i].WithDocuments(docs)
+	}
+	return list
+}
+
+// documentRefs are the documents of the document folder that docref
+// fields can point to.
+func (a *App) documentRefs() []mlcext.DocumentRef {
+	root := a.documentRoot()
+	if root == "" {
+		return nil
+	}
+	r, err := mdbrowse.NewRoot(root)
+	if err != nil {
+		return nil
+	}
+	docs, err := r.Documents()
+	if err != nil {
+		return nil
+	}
+	refs := make([]mlcext.DocumentRef, 0, len(docs))
+	for _, d := range docs {
+		refs = append(refs, mlcext.DocumentRef{RefNo: d.RefNo, Title: d.Title})
+	}
+	return refs
 }
 
 func (a *App) userTemplatesDir() string {
@@ -341,7 +368,7 @@ func (a *App) userTemplatesDir() string {
 func (a *App) RenderMLCTemplate(id string, values map[string]any) mlcext.RenderResult {
 	for _, t := range mlcext.LoadTemplates(a.userTemplatesDir()) {
 		if t.ID == id {
-			return t.Render(values)
+			return t.WithDocuments(a.documentRefs()).Render(values)
 		}
 	}
 	return mlcext.RenderResult{FieldErrors: map[string]string{"": "Vorlage nicht gefunden: " + id}, Diagnostics: []mlcext.Diagnostic{}}
