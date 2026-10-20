@@ -24,11 +24,20 @@ import (
 var ErrNotFound = errors.New("mlcdoc nicht gefunden")
 
 // Binary returns the path of the mlcdoc binary: explicit, $MLCDOC_PATH,
-// $PATH, then the installer's default location (Windows:
+// next to the running program, $PATH, then the installer's default location (Windows:
 // %ProgramFiles%\MLC\mlcdoc). Empty when there is none.
 func Binary(explicit string) string {
 	for _, p := range []string{explicit, os.Getenv("MLCDOC_PATH")} {
 		if p != "" {
+			if st, err := os.Stat(p); err == nil && !st.IsDir() {
+				return p
+			}
+		}
+	}
+	// Next to the program itself: a portable setup ships mlcdoc alongside.
+	if self, err := os.Executable(); err == nil {
+		for _, name := range []string{"mlcdoc", "mlcdoc.exe"} {
+			p := filepath.Join(filepath.Dir(self), name)
 			if st, err := os.Stat(p); err == nil && !st.IsDir() {
 				return p
 			}
