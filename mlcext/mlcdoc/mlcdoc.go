@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -25,7 +24,8 @@ import (
 var ErrNotFound = errors.New("mlcdoc nicht gefunden")
 
 // Binary returns the path of the mlcdoc binary: explicit, $MLCDOC_PATH,
-// $PATH, then the default install location. Empty when there is none.
+// $PATH, then the installer's default location (Windows:
+// %ProgramFiles%\MLC\mlcdoc). Empty when there is none.
 func Binary(explicit string) string {
 	for _, p := range []string{explicit, os.Getenv("MLCDOC_PATH")} {
 		if p != "" {
@@ -37,9 +37,9 @@ func Binary(explicit string) string {
 	if p, err := exec.LookPath("mlcdoc"); err == nil {
 		return p
 	}
-	if runtime.GOOS != "windows" {
-		if _, err := os.Stat("/usr/local/bin/mlcdoc"); err == nil {
-			return "/usr/local/bin/mlcdoc"
+	for _, p := range defaultLocations() {
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			return p
 		}
 	}
 	return ""
@@ -51,7 +51,9 @@ func Version(ctx context.Context, binary string) string {
 	if bin == "" {
 		return ""
 	}
-	out, err := exec.CommandContext(ctx, bin, "--version").Output()
+	cmd := exec.CommandContext(ctx, bin, "--version")
+	hideConsole(cmd)
+	out, err := cmd.Output()
 	if err != nil {
 		return ""
 	}
@@ -121,6 +123,7 @@ func Preview(ctx context.Context, req Request) (*Result, error) {
 
 	cmd := exec.CommandContext(ctx, bin, "run", "--script", "script.json", "--root", dir)
 	cmd.Dir = dir
+	hideConsole(cmd)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
