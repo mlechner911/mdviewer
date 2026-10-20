@@ -184,13 +184,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 	// Edit Menu: role items perform the native clipboard/undo actions on every platform.
 	editMenu := appMenu.AddSubmenu(label(t, "menuEdit", "Edit"))
 	editMenu.Append(application.NewMenuFromItems(
-		application.NewUndoMenuItem().SetLabel(label(t, "menuUndo", "Undo")),
-		application.NewRedoMenuItem().SetLabel(label(t, "menuRedo", "Redo")),
+		editItem(application.NewUndoMenuItem(), label(t, "menuUndo", "Undo")),
+		editItem(application.NewRedoMenuItem(), label(t, "menuRedo", "Redo")),
 		application.NewMenuItemSeparator(),
-		application.NewCutMenuItem().SetLabel(label(t, "menuCut", "Cut")),
-		application.NewCopyMenuItem().SetLabel(label(t, "menuCopy", "Copy")),
-		application.NewPasteMenuItem().SetLabel(label(t, "menuPaste", "Paste")),
-		application.NewSelectAllMenuItem(),
+		editItem(application.NewCutMenuItem(), label(t, "menuCut", "Cut")),
+		editItem(application.NewCopyMenuItem(), label(t, "menuCopy", "Copy")),
+		editItem(application.NewPasteMenuItem(), label(t, "menuPaste", "Paste")),
+		editItem(application.NewSelectAllMenuItem(), ""),
 	))
 
 	// macOS has one application menu; Windows and Linux attach menus per window.
@@ -199,6 +199,26 @@ func (a *App) UpdateMenu(t map[string]string) {
 	} else if a.window != nil {
 		a.window.SetMenu(appMenu)
 	}
+}
+
+// editItem labels an edit role item. Outside macOS the keyboard shortcut
+// stays with the webview: Wails (v3 beta.17, Windows) runs the menu action
+// for Ctrl+V and then hands the key on to WebView2 as well, so every paste
+// (and undo, cut …) happened twice. The menu still shows the shortcut and
+// works by click.
+func editItem(item *application.MenuItem, text string) *application.MenuItem {
+	if text != "" {
+		item.SetLabel(text)
+	}
+	if runtime.GOOS == "darwin" {
+		return item
+	}
+	acc := item.GetAccelerator()
+	item.RemoveAccelerator()
+	if runtime.GOOS == "windows" && acc != "" {
+		item.SetLabel(item.Label() + "\t" + acc)
+	}
+	return item
 }
 
 // SetWindowTitle dynamically updates the native OS application window title.

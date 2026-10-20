@@ -469,8 +469,8 @@
           isReady = true;
           EventsOn("menu-open-file", handleOpen);
           EventsOn("menu-open-recent", handleOpenRecent);
-          EventsOn("menu-save-file", handleSave);
-          EventsOn("menu-save-file-as", handleSaveAs);
+          EventsOn("menu-save-file", () => saveOnce('save'));
+          EventsOn("menu-save-file-as", () => saveOnce('saveAs'));
           EventsOn("menu-new-tab", addNewTab);
           EventsOn("menu-new-from-template", () => (showTemplateModal = true));
           EventsOn("menu-export-pdf", handleExportPdf);
@@ -628,6 +628,18 @@
     showAbout = true;
   }
 
+  // Ctrl+S arrives twice outside macOS: as the menu accelerator and, since
+  // Wails passes the key on to the webview as well, as a keydown here.
+  // Only the first of the two runs (two "Save As" dialogs otherwise).
+  let lastSave = { kind: '', at: 0 };
+  function saveOnce(kind: 'save' | 'saveAs') {
+    const now = Date.now();
+    if (lastSave.kind === kind && now - lastSave.at < 500) return;
+    lastSave = { kind, at: now };
+    if (kind === 'saveAs') handleSaveAs();
+    else handleSave();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (browseParams) return; // browse window has its own shortcuts
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
@@ -637,11 +649,7 @@
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
-      if (e.shiftKey) {
-        handleSaveAs();
-      } else {
-        handleSave();
-      }
+      saveOnce(e.shiftKey ? 'saveAs' : 'save');
     }
   }
 
