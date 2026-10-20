@@ -76,9 +76,13 @@ tasks:
     status:
       - test -f "{{.MLCDOC_DIR}}/windows/mlcdoc.exe"
       - test -f "{{.MLCDOC_DIR}}/linux/mlcdoc"
+      - test -f "{{.MLCDOC_DIR}}/darwin/mlcdoc"
     cmds:
       - cd "{{.MLCDOC_DIST}}" && sha256sum -c --ignore-missing SHA256SUMS
-      - rm -rf "{{.MLCDOC_DIR}}" && mkdir -p "{{.MLCDOC_DIR}}/windows" "{{.MLCDOC_DIR}}/linux"
+      - rm -rf "{{.MLCDOC_DIR}}" && mkdir -p "{{.MLCDOC_DIR}}/windows" "{{.MLCDOC_DIR}}/linux" "{{.MLCDOC_DIR}}/darwin"
+      # macOS: universal binary + licenses from the DMG (7z reads APFS images)
+      - 7z e -y -o"{{.MLCDOC_DIR}}/darwin" "{{.MLCDOC_DIST}}/mlcdoc-{{.MLCDOC_VERSION}}-macos-universal.dmg" mlcdoc "Dokumentation/LICENSE*" "Dokumentation/NOTICE*" > /dev/null
+      - chmod 755 "{{.MLCDOC_DIR}}/darwin/mlcdoc"
       - 7z e -y -o"{{.MLCDOC_DIR}}/windows" "{{.MLCDOC_DIST}}/mlcdoc-{{.MLCDOC_VERSION}}-windows-x64-setup.exe" mlcdoc.exe "doc/LICENSE*" "doc/NOTICE*" > /dev/null
       - |
         tmp=$(mktemp -d)
@@ -111,6 +115,8 @@ tasks:
       MAC_HOST: mlc@macstudio.fritz.box
       REMOTE_DIR: marksafe-build
     cmds:
+      # 0 — mlcdoc ships inside marksafe.app (build/mlcdoc is synced along)
+      - task: mlcdoc:fetch
       # 1 — sync source to macstudio
       - |
         rsync -az --delete \
@@ -126,7 +132,7 @@ tasks:
           echo "HINWEIS: MARKSAFE_KEYCHAIN_PASS (oder MLCTERM_KEYCHAIN_PASS) ist nicht gesetzt."
           echo "Ohne Passwort bleibt der Mac-Schlüsselbund gesperrt; codesign & Notarisierung werden übersprungen."
         fi
-        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS bash -s" << 'ENDSSH'
+        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS MLCDOC_VERSION={{.MLCDOC_VERSION}} bash -s" << 'ENDSSH'
           set -e
           export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:/opt/homebrew/bin
           export NVM_DIR="$HOME/.nvm"
@@ -138,9 +144,20 @@ tasks:
 
           wails3 task darwin:package:universal
 
+          # mlcdoc next to the executable (PDF preview/export finds it there)
+          MLCDOC_SRC="build/mlcdoc/${MLCDOC_VERSION}/darwin"
+          install -m 755 "$MLCDOC_SRC/mlcdoc" bin/marksafe.app/Contents/MacOS/mlcdoc
+          mkdir -p bin/marksafe.app/Contents/Resources/licenses/mlcdoc
+          cp "$MLCDOC_SRC"/LICENSE-* "$MLCDOC_SRC"/NOTICE-* bin/marksafe.app/Contents/Resources/licenses/mlcdoc/
+          bin/marksafe.app/Contents/MacOS/mlcdoc --version
+
           if [ -n "$KEYCHAIN_PASS" ]; then
             echo "→ Unlocking keychain and signing bin/marksafe.app..."
             security unlock-keychain -p "$KEYCHAIN_PASS" ~/Library/Keychains/login.keychain-db
+            # Nested executable first, with hardened runtime (notarization needs it)
+            codesign --force --options runtime --timestamp \
+              --sign "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
+              bin/marksafe.app/Contents/MacOS/mlcdoc
             wails3 tool sign --input bin/marksafe.app \
               --identity "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
               --entitlements build/signing/marksafe.entitlements \
