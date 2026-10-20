@@ -228,6 +228,10 @@ export function createRenderer(opts: RenderOptions = {}) {
   /** Render top-level tokens one by one, each block tagged with its source line. */
   function blocks(text: string, firstLine: number): string {
     const tokens = marked.lexer(text);
+    // marked-footnote lexes its list first and moves it to the end in
+    // walkTokens, which only marked.parse runs: move it here.
+    const fn = tokens.findIndex((t) => t.type === 'footnotes');
+    if (fn >= 0) tokens.push(...tokens.splice(fn, 1));
     let line = firstLine;
     let html = '';
     for (const tok of tokens) {

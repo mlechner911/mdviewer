@@ -52,6 +52,14 @@ describe('form fields (display)', () => {
 });
 
 describe('Markdown features', () => {
+  it('footnotes come after the text, not before it', () => {
+    const d = doc(html('# Titel\n\nText[^1].\n\n[^1]: Fußnote.\n\nEnde.\n'));
+    const kids = Array.from(d.children).map((e) => e.tagName.toLowerCase());
+    expect(kids[0]).toBe('h1');
+    expect(d.lastElementChild!.matches('section[data-footnotes]')).toBe(true);
+    expect(d.querySelector('[data-footnotes]')!.textContent).toContain('Fußnote.');
+  });
+
   it('alerts with the title in the document language', () => {
     const d = doc(html('> [!WARNING]\n> Bei mehr als −70 °C umlagern.\n', { locale: 'de' }));
     const a = d.querySelector('.mlc-md-alert-warning')!;
