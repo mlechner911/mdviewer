@@ -12,8 +12,9 @@ type Analysis struct {
 	Fields      []FieldSpan  `json:"fields"`
 	Hints       []HintSpan   `json:"hints"`
 	Lists       Lists        `json:"lists"`
-	// Document is how the Sensor Monitor reads the document (header lines
-	// and upload front matter), for a "how the server sees it" display.
+	// Document is how the Sensor Monitor reads the document (front matter,
+	// legacy header lines as a fallback), for a "how the server sees it"
+	// display.
 	Document DocumentInfo `json:"document"`
 }
 
@@ -30,6 +31,10 @@ type DocumentInfo struct {
 	Fields        int      `json:"fields"`
 	PrefillFields int      `json:"prefillFields"`
 	FieldErrors   int      `json:"fieldErrors"`
+	// HeaderInBody: id or version come from the legacy header lines.
+	HeaderInBody bool `json:"headerInBody"`
+	// Signature of the file, nil when unsigned (not verified here).
+	Signature *Signature `json:"signature"`
 }
 
 // FieldSpan locates one form field.
@@ -79,18 +84,15 @@ func Analyze(md string) Analysis {
 	a.Diagnostics = Check(md, Options{RequireHeader: true})
 	s := &scanner{src: md, section: "feld"}
 	s.run()
-	h := ParseHeader(md)
 	fm, _ := ParseFrontMatter(md)
+	m := DocumentMeta(md)
+	sig, _ := SplitSignature(md)
 	d := DocumentInfo{
-		RefNo: h.RefNo, Kind: h.Kind, KindLabel: KindLabel(h.Kind), Version: h.Version,
-		Title: fm.Title, Description: fm.Description, EventKinds: fm.EventKinds, EventKindsSet: fm.EventKindsSet,
+		RefNo: m.DocID, Kind: m.Kind, KindLabel: KindLabel(m.Kind), Version: m.Version, Title: m.Title,
+		Description: fm.Description, EventKinds: fm.EventKinds, EventKindsSet: fm.EventKindsSet,
 		Fields: len(s.fields), FieldErrors: len(s.errs),
-	}
-	if d.Version == "" {
-		d.Version = fm.Version
-	}
-	if d.Title == "" {
-		d.Title = h.Title
+		HeaderInBody: m.DocIDSource == "header" || m.VersionSource == "header",
+		Signature:    sig,
 	}
 	if d.EventKinds == nil {
 		d.EventKinds = []string{}

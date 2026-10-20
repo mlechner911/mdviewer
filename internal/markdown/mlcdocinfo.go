@@ -14,7 +14,7 @@ import (
 // same code the server uses. It replaces the generic front matter table for
 // such documents; it is an editing aid, hidden in print and export.
 func renderMLCDocInfo(md string) string {
-	h := mlcext.ParseHeader(md)
+	m := mlcext.DocumentMeta(md)
 	fm, _ := mlcext.ParseFrontMatter(md)
 	fields, errs := mlcext.ExtractFields(md)
 
@@ -31,22 +31,15 @@ func renderMLCDocInfo(md string) string {
 
 	sb.WriteString(`<div class="mlc-docinfo">`)
 	sb.WriteString(`<div class="mlc-docinfo-title">MLC-Erweiterung · so liest der Sensor Monitor dieses Dokument</div><dl>`)
-	row("Kennung", esc(h.RefNo))
-	kind := mlcext.KindLabel(h.Kind)
-	if kind == "" && h.RefNo != "" {
+	row("Kennung", esc(m.DocID))
+	kind := mlcext.KindLabel(m.Kind)
+	if kind == "" && m.DocID != "" {
 		kind = "unbekannt (Präfix SOP-, VA-, FB- oder INFO-)"
 	}
 	row("Art", esc(kind))
-	version := h.Version
-	if version == "" {
-		version = fm.Version
-	}
-	row("Version", esc(version))
-	if title := fm.Title; title != "" || h.Title != "" {
-		if title == "" {
-			title = h.Title
-		}
-		row("Titel", esc(title))
+	row("Version", esc(m.Version))
+	if m.Title != "" {
+		row("Titel", esc(m.Title))
 	}
 	if fm.Description != "" {
 		row("Beschreibung", esc(fm.Description))

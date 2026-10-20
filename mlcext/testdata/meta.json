@@ -1,0 +1,130 @@
+[
+  {
+    "markdown": "---\ndoc_id: FB-QM-001\nversion: \"2.0\"\ntitle: CAPA\n---\n# {{title}}\n\nGehört zu {{doc_id}}, Fassung {{ version }}.\n\n`{{doc_id}}` und\n\n```\n{{title}}\n```\n",
+    "meta": {
+      "docId": "FB-QM-001",
+      "version": "2.0",
+      "title": "CAPA"
+    },
+    "expanded": "---\ndoc_id: FB-QM-001\nversion: \"2.0\"\ntitle: CAPA\n---\n# CAPA\n\nGehört zu FB-QM-001, Fassung 2.0.\n\n`{{doc_id}}` und\n\n```\n{{title}}\n```\n",
+    "signature": null,
+    "content": "---\ndoc_id: FB-QM-001\nversion: \"2.0\"\ntitle: CAPA\n---\n# {{title}}\n\nGehört zu {{doc_id}}, Fassung {{ version }}.\n\n`{{doc_id}}` und\n\n```\n{{title}}\n```\n",
+    "stored": "# CAPA\n\nGehört zu FB-QM-001, Fassung 2.0.\n\n`{{doc_id}}` und\n\n```\n{{title}}\n```\n"
+  },
+  {
+    "markdown": "---\ntitle: t\n---\n**Dokumenten-ID:** SOP-QM-002 | **Version:** 2.1\n\n{{doc_id}} / {{version}} / {{unbekannt}} / {{kennung|yaml}}\n",
+    "meta": {
+      "docId": "SOP-QM-002",
+      "version": "2.1",
+      "title": "t"
+    },
+    "expanded": "---\ntitle: t\n---\n**Dokumenten-ID:** SOP-QM-002 | **Version:** 2.1\n\nSOP-QM-002 / 2.1 / {{unbekannt}} / {{kennung|yaml}}\n",
+    "signature": null,
+    "content": "---\ntitle: t\n---\n**Dokumenten-ID:** SOP-QM-002 | **Version:** 2.1\n\n{{doc_id}} / {{version}} / {{unbekannt}} / {{kennung|yaml}}\n",
+    "stored": "**Dokumenten-ID:** SOP-QM-002 | **Version:** 2.1\n\nSOP-QM-002 / 2.1 / {{unbekannt}} / {{kennung|yaml}}\n"
+  },
+  {
+    "markdown": "---\ndoc_id: SOP-QM-001\n---\n{{version}} bleibt stehen\n",
+    "meta": {
+      "docId": "SOP-QM-001",
+      "version": "",
+      "title": ""
+    },
+    "expanded": "---\ndoc_id: SOP-QM-001\n---\n{{version}} bleibt stehen\n",
+    "signature": null,
+    "content": "---\ndoc_id: SOP-QM-001\n---\n{{version}} bleibt stehen\n",
+    "stored": "{{version}} bleibt stehen\n"
+  },
+  {
+    "markdown": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\n---\n# Inhalt {{doc_id}}\n\u003c!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: abc\nalg: ed25519\nkey_id: k1\nsig: s1\n--\u003e\n",
+    "meta": {
+      "docId": "SOP-QM-001",
+      "version": "1.0",
+      "title": ""
+    },
+    "expanded": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\n---\n# Inhalt SOP-QM-001\n\u003c!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: abc\nalg: ed25519\nkey_id: k1\nsig: s1\n--\u003e\n",
+    "signature": {
+      "form": "end",
+      "fields": {
+        "alg": "ed25519",
+        "doc_no": "SOP-2026-0013",
+        "key_id": "k1",
+        "meaning": "approved",
+        "sha256": "abc",
+        "sig": "s1",
+        "signed_at": "2026-10-19T14:02:11Z",
+        "signed_by": "Dr. Anna Berger"
+      }
+    },
+    "content": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\n---\n# Inhalt {{doc_id}}\n",
+    "stored": "# Inhalt SOP-QM-001\n"
+  },
+  {
+    "markdown": "---\nsignature:\n  doc_no: SOP-2026-0013\n  signed_by: \"Dr. Anna Berger\"\n  signed_at: 2026-10-19T14:02:11Z\n  meaning: approved\n---\n---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\ntitle: Alt\n---\n# {{title}}\n",
+    "meta": {
+      "docId": "SOP-QM-001",
+      "version": "1.0",
+      "title": "Alt"
+    },
+    "expanded": "---\nsignature:\n  doc_no: SOP-2026-0013\n  signed_by: \"Dr. Anna Berger\"\n  signed_at: 2026-10-19T14:02:11Z\n  meaning: approved\n---\n---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\ntitle: Alt\n---\n# Alt\n",
+    "signature": {
+      "form": "front",
+      "fields": {
+        "doc_no": "SOP-2026-0013",
+        "meaning": "approved",
+        "signed_at": "2026-10-19T14:02:11Z",
+        "signed_by": "Dr. Anna Berger"
+      }
+    },
+    "content": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\ntitle: Alt\n---\n# {{title}}\n",
+    "stored": "# Alt\n"
+  },
+  {
+    "markdown": "---\nsignature:\n  doc_no: X\nwatermark: FREI\n---\nText {{doc_id}}\n",
+    "meta": {
+      "docId": "",
+      "version": "",
+      "title": ""
+    },
+    "expanded": "---\nsignature:\n  doc_no: X\nwatermark: FREI\n---\nText {{doc_id}}\n",
+    "signature": null,
+    "content": "---\nsignature:\n  doc_no: X\nwatermark: FREI\n---\nText {{doc_id}}\n",
+    "stored": "---\nsignature:\n  doc_no: X\nwatermark: FREI\n---\nText {{doc_id}}\n"
+  },
+  {
+    "markdown": "Text\n\u003c!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: abc\nalg: ed25519\nkey_id: k1\nsig: s1\n--\u003e\nmehr Text\n",
+    "meta": {
+      "docId": "",
+      "version": "",
+      "title": ""
+    },
+    "expanded": "Text\n\u003c!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: abc\nalg: ed25519\nkey_id: k1\nsig: s1\n--\u003e\nmehr Text\n",
+    "signature": null,
+    "content": "Text\n\u003c!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: abc\nalg: ed25519\nkey_id: k1\nsig: s1\n--\u003e\nmehr Text\n",
+    "stored": "Text\n\u003c!--mlc-signature\ndoc_no: SOP-2026-0013\nmeaning: approved\nsigned_by: \"Dr. Anna Berger\"\nsigned_at: 2026-10-19T14:02:11Z\nsha256: abc\nalg: ed25519\nkey_id: k1\nsig: s1\n--\u003e\nmehr Text\n"
+  },
+  {
+    "markdown": "# Ohne Front Matter {{title}}\n",
+    "meta": {
+      "docId": "",
+      "version": "",
+      "title": ""
+    },
+    "expanded": "# Ohne Front Matter {{title}}\n",
+    "signature": null,
+    "content": "# Ohne Front Matter {{title}}\n",
+    "stored": "# Ohne Front Matter {{title}}\n"
+  },
+  {
+    "markdown": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\nheader:\n  left: X\n---\n{{doc_id}}\n",
+    "meta": {
+      "docId": "SOP-QM-001",
+      "version": "1.0",
+      "title": ""
+    },
+    "expanded": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\nheader:\n  left: X\n---\nSOP-QM-001\n",
+    "signature": null,
+    "content": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\nheader:\n  left: X\n---\n{{doc_id}}\n",
+    "stored": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\nheader:\n  left: X\n---\nSOP-QM-001\n"
+  }
+]

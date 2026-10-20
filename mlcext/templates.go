@@ -583,7 +583,7 @@ func RefNosInDir(dir string, maxFiles int) []string {
 		}
 		b, err := os.ReadFile(path)
 		if err == nil {
-			if ref := ParseHeader(string(b)).RefNo; ref != "" {
+			if ref := DocumentMeta(string(b)).DocID; ref != "" {
 				refs = append(refs, ref)
 			}
 		}

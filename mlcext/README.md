@@ -24,17 +24,27 @@ if mlcext.Detect(md) {
 | `Check` | All findings, with line, column, severity, a stable code and a German message |
 | `Detect` | Whether a document uses the extension (plain Markdown gets no findings) |
 | `ExtractFields` | The form fields `[@…]`, ported from mlcmd2pdf `src/form.rs` with its tests |
-| `ParseHeader`, `ParseFrontMatter` | Header lines (`**Dokumenten-ID:**`, `**Version:**`) and front matter |
+| `DocumentMeta` | Id, version, title and kind: front matter (`doc_id`, `version`, `title`) first, the legacy header lines as a fallback |
+| `ParseFrontMatter`, `ParseHeader` | Front matter, and the legacy header lines (`**Dokumenten-ID:**`, `**Version:**`) |
+| `ExpandVariables`, `Variables` | `{{doc_id}}`, `{{version}}`, `{{title}}` replaced with the front matter values (not in code) |
+| `SplitSignature` | The Sensor Monitor's signature in both forms (comment at the end, old block in front) and the signed content, byte for byte |
+| `LayoutYAML` | Layout file for `mlcdoc md-to-pdf --layout`: title, page header with kind, id and version, watermark, organization and logo from the caller |
+| `SuggestFileName` | `INFO-QM-001.md`, for exports with the version: `INFO-QM-001_v1.0.pdf` |
 | `EventKinds`, `PrefillFields`, `FrontMatterKeys` | The shared lists; change them here first |
 | `HeadingSlug` | Heading anchors exactly like GitHub and mlcmd2pdf |
 | `Analyze` | Everything an editor needs: findings, field and hint positions, lists |
 | `LoadTemplates`, `TemplateInfo.Render`, `SuggestRefNo` | Templates as data: schema (`*.json`, see `mlc-template.schema.json`) + Markdown body; built-in starting set, overridable from a folder |
-| `StoredText` | The text as the Sensor Monitor stores and renders it (upload front matter removed) |
+| `StoredText` | The text as it is rendered: signature removed, variables replaced, upload front matter removed |
 | `mlcdoc.New`, `Client.RenderPDF`, `Client.RenderPages` | PDF and page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`): version check, front matter preparation (`mlcdoc.Prepare`), typed `RenderError` with line |
 
 Severity: **error** means the Sensor Monitor rejects the document or mlcdoc
 cannot render it; **warning** means it is accepted but probably not intended;
 **info** marks intended behavior, such as a field filled from an event.
+
+Shared test cases: `testdata/fields.json` (form fields) and `testdata/meta.json`
+(variables, signature, rendered text) are run by the TypeScript renderer
+(`packages/mlc-markdown`) as well; regenerate with `go test -run
+'TestFieldVectors|TestMetaVectors' -update` after a deliberate change.
 
 Tests: `go test ./...`. `MLCEXT_SEEDS=<dir> go test ./...` additionally
 checks every `.md` file in `<dir>`, for example the Sensor Monitor's template

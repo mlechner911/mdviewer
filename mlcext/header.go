@@ -94,8 +94,12 @@ func KindFromRef(ref string) string {
 	return ""
 }
 
-// FrontMatter is the optional YAML block at the top of a document.
+// FrontMatter is the optional YAML block at the top of a document (after a
+// signature block of the old front form, see SplitSignature).
 type FrontMatter struct {
+	// DocID is the document id ("SOP-QM-001"): the only place for it in
+	// new documents; the "**Dokumenten-ID:**" line is the legacy form.
+	DocID       string
 	Title       string
 	Version     string
 	Description string
@@ -116,22 +120,48 @@ func ParseFrontMatter(md string) (FrontMatter, string) {
 }
 
 // splitFrontMatter returns the raw YAML, the body and the number of lines
-// before the body.
+// before the body (0: no front matter).
 func splitFrontMatter(md string) (raw, body string, bodyLine int) {
-	text := strings.TrimPrefix(md, "\xEF\xBB\xBF")
+	b := frontMatterBlock(md)
+	if !b.present {
+		return "", md, 0
+	}
+	return b.raw, b.body, b.bodyLine
+}
+
+// fmBlock is the document's front matter as found in the file.
+type fmBlock struct {
+	raw, body string
+	// present: a closed block; open: the file starts a block it never closes.
+	present, open bool
+	// yamlLine: 1-based line of the first YAML line; bodyLine: lines before
+	// the body. Both count from the start of the file.
+	yamlLine, bodyLine int
+}
+
+// frontMatterBlock finds the document's front matter. A signature block of
+// the old front form is not it: the document's own block follows it.
+// Without a block, body is md after such a signature.
+func frontMatterBlock(md string) fmBlock {
+	skip := skipFrontSignature(md)
+	before := strings.Count(md[:skip], "\n")
+	text := strings.TrimPrefix(md[skip:], "\xEF\xBB\xBF")
 	ls := strings.Split(text, "\n")
 	if len(ls) == 0 || strings.TrimRight(ls[0], "\r") != "---" {
-		return "", md, 0
+		return fmBlock{body: md[skip:], bodyLine: before}
 	}
 	for i := 1; i < len(ls); i++ {
 		if t := strings.TrimRight(ls[i], "\r"); t == "---" || t == "..." {
 			rest := strings.Join(ls[i+1:], "\n")
 			trimmed := strings.TrimLeft(rest, "\r\n")
 			skipped := strings.Count(rest[:len(rest)-len(trimmed)], "\n")
-			return strings.Join(ls[1:i], "\n"), trimmed, i + 1 + skipped
+			return fmBlock{
+				raw: strings.Join(ls[1:i], "\n"), body: trimmed, present: true,
+				yamlLine: before + 2, bodyLine: before + i + 1 + skipped,
+			}
 		}
 	}
-	return "", md, 0
+	return fmBlock{body: md[skip:], bodyLine: before, open: true}
 }
 
 var reEventKindsKey = regexp.MustCompile(`(?m)^event_kinds\s*:`)
@@ -139,15 +169,17 @@ var reEventKindsKey = regexp.MustCompile(`(?m)^event_kinds\s*:`)
 // parseFrontMatter also returns the YAML node (nil without a valid block)
 // and a YAML error, for the check.
 func parseFrontMatter(md string) (FrontMatter, string, *yaml.Node, error) {
-	raw, body, bodyLine := splitFrontMatter(md)
-	if bodyLine == 0 {
-		return FrontMatter{}, md, nil, nil
+	b := frontMatterBlock(md)
+	if !b.present {
+		return FrontMatter{}, b.body, nil, nil
 	}
+	raw, body := b.raw, b.body
 	var node yaml.Node
 	if err := yaml.NewDecoder(bytes.NewReader([]byte(raw))).Decode(&node); err != nil && err.Error() != "EOF" {
 		return FrontMatter{Present: true}, md, nil, err
 	}
 	var v struct {
+		DocID       string   `yaml:"doc_id"`
 		Title       string   `yaml:"title"`
 		Version     string   `yaml:"version"`
 		Description string   `yaml:"description"`
@@ -155,7 +187,7 @@ func parseFrontMatter(md string) (FrontMatter, string, *yaml.Node, error) {
 	}
 	fm := FrontMatter{Present: true}
 	if err := node.Decode(&v); err == nil {
-		fm.Title, fm.Version, fm.Description, fm.EventKinds = v.Title, v.Version, v.Description, v.EventKinds
+		fm.DocID, fm.Title, fm.Version, fm.Description, fm.EventKinds = strings.TrimSpace(v.DocID), v.Title, v.Version, v.Description, v.EventKinds
 	}
 	fm.EventKindsSet = reEventKindsKey.MatchString(raw)
 	return fm, body, &node, nil
@@ -176,12 +208,15 @@ func KindLabel(kind string) string {
 	return ""
 }
 
-// StoredText is md as the Sensor Monitor stores and renders it: an upload
-// front matter (only title, version, description, event_kinds) is removed,
-// as on upload. mlcdoc rejects those keys, so a preview must render this
-// text. Front matter with other keys (mlcdoc layout such as header or
-// footer) is kept.
+// StoredText is md as it is rendered (HTML, and the text mlcdoc gets):
+//   - a signature block (either form, see SplitSignature) is removed;
+//   - {{doc_id}}, {{version}} and {{title}} are replaced (ExpandVariables);
+//   - an upload front matter (only the keys in FrontMatterKeys) is removed,
+//     as on upload; mlcdoc rejects those keys. Front matter with other keys
+//     (mlcdoc layout such as header or footer) is kept.
 func StoredText(md string) string {
+	_, md = SplitSignature(md)
+	md = ExpandVariables(md)
 	fm, body, node, err := parseFrontMatter(md)
 	if !fm.Present || err != nil || node == nil {
 		return md

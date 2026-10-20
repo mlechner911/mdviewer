@@ -55,17 +55,10 @@ func (r *Root) Documents() ([]DocumentInfo, error) {
 		if !mlcext.Detect(md) {
 			continue
 		}
-		h := mlcext.ParseHeader(md)
-		fm, _ := mlcext.ParseFrontMatter(md)
+		m := mlcext.DocumentMeta(md) // front matter first, legacy header lines as a fallback
 		d := DocumentInfo{
-			Path: rel, RefNo: h.RefNo, Kind: h.Kind, KindLabel: mlcext.KindLabel(h.Kind),
-			Version: h.Version, Title: fm.Title,
-		}
-		if d.Version == "" {
-			d.Version = fm.Version
-		}
-		if d.Title == "" {
-			d.Title = h.Title // "**Titel:** …" of SOPs
+			Path: rel, RefNo: m.DocID, Kind: m.Kind, KindLabel: mlcext.KindLabel(m.Kind),
+			Version: m.Version, Title: m.Title,
 		}
 		if d.Title == "" {
 			d.Title, _ = ExtractTitle(f)

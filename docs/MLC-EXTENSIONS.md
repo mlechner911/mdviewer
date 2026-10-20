@@ -53,7 +53,10 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | Pattern field | `[@#name TT.MM.JJJJ]`, `[@HH:MM]`, with default `=16\.10\.2026` | date/time field | ✅ checked, highlighted; preview shows text |
 | Field tooltip | `<!--* hint -->` right after a field | tooltip in the PDF viewer, not printed | ✅ highlighted in the editor; hidden in the preview |
 | Fill hint | `<!--! hint -->` | hint for the whole form, not printed | ✅ highlighted in the editor; hidden in the preview |
-| Document header | `**Dokumenten-ID:** SOP-QM-001`, `**Version:** 1.0` | document id and version for the Sensor Monitor | ✅ checked; ⏳ readable header in the preview |
+| Document id and version | front matter `doc_id: SOP-QM-001`, `version: "1.0"`, `title: …` | page header (via the layout file, see below) | ✅ checked; ⏳ document header in the preview |
+| Legacy header line | `**Dokumenten-ID:** SOP-QM-001 \| **Version:** 1.0` in the text | read as a fallback only | ✅ warning `header-in-body`, error on a contradiction |
+| Variables | `{{doc_id}}`, `{{version}}`, `{{title}}` in the text | replaced with the front matter values when rendering | ✅ checked; ⏳ replaced in the preview |
+| Signature | `<!--mlc-signature … -->` at the end of the file (old form: a `signature:` block before the front matter) | seal of the Sensor Monitor; not part of the content | ✅ recognised, left out of the content; ⏳ "signed by … on …" in the preview |
 | Layout front matter | `header`, `footer`, `signatures`, `toc`, `page-size` … | page header/footer, signature block, layout | ⏳ generic metadata table |
 
 ✅ supported · ⏳ planned (see roadmap below)
@@ -71,6 +74,45 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   span a blank line.
 - Validity dates and approval status are **not** written in the document. The
   Sensor Monitor sets them on approval.
+- **The front matter is the only place for id, version and title** (`doc_id`,
+  `version`, `title`, like Hugo and Jekyll). Allowed keys: `doc_id`, `title`,
+  `version`, `description`, `event_kinds`. The kind (SOP, VA, FB, INFO)
+  follows from the `doc_id` prefix. The header line in the text is the legacy
+  form: still read, but it gives a warning; when both say different things,
+  that is an error.
+- **Variables:** only `{{doc_id}}`, `{{version}}` and `{{title}}`, no logic.
+  They stay in the file and are replaced when the document is rendered, so
+  they stay right after a new version. Any other `{{…}}` is an error
+  (`unknown-variable`, or `template-placeholder-left` for a template
+  placeholder that was not filled in). Not replaced inside code.
+- **Signature:** the Sensor Monitor seals a released document with a comment
+  at the very end:
+
+  ```markdown
+  <!--mlc-signature
+  doc_no: SOP-2026-0013
+  meaning: approved
+  signed_by: "Dr. Anna Berger"
+  signed_at: 2026-10-19T14:02:11Z
+  sha256: …
+  alg: ed25519
+  key_id: …
+  sig: …
+  -->
+  ```
+
+  The checksum covers the file before `<!--mlc-signature`, byte for byte; the
+  comment starts on a line of its own. Editing a signed file voids the
+  signature (it becomes a new version). Older documents carry the signature
+  as a `signature:` front matter block before the document's own front
+  matter; both forms are read (`mlcext.SplitSignature`). Not to be confused
+  with `signatures:` in the layout front matter of mlcdoc: those are the
+  printed signature lines.
+- **Watermark** is not part of the document (`watermark` in the front matter
+  is an error). It belongs to printing: the Sensor Monitor sets it by the
+  version's status, MarkSafe by its setting (off by default). Both pass it to
+  mlcdoc in the layout file (`mlcext.LayoutYAML`), next to the page header
+  with id and version.
 
 ## Tooling
 

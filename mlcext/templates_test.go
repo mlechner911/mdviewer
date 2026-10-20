@@ -45,7 +45,10 @@ func TestEveryBuiltinTemplateCreatesAValidDocument(t *testing.T) {
 			t.Errorf("%s: placeholder left:\n%s", id, res.Content)
 		}
 		for _, d := range res.Diagnostics {
-			if d.Severity != Info {
+			// TODO(P-MARKS-20261020-02 Phase 4): the templates move id and
+			// version into the front matter; until then the legacy header
+			// line gives this warning.
+			if d.Severity != Info && d.Code != "header-in-body" {
 				t.Errorf("%s: %d:%d %s %s", id, d.Line, d.Col, d.Code, d.Message)
 			}
 		}

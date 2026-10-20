@@ -64,13 +64,15 @@ func IsPrefillField(name string) bool {
 }
 
 // FrontMatterKeys are the keys a document may carry in its front matter.
-// Everything else is rejected: validity, review dates and status are set by
-// the approval in the Sensor Monitor, never by the author.
-var FrontMatterKeys = []string{"title", "version", "description", "event_kinds"}
+// doc_id, version and title identify it (DocumentMeta). Everything else is
+// rejected: validity, review dates, status and the watermark are set by the
+// Sensor Monitor (approval, printing), never by the author.
+var FrontMatterKeys = []string{"doc_id", "title", "version", "description", "event_kinds"}
 
 // serverOwnedKeys are keys authors tend to write that belong to the
 // approval; they get a dedicated message.
 var serverOwnedKeys = map[string]bool{
 	"valid_from": true, "valid_until": true, "review_due": true, "status": true,
 	"approved": true, "approved_by": true, "gueltig_ab": true, "gültig_ab": true,
+	"watermark": true,
 }
