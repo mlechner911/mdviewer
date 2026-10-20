@@ -47,3 +47,4 @@ mlcplan.md
 /.mlcai/
 /mlcprodweb/
 build/mlcdoc/
+packages/*/dist/

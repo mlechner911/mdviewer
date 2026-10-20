@@ -1,0 +1,173 @@
+/* mlc-markdown — styles for Markdown with the MLC Markdown Extension
+   (non-standard). Put class="mlc-md" on the element holding the rendered
+   HTML. Every color, font and spacing is a variable --mlc-md-*: apps set
+   them to their own design. Light is the default; data-theme="dark" on the
+   element or an ancestor switches to dark. No framework (Tailwind) needed.
+
+   Form fields look like the fillable PDF of mlcdoc: a check box, a line in
+   field width, a box in row height. Fill tips and field hints are screen
+   only, never printed. */
+
+.mlc-md {
+  --mlc-md-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mlc-md-font-heading: var(--mlc-md-font);
+  --mlc-md-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --mlc-md-font-size: 1rem;
+  --mlc-md-line-height: 1.5;
+  --mlc-md-max-width: 960px;
+  --mlc-md-radius: 4px;
+  --mlc-md-gap: 0.75rem;
+
+  --mlc-md-text: #0f172a;
+  --mlc-md-heading: #1e293b;
+  --mlc-md-muted: #64748b;
+  --mlc-md-border: #e2e8f0;
+  --mlc-md-surface: #f8fafc;
+  --mlc-md-accent: #4f46e5;
+  --mlc-md-code-bg: #f1f5f9;
+  --mlc-md-quote-bg: rgba(99, 102, 241, 0.06);
+  --mlc-md-table-head-bg: #f1f5f9;
+  --mlc-md-table-stripe: rgba(99, 102, 241, 0.05);
+
+  --mlc-md-field-line: currentColor;
+  --mlc-md-field-bg: rgba(201, 76, 53, 0.06);
+  --mlc-md-field-pattern: var(--mlc-md-muted);
+  --mlc-md-hint: var(--mlc-md-muted);
+  --mlc-md-hint-bg: #fffbeb;
+  --mlc-md-hint-border: #f59e0b;
+
+  --mlc-md-alert-bg: rgba(0, 0, 0, 0.03);
+  --mlc-md-alert-note: #0969da;
+  --mlc-md-alert-tip: #1a7f37;
+  --mlc-md-alert-important: #8250df;
+  --mlc-md-alert-warning: #9a6700;
+  --mlc-md-alert-caution: #cf222e;
+
+  font-family: var(--mlc-md-font);
+  font-size: var(--mlc-md-font-size);
+  line-height: var(--mlc-md-line-height);
+  color: var(--mlc-md-text);
+  max-width: var(--mlc-md-max-width);
+  overflow-wrap: break-word;
+}
+
+.mlc-md[data-theme='dark'],
+[data-theme='dark'] .mlc-md {
+  --mlc-md-text: #c9d1d9;
+  --mlc-md-heading: #f3f4f6;
+  --mlc-md-muted: #94a3b8;
+  --mlc-md-border: #2a3039;
+  --mlc-md-surface: #14161a;
+  --mlc-md-accent: #818cf8;
+  --mlc-md-code-bg: #151b23;
+  --mlc-md-quote-bg: rgba(129, 140, 248, 0.08);
+  --mlc-md-table-head-bg: #151b23;
+  --mlc-md-table-stripe: rgba(129, 140, 248, 0.06);
+  --mlc-md-field-bg: rgba(240, 128, 104, 0.08);
+  --mlc-md-hint-bg: rgba(245, 158, 11, 0.1);
+  --mlc-md-alert-bg: rgba(255, 255, 255, 0.04);
+  --mlc-md-alert-note: #4493f8;
+  --mlc-md-alert-tip: #3fb950;
+  --mlc-md-alert-important: #ab7df8;
+  --mlc-md-alert-warning: #d29922;
+  --mlc-md-alert-caution: #f85149;
+}
+
+/* ---------- Text ---------- */
+.mlc-md h1, .mlc-md h2, .mlc-md h3, .mlc-md h4, .mlc-md h5, .mlc-md h6 {
+  font-family: var(--mlc-md-font-heading);
+  color: var(--mlc-md-heading);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.2em 0 0.4em;
+}
+.mlc-md > :first-child { margin-top: 0; }
+.mlc-md h1 { font-size: 1.75em; border-bottom: 2px solid var(--mlc-md-border); padding-bottom: 0.3em; }
+.mlc-md h2 { font-size: 1.35em; }
+.mlc-md h3 { font-size: 1.1em; }
+.mlc-md h4, .mlc-md h5, .mlc-md h6 { font-size: 1em; font-weight: 600; }
+.mlc-md p, .mlc-md ul, .mlc-md ol, .mlc-md table, .mlc-md pre, .mlc-md blockquote { margin: var(--mlc-md-gap) 0; }
+.mlc-md ul, .mlc-md ol { padding-left: 1.75em; }
+.mlc-md ul { list-style: disc; }
+.mlc-md ol { list-style: decimal; }
+.mlc-md li { margin: 0.2em 0; }
+.mlc-md li > p { margin: 0.25em 0; }
+.mlc-md strong { font-weight: 600; }
+.mlc-md em { font-style: italic; }
+.mlc-md hr { border: none; border-top: 1px solid var(--mlc-md-border); margin: 2em 0; }
+.mlc-md img { max-width: 100%; border-radius: var(--mlc-md-radius); }
+.mlc-md a { color: var(--mlc-md-accent); text-decoration: none; }
+.mlc-md a:hover { text-decoration: underline; }
+.mlc-md a.mlc-md-external::after { content: ' ↗'; font-size: 0.8em; opacity: 0.7; }
+.mlc-md a.mlc-md-ref { font-family: var(--mlc-md-font-mono); white-space: nowrap; }
+.mlc-md li:has(> input[type='checkbox']) { list-style: none; }
+.mlc-md li > input[type='checkbox'] { margin: 0 0.5em 0 -1.2em; vertical-align: middle; pointer-events: none; }
+
+/* ---------- Code ---------- */
+.mlc-md code { font-family: var(--mlc-md-font-mono); font-size: 0.875em; background: var(--mlc-md-code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+.mlc-md pre { background: var(--mlc-md-code-bg); border: 1px solid var(--mlc-md-border); border-radius: var(--mlc-md-radius); padding: 0.9em 1.1em; overflow-x: auto; }
+.mlc-md pre code { background: none; padding: 0; font-size: 0.875em; line-height: 1.4; }
+
+/* ---------- Tables (full width when the source asks for it, like mlcdoc) ---------- */
+.mlc-md table { border-collapse: collapse; font-size: 0.925em; }
+.mlc-md table.mlc-md-table-full { width: 100%; }
+.mlc-md th, .mlc-md td { border: 1px solid var(--mlc-md-border); padding: 0.35em 0.6em; text-align: left; vertical-align: top; }
+.mlc-md th { background: var(--mlc-md-table-head-bg); font-weight: 600; }
+.mlc-md tbody tr:nth-child(even) td { background: var(--mlc-md-table-stripe); }
+
+/* ---------- Quotes and alerts ---------- */
+.mlc-md blockquote { background: var(--mlc-md-quote-bg); border-left: 3px solid var(--mlc-md-accent); border-radius: 0 var(--mlc-md-radius) var(--mlc-md-radius) 0; padding: 0.6em 1.1em; }
+.mlc-md .mlc-md-alert { --mlc-md-alert: var(--mlc-md-alert-note); margin: var(--mlc-md-gap) 0; padding: 0.6em 1em; background: var(--mlc-md-alert-bg); border-left: 4px solid var(--mlc-md-alert); border-radius: 0 var(--mlc-md-radius) var(--mlc-md-radius) 0; }
+.mlc-md .mlc-md-alert > :last-child { margin-bottom: 0; }
+.mlc-md .mlc-md-alert-title { margin: 0 0 0.25em; font-weight: 600; font-size: 0.9em; color: var(--mlc-md-alert); }
+.mlc-md .mlc-md-alert-tip { --mlc-md-alert: var(--mlc-md-alert-tip); }
+.mlc-md .mlc-md-alert-important { --mlc-md-alert: var(--mlc-md-alert-important); }
+.mlc-md .mlc-md-alert-warning { --mlc-md-alert: var(--mlc-md-alert-warning); }
+.mlc-md .mlc-md-alert-caution { --mlc-md-alert: var(--mlc-md-alert-caution); }
+
+/* ---------- Form fields (MLC extension), read-only like the PDF ---------- */
+.mlc-md .mlc-md-field { background: var(--mlc-md-field-bg); }
+.mlc-md .mlc-md-field-check { display: inline-block; width: 0.85em; height: 0.85em; border: 1px solid var(--mlc-md-field-line); vertical-align: -0.1em; margin-right: 0.25em; }
+.mlc-md .mlc-md-field-line { display: inline-block; border-bottom: 1px solid var(--mlc-md-field-line); padding: 0 0.25em; line-height: 1.3; min-height: 1.2em; vertical-align: bottom; }
+.mlc-md .mlc-md-field-multiline { display: block; border: 1px solid var(--mlc-md-field-line); border-radius: 2px; padding: 0.25em 0.45em; margin: 0.4em 0; line-height: 1.6; }
+.mlc-md .mlc-md-field-fill { min-height: 6em; }
+.mlc-md .mlc-md-field-pattern { color: var(--mlc-md-field-pattern); font-family: var(--mlc-md-font-mono); font-size: 0.85em; }
+.mlc-md .mlc-md-field-hint { margin-left: 0.4em; color: var(--mlc-md-hint); font-size: 0.8em; font-style: italic; }
+.mlc-md .mlc-md-tip { margin: var(--mlc-md-gap) 0; padding: 0.4em 0.9em; background: var(--mlc-md-hint-bg); border-left: 3px solid var(--mlc-md-hint-border); border-radius: 0 var(--mlc-md-radius) var(--mlc-md-radius) 0; }
+.mlc-md .mlc-md-tip > summary { cursor: pointer; font-weight: 600; font-size: 0.9em; }
+.mlc-md .mlc-md-tip-inline { color: var(--mlc-md-hint); font-style: italic; }
+
+/* ---------- Page break (MLC extension) ---------- */
+.mlc-md .mlc-md-page-break { display: flex; align-items: center; gap: 0.75em; margin: 2em 0; color: var(--mlc-md-muted); font-family: var(--mlc-md-font-mono); font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.06em; }
+.mlc-md .mlc-md-page-break::before { content: ''; flex: 1; border-top: 1px dashed var(--mlc-md-border); }
+
+/* ---------- Math and diagrams ---------- */
+.mlc-md .mlc-md-math { font-family: var(--mlc-md-font-mono); }
+.mlc-md .mlc-md-math-done { font-family: inherit; }
+.mlc-md .mlc-md-math-display { display: block; text-align: center; margin: var(--mlc-md-gap) 0; }
+.mlc-md .mlc-md-diagram { display: flex; justify-content: center; margin: var(--mlc-md-gap) 0; padding: 1em; border: 1px solid var(--mlc-md-border); border-radius: var(--mlc-md-radius); overflow-x: auto; }
+.mlc-md .mlc-md-diagram svg { max-width: 100%; height: auto; }
+.mlc-md .mlc-md-mermaid-error { border-color: var(--mlc-md-alert-caution); }
+
+/* ---------- Footnotes (marked-footnote) ---------- */
+.mlc-md .footnotes { margin-top: 2em; font-size: 0.875em; color: var(--mlc-md-muted); border-top: 1px solid var(--mlc-md-border); }
+
+/* ---------- Print: paper colors, no screen-only help ---------- */
+@media print {
+  .mlc-md {
+    --mlc-md-text: #111827;
+    --mlc-md-heading: #000;
+    --mlc-md-muted: #4b5563;
+    --mlc-md-border: #cbd5e1;
+    --mlc-md-code-bg: #f8fafc;
+    --mlc-md-field-bg: transparent;
+    max-width: none;
+    font-size: 11pt;
+  }
+  .mlc-md .mlc-md-tip, .mlc-md .mlc-md-field-hint, .mlc-md .mlc-md-tip-inline { display: none; }
+  .mlc-md .mlc-md-page-break { break-after: page; margin: 0; height: 0; font-size: 0; }
+  .mlc-md .mlc-md-page-break::before { display: none; }
+  .mlc-md a.mlc-md-external::after { content: ''; }
+  .mlc-md h1, .mlc-md h2, .mlc-md h3, .mlc-md h4 { break-after: avoid; }
+  .mlc-md pre, .mlc-md table, .mlc-md .mlc-md-alert, .mlc-md .mlc-md-field-multiline, .mlc-md .mlc-md-diagram, .mlc-md img { break-inside: avoid; }
+}

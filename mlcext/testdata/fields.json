@@ -1,0 +1,411 @@
+[
+  {
+    "markdown": "# Bericht\n\nGemeldet: [@] Datum: [@TT.MM.JJJJ] Ort: [@____Halle 3____]\n\n## Beschreibung\n\n[@______________\n______________\n______________]\n",
+    "fields": [
+      {
+        "kind": "check",
+        "name": "bericht_1",
+        "named": false,
+        "value": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 3,
+        "col": 11
+      },
+      {
+        "kind": "text",
+        "name": "bericht_2",
+        "named": false,
+        "value": "",
+        "chars": 10,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "TT.MM.JJJJ",
+        "tooltip": "TT.MM.JJJJ",
+        "line": 3,
+        "col": 22
+      },
+      {
+        "kind": "text",
+        "name": "bericht_3",
+        "named": false,
+        "value": "Halle 3",
+        "chars": 15,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 3,
+        "col": 41
+      },
+      {
+        "kind": "multiline",
+        "name": "beschreibung_1",
+        "named": false,
+        "value": "",
+        "chars": 14,
+        "rows": 3,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 7,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@#ursache _____] \u003c!--* Was war der Grund? --\u003e\n[@#ok] [@#zeit HH:MM]\n\n[@#vorfall\n____\n____]\n",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "ursache",
+        "named": true,
+        "value": "",
+        "chars": 5,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "Was war der Grund?",
+        "line": 1,
+        "col": 1
+      },
+      {
+        "kind": "check",
+        "name": "ok",
+        "named": true,
+        "value": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 2,
+        "col": 1
+      },
+      {
+        "kind": "text",
+        "name": "zeit",
+        "named": true,
+        "value": "",
+        "chars": 5,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "HH:MM",
+        "tooltip": "HH:MM",
+        "line": 2,
+        "col": 8
+      },
+      {
+        "kind": "multiline",
+        "name": "vorfall",
+        "named": true,
+        "value": "",
+        "chars": 4,
+        "rows": 2,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 4,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "`[@]` and \\[@] and [@team](https://example.org)\n\n```\n[@]\n```\n\n\u003c!-- [@] --\u003e\n",
+    "fields": [],
+    "errors": []
+  },
+  {
+    "markdown": "[@#vorfall __Überschreitung · Kritisch, Kühlraum A › Temperatur__\n____\n__Kommentar: \\]Klammer\\], Rohr \\| Pfeife, \\_Unterstrich\\_, \\#7, \\\\pfad, \u003c!-- kein Kommentar --\u003e__\n____\n____]\n",
+    "fields": [
+      {
+        "kind": "multiline",
+        "name": "vorfall",
+        "named": true,
+        "value": "Überschreitung · Kritisch, Kühlraum A › Temperatur\n\nKommentar: ]Klammer], Rohr | Pfeife, _Unterstrich_, #7, \\pfad, \u003c!-- kein Kommentar --\u003e",
+        "chars": 90,
+        "rows": 5,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "| [@#ev ____EV\\|0820\\]____] | x |\n",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "ev",
+        "named": true,
+        "value": "EV|0820]",
+        "chars": 16,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 3
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@\\#kein-name ____]",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "feld_1",
+        "named": false,
+        "value": "#kein-name",
+        "chars": 15,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@#datum TT.MM.JJJJ=16\\.10\\.2026] [@#zeit HH:MM=__08:00__] [@#leer TT.MM.JJJJ=]\n[@____a=b____]\n",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "datum",
+        "named": true,
+        "value": "16.10.2026",
+        "chars": 10,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "TT.MM.JJJJ",
+        "tooltip": "TT.MM.JJJJ",
+        "line": 1,
+        "col": 1
+      },
+      {
+        "kind": "text",
+        "name": "zeit",
+        "named": true,
+        "value": "08:00",
+        "chars": 5,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "HH:MM",
+        "tooltip": "HH:MM",
+        "line": 1,
+        "col": 35
+      },
+      {
+        "kind": "text",
+        "name": "leer",
+        "named": true,
+        "value": "",
+        "chars": 10,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "TT.MM.JJJJ",
+        "tooltip": "TT.MM.JJJJ",
+        "line": 1,
+        "col": 60
+      },
+      {
+        "kind": "text",
+        "name": "feld_1",
+        "named": false,
+        "value": "a=b",
+        "chars": 11,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 2,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@#rest __Vorgabe__\n______\n…]\n\n[@#kurz\n...]\n\n[@#fest ____\n____]\n",
+    "fields": [
+      {
+        "kind": "multiline",
+        "name": "rest",
+        "named": true,
+        "value": "Vorgabe",
+        "chars": 11,
+        "rows": 2,
+        "fillPage": true,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      },
+      {
+        "kind": "multiline",
+        "name": "kurz",
+        "named": true,
+        "value": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": true,
+        "pattern": "",
+        "tooltip": "",
+        "line": 5,
+        "col": 1
+      },
+      {
+        "kind": "multiline",
+        "name": "fest",
+        "named": true,
+        "value": "",
+        "chars": 4,
+        "rows": 2,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 8,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "- [ ] offen\n- [x] erledigt\n",
+    "fields": [],
+    "errors": []
+  },
+  {
+    "markdown": "ok\n[@____",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-unclosed",
+        "line": 2,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "[@___\n\n___]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-blank-line",
+        "line": 1,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "[@Ja|Nein]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-choice",
+        "line": 1,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "[@#a.b ___]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-name",
+        "line": 1,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "[@#x] [@#x]",
+    "fields": [
+      {
+        "kind": "check",
+        "name": "x",
+        "named": true,
+        "value": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": [
+      {
+        "code": "field-duplicate",
+        "line": 1,
+        "col": 7
+      }
+    ]
+  },
+  {
+    "markdown": "## Titel [@]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-in-heading",
+        "line": 1,
+        "col": 10
+      }
+    ]
+  },
+  {
+    "markdown": "[@HH:MM=08:00 Uhr]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-preset-too-long",
+        "line": 1,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "# Ä Öl\n\n* **Ort:** [@#ort ___] \u003c!--* z. B. Kühlraum A --\u003e\n* [@] Kritisch\n",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "ort",
+        "named": true,
+        "value": "",
+        "chars": 3,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "z. B. Kühlraum A",
+        "line": 3,
+        "col": 12
+      },
+      {
+        "kind": "check",
+        "name": "ä-öl_1",
+        "named": false,
+        "value": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 4,
+        "col": 3
+      }
+    ],
+    "errors": []
+  }
+]
