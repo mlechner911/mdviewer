@@ -736,8 +736,9 @@
     // Ctrl+P prints through the PDF; the webview's own print dialog stays
     // closed. On macOS the menu handles Cmd+P.
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
+      // No print dialog of the webview; without mlcdoc there is no printing.
       e.preventDefault();
-      if (!/mac/i.test(navigator.platform)) handlePrint();
+      if (mlcdocVersion && !/mac/i.test(navigator.platform)) handlePrint();
       return;
     }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
@@ -1090,9 +1091,12 @@
             class="px-1.5 h-6 rounded text-[11px] font-bold transition-colors {buttonClass} {showPdfPreview ? 'ring-1 ring-current' : ''}"
           >PDF</button>
         {/if}
+        <!-- Printing goes through the PDF: only with mlcdoc -->
+        {#if mlcdocVersion}
         <button onclick={handlePrint} title={$t('print')} class="p-1 rounded transition-colors {buttonClass}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         </button>
+        {/if}
         <div class="h-4 w-px {dividerClass}"></div>
         <button 
           onclick={toggleAppTheme} 
