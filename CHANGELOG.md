@@ -2,6 +2,11 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.1] – unreleased
+
+### Fixed
+- Without the PDF toolkit `mlcdoc` (e.g. the bare Linux binary), print, "Export › As PDF…" and the print button are no longer offered; `Ctrl+P` does nothing. HTML export stays available.
+
 ## [1.7.0] – 2026-10-21
 
 MarkSafe becomes the editor for SOPs and forms of the MLC Sensor Monitor: documents written in Markdown turn into fillable PDF forms.
