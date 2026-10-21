@@ -2,7 +2,7 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.7.0] – unreleased
+## [1.7.0] – 2026-10-21
 
 MarkSafe becomes the editor for SOPs and forms of the MLC Sensor Monitor: documents written in Markdown turn into fillable PDF forms.
 

@@ -255,6 +255,8 @@ tasks:
         {{.DROPZONE}}/marksafe-{{.VERSION}}-windows.exe|marksafe-windows.exe
         {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64|marksafe-linux
         {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg|marksafe-macos.dmg
+        {{.DROPZONE}}/marksafe-{{.VERSION}}-windows-portable.zip|marksafe-windows-portable.zip
+        {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64.tar.gz|marksafe-linux-amd64.tar.gz
         "
         missing=0
         sent=0
