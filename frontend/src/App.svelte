@@ -620,6 +620,13 @@
         if (result) {
           const title = await backend.getFileTitle(result.path);
           tabs = [createNewTab(title, result.content, result.path)];
+          // Opened with a document: read it first, the editor comes on
+          // request. Not for a new or empty file (then one wants to write),
+          // and only for this start, not as the remembered setting.
+          if (result.content.trim() !== '' && !get(isEditorHidden)) {
+            startInPreview = true;
+            isEditorHidden.set(true);
+          }
           const parentDir = await backend.getParentDir(result.path);
           await backend.addPathToWhitelist(parentDir);
         } else {
@@ -642,6 +649,7 @@
       if (localStorage.getItem('marksafe-editor-hidden') === '1') isEditorHidden.set(true);
     } catch { /* storage unavailable */ }
     isEditorHidden.subscribe((hidden) => {
+      if (startInPreview) return; // hidden for this start only
       try { localStorage.setItem('marksafe-editor-hidden', hidden ? '1' : '0'); } catch { /* ignore */ }
     });
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -731,6 +739,14 @@
     else handleSave();
   }
 
+  // Started with a document, the editor is hidden for this start only
+  // (see init); the first toggle makes it a normal, remembered choice again.
+  let startInPreview = false;
+  function toggleEditor() {
+    startInPreview = false;
+    isEditorHidden.update(v => !v);
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (browseParams) return; // browse window has its own shortcuts
     // Ctrl+P prints through the PDF; the webview's own print dialog stays
@@ -739,6 +755,11 @@
       // No print dialog of the webview; without mlcdoc there is no printing.
       e.preventDefault();
       if (mlcdocVersion && !/mac/i.test(navigator.platform)) handlePrint();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      if (!$isFocusMode) toggleEditor();
       return;
     }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
@@ -852,7 +873,7 @@
       onEditCopyAsRTF={() => handleExport()}
       onEditCopyImage={() => handleExport()}
       onEditCopyImageText={() => handleExport()}
-      onFormatToggle={() => isEditorHidden.update(v => !v)}
+      onFormatToggle={toggleEditor}
       onFormatWordCount={() => console.log('wordCount')}
       onViewZoomIn={() => adjustFontSize(5)}
       onViewZoomOut={() => adjustFontSize(-5)}
@@ -1053,12 +1074,18 @@
         <div class="flex items-center gap-2">
             <!-- Focus mode always hides the editor, so the editor toggle would do nothing there -->
             {#if !$isFocusMode}
+            <!-- With the editor hidden it is labelled "Edit": the way back has to be easy to find -->
             <button
-                onclick={() => isEditorHidden.update(v => !v)}
-                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors {$isEditorHidden ? focusButtonClass : ''}"
-                title={$isEditorHidden ? $t('showEditor') : $t('hideEditor')}
+                onclick={toggleEditor}
+                class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center gap-1 {$isEditorHidden ? focusButtonClass : ''}"
+                title={($isEditorHidden ? $t('showEditor') : $t('hideEditor')) + ' (' + (/mac/i.test(navigator.platform) ? '⌘' : 'Ctrl+') + 'E)'}
             >
+                {#if $isEditorHidden}
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span class="text-xs">{$t('editDocument')}</span>
+                {:else}
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                {/if}
             </button>
             {/if}
             <button 

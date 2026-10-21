@@ -2,6 +2,11 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+- Opened with a document (double click, "Open with", command line), MarkSafe starts in the preview; the editor comes on request. With the editor hidden, its toolbar button reads "Edit"; `Ctrl+E` (`⌘E`) shows and hides the editor. A new or empty file still opens in the editor, and the remembered editor setting stays as it was.
+
 ## [1.7.1] – 2026-10-21
 
 ### Fixed
