@@ -116,6 +116,18 @@
     "stored": "# Ohne Front Matter {{title}}\n"
   },
   {
+    "markdown": "---\ntitle: t\n---\n**Dokumenten-ID:** {{doc_id}} | **Version:** {{version}}\n",
+    "meta": {
+      "docId": "",
+      "version": "",
+      "title": "t"
+    },
+    "expanded": "---\ntitle: t\n---\n**Dokumenten-ID:** {{doc_id}} | **Version:** {{version}}\n",
+    "signature": null,
+    "content": "---\ntitle: t\n---\n**Dokumenten-ID:** {{doc_id}} | **Version:** {{version}}\n",
+    "stored": "**Dokumenten-ID:** {{doc_id}} | **Version:** {{version}}\n"
+  },
+  {
     "markdown": "---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\nheader:\n  left: X\n---\n{{doc_id}}\n",
     "meta": {
       "docId": "SOP-QM-001",

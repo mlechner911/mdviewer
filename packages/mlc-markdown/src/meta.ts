@@ -155,6 +155,7 @@ function parseHeader(body: string): { refNo: string; version: string; title: str
       if (m[1] === 'Gültig ab') continue;
       const v = m[2].trim().replace(/\\$/, '').trim();
       if (!v || v.startsWith('[')) continue;
+      if (v.includes('{{')) continue; // shows the front matter, no header of its own
       if (m[1] === 'Titel' && !h.title) h.title = v;
       else if ((m[1] === 'Dokumenten-ID' || m[1] === 'Dokument-ID') && !h.refNo) h.refNo = v;
       else if (m[1] === 'Version' && !h.version) h.version = v;

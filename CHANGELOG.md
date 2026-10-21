@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Fixed
+- Header lines made of variables (`**Dokumenten-ID:** {{doc_id}}`, `**Version:** {{version}}`) are no longer reported as the old header or as a conflict with the front matter (mlcext v0.9.2, B-MARKS-20261021-01).
+
 ### Changed
 - Opened with a document (double click, "Open with", command line), MarkSafe starts in the preview; the editor comes on request. With the editor hidden, its toolbar button reads "Edit"; `Ctrl+E` (`⌘E`) shows and hides the editor. A new or empty file still opens in the editor, and the remembered editor setting stays as it was.
 

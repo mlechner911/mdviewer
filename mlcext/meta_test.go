@@ -233,6 +233,7 @@ var metaInputs = []string{
 	"---\nsignature:\n  doc_no: X\nwatermark: FREI\n---\nText {{doc_id}}\n",
 	"Text\n" + sigEnd + "mehr Text\n",
 	"# Ohne Front Matter {{title}}\n",
+	"---\ntitle: t\n---\n**Dokumenten-ID:** {{doc_id}} | **Version:** {{version}}\n",
 	"---\ndoc_id: SOP-QM-001\nversion: \"1.0\"\nheader:\n  left: X\n---\n{{doc_id}}\n",
 }
 
@@ -272,5 +273,23 @@ func TestMetaVectors(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("testdata/meta.json is out of date; regenerate with -update and check the diff")
+	}
+}
+
+// B-MARKS-20261021-01: header lines made of variables show the front
+// matter; they are neither the legacy header nor a conflict with it.
+func TestHeaderWithVariables(t *testing.T) {
+	md := "---\ndoc_id: SOP-QM-006\nversion: \"1.0\"\ntitle: CAPA-Prozess\n---\n# Standardarbeitsanweisung (SOP)\n\n**Titel:** {{title}}\n**Dokumenten-ID:** {{doc_id}}\n**Version:** {{version}}\n"
+	ds := Check(md, Options{RequireHeader: true})
+	for _, d := range ds {
+		if d.Severity == Error || d.Code == "header-in-body" {
+			t.Errorf("unexpected %s %s at line %d: %s", d.Severity, d.Code, d.Line, d.Message)
+		}
+	}
+	if m := DocumentMeta(md); m.DocID != "SOP-QM-006" || m.Version != "1.0" || m.DocIDSource != "frontmatter" {
+		t.Errorf("meta = %+v", m)
+	}
+	if _, ok := MoveHeaderToFrontMatter(md); ok {
+		t.Errorf("MoveHeaderToFrontMatter changed a header made of variables")
 	}
 }

@@ -58,6 +58,11 @@ func ParseHeader(md string) Header {
 			if v == "" || strings.HasPrefix(v, "[") {
 				continue // placeholder "[Datum]"
 			}
+			if strings.Contains(v, "{{") {
+				// "**Dokumenten-ID:** {{doc_id}}" shows the front matter in
+				// the text; it is no header of its own (B-MARKS-20261021-01).
+				continue
+			}
 			switch m[1] {
 			case "Titel":
 				if h.Title == "" {

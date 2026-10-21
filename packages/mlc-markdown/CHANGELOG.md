@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Header lines made of variables (`**Dokumenten-ID:** {{doc_id}}`) no longer
+  count as id, version or title; they show the front matter.
+
 ## [0.1.0] - 2026-10-20
 
 First release.
