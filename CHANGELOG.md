@@ -2,6 +2,48 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.0] – unreleased
+
+MarkSafe becomes the editor for SOPs and forms of the MLC Sensor Monitor: documents written in Markdown turn into fillable PDF forms.
+
+### Added
+- **Fillable PDF forms**: form fields of the MLC Markdown Extension (`[@#name ____]`, check boxes, date and time patterns, presets, tooltips, fill hints) become a real PDF form. The extension is non-standard and documented in `docs/MLC-EXTENSIONS.md`.
+- **PDF preview, export and printing** through the bundled MLC PDF toolkit `mlcdoc` (shipped with every installer):
+  - page header with kind, ID and version
+  - watermark as a user setting
+  - the signature note of the Sensor Monitor
+  - images from local files, base64 or whitelisted URLs
+  - optional placeholders in the preview
+  - Print (`Ctrl+P`) opens the same PDF in the system's PDF viewer.
+- **Front matter as the single source** of `doc_id`, `version` and `title`. The variables `{{doc_id}}`, `{{version}}`, `{{title}}` are replaced when rendering. A document header in the preview. Quick fix for the old header line in the text.
+- **Templates**: SOP, procedure, form, information sheet, a form example with all field types, README, CHANGELOG, empty document and minutes. Templates are JSON schema plus Markdown in a per-user folder, editable without an update; the document folder can override them.
+- **Checks while you write** (Go module `mlcext`, shared with the Sensor Monitor):
+  - form fields, ID and version, variables
+  - signature
+  - table columns too narrow in the PDF (with quick fix)
+  - characters the PDF fonts lack
+- **Editor**:
+  - MLC highlighting and completion
+  - alert box menu, symbol palette of characters that print in the PDF
+  - table menu and column widths (toolbar, right click, a box at the table)
+  - base64 images shown shortened
+  - CodeMirror texts in German, Spanish and French
+- **Document folder** with an overview of all documents (ID, kind, version, check result, file name hint).
+- **Signed documents**: editing one asks before saving and removes the void signature.
+- **File names** from the document ID: `SOP-QM-001.md`, exports `SOP-QM-001_v1.0.pdf`.
+- Shared rendering packages on npm: `mlc-markdown` and `mlc-markdown-svelte`. The preview, the browse window and `marksafe_browse` use them, as will the Sensor Monitor.
+- `task version:set|sync|check`: the version from `VERSION` in every file.
+
+### Changed
+- Export moved to *File → Export* (PDF, HTML); embedded HTML is shown sanitized.
+- The browse button appears only for saved files; zoom only for the HTML preview.
+
+### Fixed
+- Paste, undo and cut acted twice on Windows (Wails passed the key on to WebView2 as well); Ctrl+S could open two save dialogs.
+- Footnotes rendered before the text; table alignment ignored in the HTML preview; the PDF preview re-rendered every 800 ms.
+- Installer and package metadata still carried version 1.5.1.
+- HTML export offline: diagrams, formulas and local images are embedded.
+
 ## [1.6.1] – 2026-09-22
 
 ### Added
