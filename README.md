@@ -1,4 +1,4 @@
-# MarkSafe 1.7.1
+# MarkSafe 1.8.0
 
 > **[mlcgo.eu](https://mlcgo.eu)** — tools, libraries and manuals · [Product page](https://mlcgo.eu/products/marksafe/)
 
@@ -47,13 +47,13 @@ Download the latest version for your platform from the **[Releases](https://gith
 - *Alternative:* Download `marksafe-macos-arm64.zip` from GitHub Releases.
 
 ### Windows
-- Download `marksafe-windows-setup.exe` (or `marksafe-1.7.1-windows-setup.exe`) and run the installer.
+- Download `marksafe-windows-setup.exe` (or `marksafe-1.8.0-windows-setup.exe`) and run the installer.
 - A standalone portable executable (`marksafe-windows.exe`) is also available on **[mlcgo.eu](https://mlcgo.eu/downloads/marksafe/marksafe-windows.exe)**.
 
 ### Linux
-- Download `marksafe-linux` (or `marksafe-1.7.1-linux-amd64`).
-- Make it executable: `chmod +x marksafe-1.7.1-linux-amd64`.
-- Run `./marksafe-1.7.1-linux-amd64` or add it to your `$PATH`.
+- Download `marksafe-linux` (or `marksafe-1.8.0-linux-amd64`).
+- Make it executable: `chmod +x marksafe-1.8.0-linux-amd64`.
+- Run `./marksafe-1.8.0-linux-amd64` or add it to your `$PATH`.
 
 ##  License
 

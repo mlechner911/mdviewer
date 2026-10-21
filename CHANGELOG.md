@@ -2,7 +2,7 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.8.0] – 2026-10-21
 
 ### Added
 - **Connection to the MLC Sensor Monitor**, off by default: nothing of it is shown until its address is entered under File › Settings… › Connections. Then File › Sensor Monitor offers:
