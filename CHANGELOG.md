@@ -4,6 +4,14 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **Connection to the MLC Sensor Monitor**, off by default: nothing of it is shown until its address is entered under File › Settings… › Connections. Then File › Sensor Monitor offers:
+  - **Sign In…** by device login of mlcauth: confirm a code in the browser; the sign-in lasts an hour and is kept only in memory.
+  - **Open…**: look up a document ID and open the approved version or the waiting draft.
+  - **Save as Draft…**: a new version as a draft, with reason and, when the organisation asks for it, the signing PIN. Approving stays in the Sensor Monitor.
+  - The status bar shows whether the document matches the approved version. If it does not, printing and PDF export suggest the watermark ENTWURF for that PDF; nothing is enforced.
+- **File › Settings…** (`Ctrl+,`).
+
 ### Fixed
 - Header lines made of variables (`**Dokumenten-ID:** {{doc_id}}`, `**Version:** {{version}}`) are no longer reported as the old header or as a conflict with the front matter (mlcext v0.9.2, B-MARKS-20261021-01).
 
