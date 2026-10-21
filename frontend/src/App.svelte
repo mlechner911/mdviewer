@@ -226,8 +226,16 @@
     activeTabIndex = tabs.length - 1;
   }
 
-  function handleCloseTab(index: number, event?: MouseEvent) {
+  async function handleCloseTab(index: number, event?: MouseEvent) {
     if (event) event.stopPropagation();
+    const tab = tabs[index];
+    if (tab?.isDirty) {
+      const a = await askUnsaved([tab.title]);
+      if (a === 'cancel') return;
+      if (a === 'confirm' && !(await saveTab(index))) return;
+      index = tabs.indexOf(tab);
+      if (index < 0) return;
+    }
     if (tabs.length === 1) {
       tabs = [createNewTab($t('untitled'), defaultMarkdown())];
       activeTabIndex = 0;
@@ -476,14 +484,61 @@
   let isSaving = false;
 
   // A yes/no question as a promise (ConfirmModal below).
-  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; cancelLabel?: string; resolve: (ok: boolean) => void } | null>(null);
+  type ConfirmAnswer = 'confirm' | 'alt' | 'cancel';
+  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; cancelLabel?: string; altLabel?: string; resolve: (a: ConfirmAnswer) => void } | null>(null);
   function askConfirm(title: string, message: string, confirmLabel: string, cancelLabel?: string): Promise<boolean> {
-    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, cancelLabel, resolve }));
+    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, cancelLabel, resolve: (a) => resolve(a === 'confirm') }));
   }
-  function answerConfirm(ok: boolean) {
-    confirmAsk?.resolve(ok);
+  function answerConfirm(a: ConfirmAnswer | boolean) {
+    confirmAsk?.resolve(a === true ? 'confirm' : a === false ? 'cancel' : a);
     confirmAsk = null;
   }
+
+  // Unsaved changes: Save / Don't save / Cancel.
+  function askUnsaved(names: string[]): Promise<ConfirmAnswer> {
+    const message = names.length === 1 ? $t('unsavedOne', names[0]) : $t('unsavedMany', names.length);
+    return new Promise((resolve) => (confirmAsk = {
+      title: $t('unsavedTitle'), message, confirmLabel: $t('save'), cancelLabel: $t('cancel'), altLabel: $t('unsavedDiscard'), resolve,
+    }));
+  }
+
+  // Saves tab index (Save As for a new document); false when it stays
+  // unsaved (cancelled or failed).
+  async function saveTab(index: number): Promise<boolean> {
+    activeTabIndex = index;
+    await tick();
+    await handleSave();
+    return !tabs[index]?.isDirty;
+  }
+
+  // The window's X or quitting with unsaved tabs (backend held it back).
+  let closeAsking = false;
+  async function closeRequested() {
+    if (closeAsking) return;
+    closeAsking = true;
+    try {
+      const dirty = tabs.map((tab, i) => ({ tab, i })).filter((x) => x.tab.isDirty);
+      if (dirty.length) {
+        const a = await askUnsaved(dirty.map((x) => x.tab.title));
+        if (a === 'cancel') return;
+        if (a === 'confirm') {
+          for (const x of dirty) {
+            const i = tabs.indexOf(x.tab);
+            if (i >= 0 && !(await saveTab(i))) return;
+          }
+        }
+      }
+      await backend.closeApp();
+    } finally {
+      closeAsking = false;
+    }
+  }
+
+  // Tell the backend whether closing must ask.
+  $effect(() => {
+    const unsaved = tabs.some((tab) => tab.isDirty);
+    untrack(() => void backend.setUnsavedChanges(unsaved));
+  });
 
   // An edited signed document no longer matches its signature: saved as a
   // new version without the block, after asking (else it would look signed).
@@ -678,6 +733,7 @@
           EventsOn("set-locale", (l: string) => locale.set(l));
           EventsOn("menu-about", () => openAbout());
           EventsOn("menu-settings", () => (showSettings = true));
+          EventsOn("app-close-requested", () => void closeRequested());
           EventsOn("menu-sm-login", () => (showSensorLogin = true));
           EventsOn("menu-sm-open", () => requireSensor(() => (showSensorOpen = true)));
           EventsOn("menu-sm-save-draft", () => requireSensor(() => (showSensorDraft = true)));
@@ -777,7 +833,7 @@
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
       EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html"); EventsOff("menu-print");
-      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("menu-sm-login"); EventsOff("menu-sm-open"); EventsOff("menu-sm-save-draft"); EventsOff("sensormonitor-login"); clearInterval(sensorTimer); EventsOff("set-theme");
+      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("app-close-requested"); EventsOff("menu-sm-login"); EventsOff("menu-sm-open"); EventsOff("menu-sm-save-draft"); EventsOff("sensormonitor-login"); clearInterval(sensorTimer); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
@@ -990,6 +1046,9 @@
     message={confirmAsk.message}
     confirmLabel={confirmAsk.confirmLabel}
     cancelLabel={confirmAsk.cancelLabel ?? $t('cancel')}
+    altLabel={confirmAsk.altLabel ?? ''}
+    onAlt={() => answerConfirm('alt')}
+    confirmClass={confirmAsk.altLabel ? 'bg-blue-600 hover:bg-blue-500' : undefined}
     theme={$effectiveAppTheme}
     onConfirm={() => answerConfirm(true)}
     onCancel={() => answerConfirm(false)}

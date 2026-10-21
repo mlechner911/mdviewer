@@ -17,6 +17,10 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    unsavedTitle: 'Unsaved changes',
+    unsavedOne: '“%s” has unsaved changes. Save them?',
+    unsavedMany: '%s documents have unsaved changes. Save them?',
+    unsavedDiscard: 'Don\'t save',
     menuSensorOpen: 'Open…',
     menuSensorSaveDraft: 'Save as Draft…',
     smOpenTitle: 'Open from the Sensor Monitor',
@@ -227,6 +231,10 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    unsavedTitle: 'Ungespeicherte Änderungen',
+    unsavedOne: '„%s“ hat ungespeicherte Änderungen. Speichern?',
+    unsavedMany: '%s Dokumente haben ungespeicherte Änderungen. Speichern?',
+    unsavedDiscard: 'Nicht speichern',
     menuSensorOpen: 'Öffnen…',
     menuSensorSaveDraft: 'Als Entwurf speichern…',
     smOpenTitle: 'Aus dem Sensor Monitor öffnen',
@@ -437,6 +445,10 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    unsavedTitle: 'Cambios sin guardar',
+    unsavedOne: '«%s» tiene cambios sin guardar. ¿Guardarlos?',
+    unsavedMany: '%s documentos tienen cambios sin guardar. ¿Guardarlos?',
+    unsavedDiscard: 'No guardar',
     menuSensorOpen: 'Abrir…',
     menuSensorSaveDraft: 'Guardar como borrador…',
     smOpenTitle: 'Abrir desde el Sensor Monitor',
@@ -647,6 +659,10 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    unsavedTitle: 'Modifications non enregistrées',
+    unsavedOne: '« %s » contient des modifications non enregistrées. Les enregistrer ?',
+    unsavedMany: '%s documents contiennent des modifications non enregistrées. Les enregistrer ?',
+    unsavedDiscard: 'Ne pas enregistrer',
     menuSensorOpen: 'Ouvrir…',
     menuSensorSaveDraft: 'Enregistrer comme brouillon…',
     smOpenTitle: 'Ouvrir depuis le Sensor Monitor',

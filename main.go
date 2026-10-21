@@ -36,6 +36,8 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
+		// Quitting (Cmd+Q on macOS) with unsaved changes asks first.
+		ShouldQuit: app.shouldClose,
 	})
 
 	// macOS hands "Open with" over as an application event instead of argv.
@@ -58,6 +60,13 @@ func main() {
 			Theme: application.Dark,
 		},
 		URL: "/",
+	})
+
+	// Closing the window (the X) with unsaved changes asks first.
+	app.window.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
+		if !app.shouldClose() {
+			e.Cancel()
+		}
 	})
 
 	// Forward dropped files to the frontend (see frontend/src/lib/wails.ts).

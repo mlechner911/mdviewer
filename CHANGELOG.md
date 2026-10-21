@@ -13,6 +13,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 - **File › Settings…** (`Ctrl+,`).
 
 ### Fixed
+- Closing a tab or the window (the X, `⌘Q` on macOS) with unsaved changes now asks: Save, Don't save or Cancel. Before, the changes were lost without a question.
 - Header lines made of variables (`**Dokumenten-ID:** {{doc_id}}`, `**Version:** {{version}}`) are no longer reported as the old header or as a conflict with the front matter (mlcext v0.9.2, B-MARKS-20261021-01).
 
 ### Changed

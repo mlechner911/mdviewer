@@ -46,7 +46,9 @@ import {
   SensorMonitorLookup,
   SensorMonitorSource,
   SensorMonitorCompare,
-  SensorMonitorSaveDraft
+  SensorMonitorSaveDraft,
+  SetUnsavedChanges,
+  CloseApp
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -432,4 +434,16 @@ export async function sensorMonitorCompare(ref: string, md: string): Promise<{ c
 export async function sensorMonitorSaveDraft(md: string, filename: string, reason: string, pin: string): Promise<{ draft: SensorSavedDraft | null; error: SensorError | null }> {
   if (!isWailsReady()) return { draft: null, error: sensorFailure('Wails not ready') };
   try { return (await SensorMonitorSaveDraft(md, filename, reason, pin)) as any; } catch (err) { return { draft: null, error: sensorFailure(err) }; }
+}
+
+/** Whether a tab has unsaved changes: then closing the window asks first. */
+export async function setUnsavedChanges(unsaved: boolean): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await SetUnsavedChanges(unsaved); } catch { /* ignore */ }
+}
+
+/** Quit after the user answered the unsaved-changes question. */
+export async function closeApp(): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await CloseApp(); } catch (err) { console.error('closeApp failed:', err); }
 }

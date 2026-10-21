@@ -47,6 +47,7 @@ type App struct {
 	pdf         pdfTool
 	templates   templateSeed
 	sensor      sensorState
+	closing     closeState
 }
 
 // templateSeed copies the built-in templates into the user's template
