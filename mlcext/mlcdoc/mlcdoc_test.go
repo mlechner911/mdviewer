@@ -106,9 +106,10 @@ func TestPrepare(t *testing.T) {
 		{"# A\n", "# A\n", ""},
 		{"---\ntitle: X\nheader: {left: A}\n---\n# A\n", "---\ntitle: X\nheader: {left: A}\n---\n# A\n", ""},
 		{"---\ntitle: X\ntags: [a, b]\naliases: [c]\n---\n# A\n", "---\ntitle: X\n---\n# A\n", "tags,aliases"},
-		{"---\nevent_kinds: [DEVIATION]\n---\n\n# A\n", "# A\n", "event_kinds"},
+		{"---\nevent_kinds: [DEVIATION]\n---\n\n# A\n", "# A\n", ""}, // own keys: removed, not reported
+		{"---\ndoc_id: X\ntags: [a]\n---\n# A\n", "# A\n", "tags"},
 		{"---\ntitle: [kaputt\n---\n# A\n", "---\ntitle: [kaputt\n---\n# A\n", ""},
-		{"---\ndoc_id: SOP-QM-001\ntitle: K\n---\n# {{title}} {{doc_id}}\n<!--mlc-signature\nsha256: x\n-->\n", "---\ntitle: K\n---\n# K SOP-QM-001\n", "doc_id"},
+		{"---\ndoc_id: SOP-QM-001\ntitle: K\n---\n# {{title}} {{doc_id}}\n<!--mlc-signature\nsha256: x\n-->\n", "---\ntitle: K\n---\n# K SOP-QM-001\n", ""},
 	} {
 		got, ignored := Prepare(c.in)
 		if got != c.want || strings.Join(ignored, ",") != c.ignored {

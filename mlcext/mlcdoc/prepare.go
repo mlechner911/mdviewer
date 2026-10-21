@@ -96,14 +96,22 @@ func prepareContent(md string) (string, []string) {
 	m := doc.Content[0]
 	var ignored []string
 	kept := m.Content[:0:0]
+	removed := false
 	for i := 0; i+1 < len(m.Content); i += 2 {
 		if slices.Contains(Keys, m.Content[i].Value) {
 			kept = append(kept, m.Content[i], m.Content[i+1])
-		} else {
+			continue
+		}
+		removed = true
+		if !slices.Contains(mlcext.FrontMatterKeys, m.Content[i].Value) {
+			// The document's own keys (doc_id, version, description,
+			// event_kinds) are not lost: the page header comes from them
+			// (mlcext.LayoutYAML), the rest belongs to the Sensor Monitor.
+			// Only foreign keys (tags, aliases …) are reported.
 			ignored = append(ignored, m.Content[i].Value)
 		}
 	}
-	if len(ignored) == 0 {
+	if !removed {
 		return md, nil
 	}
 	body := strings.Join(lines[end+1:], "\n")
