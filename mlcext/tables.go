@@ -28,7 +28,23 @@ var (
 	reCellLink  = regexp.MustCompile(`!?\[([^\]]*)\]\([^)]*\)`)
 	reCellBreak = regexp.MustCompile(`(?i)<br\s*/?>`)
 	reCellTag   = regexp.MustCompile(`<[^>]+>`)
+	reCellField = regexp.MustCompile(`\[@(?:#[^\s\]]*)?\s*([^\]]*)\]`)
 )
+
+// fieldWidth: a form field measured as it prints, as a placeholder word
+// (a check box about two characters, a line as long as its underscores or
+// its pattern).
+func fieldWidth(m string) string {
+	sm := reCellField.FindStringSubmatch(m)
+	body := strings.TrimSpace(sm[1])
+	n := 2
+	if u := strings.Count(body, "_"); u > 0 {
+		n = u
+	} else if body != "" {
+		n = utf8.RuneCountInString(strings.SplitN(body, "=", 2)[0])
+	}
+	return strings.Repeat("x", n)
+}
 
 type mdTable struct {
 	header, sep, end int // 0-based lines: header row, separator row, last row
@@ -113,6 +129,7 @@ func findTables(md string) []mdTable {
 
 // cellLines is a cell as printed: markup removed, split at <br>.
 func cellLines(c string) []string {
+	c = reCellField.ReplaceAllStringFunc(c, fieldWidth)
 	c = reCellLink.ReplaceAllString(c, "$1")
 	parts := reCellBreak.Split(c, -1)
 	for i, p := range parts {

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-template.schema.json",
+  "name": "Formblatt – Beispiel mit allen Feldarten",
+  "description": "Zum Nachschlagen und als Ausgangspunkt: Textfelder, Muster für Datum und Uhrzeit, Vorgabewerte, Ankreuzfelder, mehrzeilige Felder, Felder in Tabellen, Tooltips, Ausfülltipp und die Felder, die der Sensor Monitor aus einem Ereignis vorausfüllt.",
+  "category": "mlc",
+  "body": "formbeispiel.md",
+  "file": "{{doc_id}}.md",
+  "fields": [
+    {
+      "id": "title",
+      "label": "Titel",
+      "type": "text",
+      "required": true,
+      "target": "frontmatter",
+      "placeholder": "Lagerung kühlkettenpflichtiger Arzneimittel",
+      "default": "Beispiel-Formblatt"
+    },
+    {
+      "id": "bereich",
+      "label": "Bereich",
+      "type": "text",
+      "default": "QM",
+      "help": "Kürzel in der Kennung, z. B. QM, KAL, LAG"
+    },
+    {
+      "id": "doc_id",
+      "label": "Dokumenten-ID",
+      "type": "refno",
+      "prefix": "FB",
+      "area": "bereich",
+      "required": true,
+      "target": "frontmatter",
+      "help": "Vorschlag aus dem Dokumentenordner; ob sie frei ist, prüft der Sensor Monitor beim Hochladen."
+    },
+    {
+      "id": "version",
+      "label": "Version",
+      "type": "text",
+      "default": "1.0",
+      "required": true,
+      "target": "frontmatter"
+    },
+    {
+      "id": "description",
+      "label": "Beschreibung",
+      "type": "text",
+      "target": "frontmatter",
+      "help": "Ein Satz für die Dokumentenliste; optional."
+    },
+    {
+      "id": "event_kinds",
+      "label": "Gilt bei",
+      "type": "multiselect",
+      "options": "event_kinds",
+      "target": "frontmatter",
+      "help": "Bei welchen Ereignissen das Dokument zuerst angezeigt wird; leer = allgemein."
+    }
+  ]
+}

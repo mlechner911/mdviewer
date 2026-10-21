@@ -20,8 +20,8 @@ func builtin(t *testing.T, id string) TemplateInfo {
 
 func TestBuiltinTemplatesHaveNoProblems(t *testing.T) {
 	list := LoadTemplates()
-	if len(list) != 8 {
-		t.Fatalf("want 8 built-in templates, got %d", len(list))
+	if len(list) != 9 {
+		t.Fatalf("want 9 built-in templates, got %d", len(list))
 	}
 	var order []string
 	for _, tpl := range list {
@@ -31,7 +31,7 @@ func TestBuiltinTemplatesHaveNoProblems(t *testing.T) {
 		order = append(order, tpl.Category+":"+tpl.ID)
 	}
 	// MLC documents first, then the general ones, each by name.
-	if got := strings.Join(order, " "); got != "mlc:form mlc:info mlc:sop mlc:va general:protokoll general:changelog general:leer general:readme" {
+	if got := strings.Join(order, " "); got != "mlc:form mlc:formbeispiel mlc:info mlc:sop mlc:va general:protokoll general:changelog general:leer general:readme" {
 		t.Errorf("order: %s", got)
 	}
 }
@@ -66,7 +66,7 @@ func TestGeneralTemplates(t *testing.T) {
 }
 
 func TestEveryBuiltinTemplateCreatesAValidDocument(t *testing.T) {
-	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "info": "INFO"}
+	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "formbeispiel": "FB", "info": "INFO"}
 	for id, p := range prefix {
 		tpl := builtin(t, id)
 		values := map[string]any{"doc_id": strings.ToLower(p) + "-qm-001"}
@@ -95,7 +95,7 @@ func TestEveryBuiltinTemplateCreatesAValidDocument(t *testing.T) {
 			}
 		}
 		m := DocumentMeta(res.Content)
-		if m.DocID != p+"-QM-001" || m.Version != "1.0" || m.Kind != id || m.DocIDSource != "frontmatter" || ParseHeader(res.Content).RefNo != "" {
+		if m.DocID != p+"-QM-001" || m.Version != "1.0" || m.Kind != KindFromRef(p) || m.DocIDSource != "frontmatter" || ParseHeader(res.Content).RefNo != "" {
 			t.Errorf("%s: meta %+v", id, m)
 		}
 		fm, _ := ParseFrontMatter(res.Content)

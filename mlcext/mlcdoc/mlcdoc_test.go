@@ -120,7 +120,7 @@ func TestPrepare(t *testing.T) {
 // Every built-in template renders in mlcdoc without warnings.
 func TestTemplatesRenderWithoutWarnings(t *testing.T) { // needs mlcdoc
 	c := client(t)
-	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "info": "INFO"}
+	prefix := map[string]string{"sop": "SOP", "va": "VA", "form": "FB", "formbeispiel": "FB", "info": "INFO"}
 	for _, tpl := range mlcext.LoadTemplates() {
 		r := tpl.Render(map[string]any{
 			"title": "Test", "bereich": "QM", "doc_id": prefix[tpl.ID] + "-QM-001", "version": "1.0", "event_kinds": []any{"DEVIATION"},

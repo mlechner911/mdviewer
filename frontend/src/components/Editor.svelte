@@ -13,6 +13,7 @@
   import { mlcExtension, insertMlcSnippet, type MlcSource, type MlcAnalysis, type MlcSnippet } from '../../../packages/mlcext-editor/src/index';
   import { editorPhrases } from '../lib/editor/phrases';
   import { dataUriFolding } from '../lib/editor/dataUri';
+  import { tableHint, tableAtCursor } from '../lib/editor/tableHint';
   import { locale, t as tr } from '../i18n';
 
   // --- Svelte 5 Runes: Props ---
@@ -24,7 +25,8 @@
     onscroll,
     mlcSource,
     onmlcanalysis,
-    tableFit
+    tableFit,
+    oncursortable
   } = $props<{
     value: string;
     theme: EffectiveTheme_t;
@@ -37,6 +39,8 @@
     onmlcanalysis?: (analysis: MlcAnalysis) => void;
     /** Column widths of the table at line (mlcext.FitTableColumns); null: no table. */
     tableFit?: (md: string, line: number, mode: 'auto' | 'content') => Promise<string | null>;
+    /** Separator row of the table at the cursor (0: none), for the toolbar. */
+    oncursortable?: (line: number) => void;
   }>();
 
   // Right-click in a table: column widths for the PDF.
@@ -239,6 +243,15 @@
     editorView.focus();
   }
 
+  /** Column widths of the table at the cursor (toolbar menu). */
+  export function fitTableAtCursor(mode: 'auto' | 'content') {
+    if (!editorView) return;
+    const line = tableAtCursor(editorView.state);
+    if (!line) return;
+    tableMenu = { x: 0, y: 0, line };
+    void fitTable(mode);
+  }
+
   /** insertText puts text at the cursor (replacing a selection). */
   export function insertText(text: string) {
     if (!editorView) return;
@@ -341,6 +354,14 @@
   // CodeMirror's own texts and the data: URL boxes follow the interface language.
   function languageExtensions(loc: string) {
     return [
+      ...(tableFit
+        ? [tableHint({
+            label: '⇔ ' + $tr('tableHintLabel'),
+            title: $tr('tableMenuTitle'),
+            open: (x, y, line) => (tableMenu = { x, y, line }),
+            onCursorTable: (line) => oncursortable?.(line),
+          })]
+        : []),
       editorPhrases(loc),
       dataUriFolding({ image: $tr('dataUriImage'), expandHint: $tr('dataUriExpand'), locale: loc }),
     ];

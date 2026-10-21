@@ -289,6 +289,9 @@
           ? backend.mlcFitTable(md, d.line, 'content')
           : Promise.resolve(null),
   };
+  // Table at the editor's cursor (separator row, 0: none): table menu.
+  let cursorTable = $state(0);
+  const TABLE_TEMPLATE = '| Spalte 1 | Spalte 2 | Spalte 3 |\n| --- | --- | --- |\n|  |  |  |\n';
   // Symbols that print in the PDF, from mlcext (same list for every tool).
   const pdfSymbols = $derived(mlcAnalysis?.lists?.symbols ?? []);
   // Alert boxes for the toolbar, colors as in mlc-markdown.css.
@@ -932,6 +935,27 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
         </button>
+        <!-- Tables: insert, column widths for the PDF (also right click, and the box at the separator row) -->
+        <details class="mlc-menu relative shrink-0">
+          <summary
+            class="list-none cursor-pointer px-1.5 h-6 flex items-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 {buttonClass}"
+            title={$t('tableToolbarTitle')}
+          >⊞ ▾</summary>
+          <div class="fixed z-50 mt-1 py-1 min-w-64 rounded border shadow-lg text-xs {toolbarClass}">
+            <button
+              class="w-full text-left px-3 py-1 hover:bg-black/10 dark:hover:bg-white/10"
+              onclick={(e) => { editorComponent?.insertText(TABLE_TEMPLATE); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+            >{$t('tableInsert')}</button>
+            <div class="px-3 pt-2 pb-0.5 opacity-60">{$t('tableMenuTitle')}{cursorTable ? '' : ' · ' + $t('tableNeedCursor')}</div>
+            {#each [['auto', 'tableFitAuto'], ['content', 'tableFitContent']] as [mode, label]}
+              <button
+                class="w-full text-left px-3 py-1 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-transparent"
+                disabled={!cursorTable}
+                onclick={(e) => { editorComponent?.fitTableAtCursor(mode as 'auto' | 'content'); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+              >{$t(label)}</button>
+            {/each}
+          </div>
+        </details>
         <!-- Symbols that print in the PDF (mlcext.PDFSymbols: the fonts of mlcdoc) -->
         {#if pdfSymbols.length}
         <details class="mlc-menu relative shrink-0">
@@ -1001,6 +1025,7 @@
           onscroll={handleEditorScroll}
           {mlcSource}
           tableFit={backend.mlcFitTable}
+          oncursortable={(l: number) => (cursorTable = l)}
         />
       </div>
       {/if}

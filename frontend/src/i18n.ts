@@ -17,6 +17,10 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    tableHintLabel: 'Column widths',
+    tableToolbarTitle: 'Table: insert, column widths for the PDF',
+    tableInsert: 'Insert table',
+    tableNeedCursor: 'place the cursor in a table',
     tableMenuTitle: 'Column widths in the PDF',
     tableFitAuto: 'Automatic (by content, as wide as needed)',
     tableFitContent: 'Full width, shares by content',
@@ -154,6 +158,10 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    tableHintLabel: 'Spaltenbreiten',
+    tableToolbarTitle: 'Tabelle: einfügen, Spaltenbreiten fürs PDF',
+    tableInsert: 'Tabelle einfügen',
+    tableNeedCursor: 'Cursor in eine Tabelle setzen',
     tableMenuTitle: 'Spaltenbreiten im PDF',
     tableFitAuto: 'Automatisch (nach Inhalt, so breit wie nötig)',
     tableFitContent: 'Volle Breite, Anteile nach Inhalt',
@@ -291,6 +299,10 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    tableHintLabel: 'Anchos de columna',
+    tableToolbarTitle: 'Tabla: insertar, anchos de columna para el PDF',
+    tableInsert: 'Insertar tabla',
+    tableNeedCursor: 'coloque el cursor en una tabla',
     tableMenuTitle: 'Anchos de columna en el PDF',
     tableFitAuto: 'Automático (según el contenido)',
     tableFitContent: 'Ancho completo, proporciones según el contenido',
@@ -428,6 +440,10 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    tableHintLabel: 'Largeurs de colonnes',
+    tableToolbarTitle: 'Tableau : insérer, largeurs de colonnes pour le PDF',
+    tableInsert: 'Insérer un tableau',
+    tableNeedCursor: 'placez le curseur dans un tableau',
     tableMenuTitle: 'Largeurs de colonnes dans le PDF',
     tableFitAuto: 'Automatique (selon le contenu)',
     tableFitContent: 'Pleine largeur, parts selon le contenu',
