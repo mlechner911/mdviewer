@@ -80,6 +80,29 @@ Build output goes to `bin/`.
 | Release | `task release` | Build and copy installers to `/mnt/data2tb/dropzone/` |
 | Check | `task check` | Run `svelte-check` and `go test` |
 
+## Version
+
+The version lives in one place: the file `VERSION` (e.g. `1.6.2`). The app
+embeds it at build time; `scripts/sync-version.sh` writes it into every other
+file that carries it:
+
+- `build/config.yml`
+- `build/windows/info.json` and `build/windows/nsis/wails_tools.nsh` (exe and installer)
+- `build/darwin/Info.plist` and `build/darwin/Info.dev.plist`
+- `build/linux/nfpm/nfpm.yaml`
+- `frontend/package.json`
+- the download names and the heading in `README.md`
+- `mlcprodweb/meta.yaml` (product page, its own repository)
+
+| Task | Does |
+| --- | --- |
+| `task version:set -- 1.7.0` | sets the new version and syncs it |
+| `task version:sync` | syncs after a hand edit of `VERSION`; also runs first in `build`, `build:windows` and `build:macos:remote` |
+| `task version:check` | fails when a file is out of step, writes nothing; part of `task check` |
+
+Not synced on purpose: `CHANGELOG.md` (written per release), the npm packages
+in `packages/` and the Go module `mlcext` (own versions and tags).
+
 ## 📄 License
 
 MIT License - Copyright (c) 2026 Michael Lechner

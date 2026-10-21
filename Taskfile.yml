@@ -46,6 +46,8 @@ tasks:
   build:
     desc: Build the application for the host OS (or GOOS=...)
     cmds:
+      # The version from VERSION in every file (installers, packages, page).
+      - task: version:sync
       - task: "{{.GOOS}}:build"
         vars:
           DEV: '{{.DEV}}'
@@ -71,6 +73,22 @@ tasks:
     cmds:
       - wails3 generate bindings -f '-tags {{.LINUX_TAGS}}' -clean=true -ts -i
 
+  version:sync:
+    desc: Write the version from VERSION into config, installers, packages, README and the product page
+    cmds:
+      - ./scripts/sync-version.sh
+
+  version:set:
+    desc: "Set a new version and sync it everywhere: task version:set -- 1.7.0"
+    cmds:
+      - echo "{{.CLI_ARGS}}" > VERSION
+      - task: version:sync
+
+  version:check:
+    desc: Fail when a file does not carry the version from VERSION (writes nothing)
+    cmds:
+      - ./scripts/sync-version.sh --check
+
   mlcdoc:fetch:
     desc: Extract the pinned mlcdoc release (Windows + Linux binary, licenses) into build/mlcdoc for bundling
     status:
@@ -95,6 +113,8 @@ tasks:
   build:windows:
     desc: Build the Windows executable & NSIS installer (AMD64, cross-compiled), with mlcdoc
     cmds:
+      # The version from VERSION in every file (installers, packages, page).
+      - task: version:sync
       - task: mlcdoc:fetch
       - task: windows:package
         vars:
@@ -115,6 +135,8 @@ tasks:
       MAC_HOST: mlc@macstudio.fritz.box
       REMOTE_DIR: marksafe-build
     cmds:
+      # The version from VERSION in every file (installers, packages, page).
+      - task: version:sync
       # 0 — mlcdoc ships inside marksafe.app (build/mlcdoc is synced along)
       - task: mlcdoc:fetch
       # 1 — sync source to macstudio
@@ -255,6 +277,7 @@ tasks:
   check:
     desc: Run Svelte check and Go tests
     cmds:
+      - task: version:check
       - task: bindings
       - cd frontend && npm run check
       - go test -tags {{.LINUX_TAGS}} ./...
