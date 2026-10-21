@@ -1,6 +1,6 @@
 {
   "name": "mlc-markdown",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Rendering of Markdown with the MLC Markdown Extension (non-standard): form fields, fill hints, alerts, anchors, page breaks — the same look in MarkSafe, the MLC Sensor Monitor and the MLC Terminal. Display only; the rules live in the Go module mlcext.",
   "keywords": [
     "markdown",

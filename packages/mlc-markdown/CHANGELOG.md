@@ -1,11 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.1] - 2026-10-21
 
 ### Fixed
 
 - Header lines made of variables (`**Dokumenten-ID:** {{doc_id}}`) no longer
   count as id, version or title; they show the front matter.
+- Tables keep the alignment of their separator row (`:--`, `:-:`, `--:`) in
+  `styles/mlc-markdown.css`; before, every cell was left-aligned.
 
 ## [0.1.0] - 2026-10-20
 
