@@ -65,11 +65,13 @@ type Lists struct {
 	EventKinds      []string       `json:"eventKinds"`
 	Prefill         []PrefillField `json:"prefill"`
 	FrontMatterKeys []string       `json:"frontMatterKeys"`
+	// Symbols that print in the PDF, for a symbol palette.
+	Symbols []SymbolGroup `json:"symbols"`
 }
 
 // SharedLists returns the shared vocabularies.
 func SharedLists() Lists {
-	return Lists{EventKinds: EventKinds, Prefill: Prefill, FrontMatterKeys: FrontMatterKeys}
+	return Lists{EventKinds: EventKinds, Prefill: Prefill, FrontMatterKeys: FrontMatterKeys, Symbols: PDFSymbols}
 }
 
 // Analyze checks md like Check with RequireHeader and also returns the

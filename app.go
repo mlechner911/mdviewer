@@ -330,6 +330,17 @@ func (a *App) MLCMoveHeader(md string) string {
 	return out
 }
 
+// MLCFitTable sets the column widths of the table at line (1-based):
+// mode "auto" (mlcdoc sizes by content) or "content" (full width, shares
+// after the content). "" when line is in no table.
+func (a *App) MLCFitTable(md string, line int, mode string) string {
+	out, ok := mlcext.FitTableColumns(md, line, mode)
+	if !ok {
+		return ""
+	}
+	return out
+}
+
 // MLCSignatureState tells whether md is signed and still matches its
 // checksum (an edit voids the signature).
 func (a *App) MLCSignatureState(md string) mlcext.SignatureState {

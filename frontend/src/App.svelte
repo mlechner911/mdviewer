@@ -280,9 +280,17 @@
   const mlcSource = {
     analyze: (md: string) => backend.analyzeMLC(md),
     // Quick fix for the legacy header line (mlcext.MoveHeaderToFrontMatter).
-    fixLabel: (code: string) => (code === 'header-in-body' ? $t('fixMoveHeader') : null),
-    fix: (code: string, md: string) => (code === 'header-in-body' ? backend.mlcMoveHeader(md) : Promise.resolve(null)),
+    fixLabel: (code: string) =>
+      code === 'header-in-body' ? $t('fixMoveHeader') : code === 'table-column-narrow' ? $t('tableFitContent') : null,
+    fix: (code: string, md: string, d: { line: number }) =>
+      code === 'header-in-body'
+        ? backend.mlcMoveHeader(md)
+        : code === 'table-column-narrow'
+          ? backend.mlcFitTable(md, d.line, 'content')
+          : Promise.resolve(null),
   };
+  // Symbols that print in the PDF, from mlcext (same list for every tool).
+  const pdfSymbols = $derived(mlcAnalysis?.lists?.symbols ?? []);
   // Alert boxes for the toolbar, colors as in mlc-markdown.css.
   const ALERTS = [
     { kind: 'NOTE', label: 'alertNote', color: '#0969da' },
@@ -924,6 +932,30 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
         </button>
+        <!-- Symbols that print in the PDF (mlcext.PDFSymbols: the fonts of mlcdoc) -->
+        {#if pdfSymbols.length}
+        <details class="mlc-menu relative shrink-0">
+          <summary
+            class="list-none cursor-pointer px-1.5 h-6 flex items-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 {buttonClass}"
+            title={$t('symbolInsertTitle')}
+          >☺ ▾</summary>
+          <div class="fixed z-50 mt-1 p-2 w-72 rounded border shadow-lg text-xs {toolbarClass}">
+            {#each pdfSymbols as g}
+              <div class="opacity-60 mt-1 mb-0.5">{g.name}</div>
+              <div class="flex flex-wrap gap-0.5">
+                {#each g.symbols as sym}
+                  <button
+                    class="w-7 h-7 rounded text-base hover:bg-black/10 dark:hover:bg-white/10"
+                    title={sym}
+                    onclick={(e) => { editorComponent?.insertText(sym); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+                  >{sym}</button>
+                {/each}
+              </div>
+            {/each}
+            <div class="opacity-50 mt-2 leading-snug">{$t('symbolInsertNote')}</div>
+          </div>
+        </details>
+        {/if}
         <!-- Alert boxes (GitHub/GitLab "> [!NOTE]" …; also boxes in the PDF) -->
         <details class="mlc-menu relative shrink-0">
           <summary
@@ -968,6 +1000,7 @@
           onchange={onContentInput}
           onscroll={handleEditorScroll}
           {mlcSource}
+          tableFit={backend.mlcFitTable}
         />
       </div>
       {/if}

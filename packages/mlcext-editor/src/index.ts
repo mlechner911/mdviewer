@@ -78,7 +78,8 @@ export interface MlcSource {
    * code, or null when there is none, and the fixed document.
    */
   fixLabel?(code: string): string | null;
-  fix?(code: string, markdown: string): Promise<string | null>;
+  /** diagnostic: the finding (line, col) the fix is for. */
+  fix?(code: string, markdown: string, diagnostic: MlcDiagnostic): Promise<string | null>;
 }
 
 export interface MlcOptions {
@@ -181,7 +182,7 @@ function toCMDiagnostics(doc: Text, a: MlcAnalysis, source?: MlcSource): CMDiagn
             name: label,
             apply(view: EditorView) {
               const text = view.state.doc.toString();
-              void source!.fix!(d.code, text).then((fixed) => {
+              void source!.fix!(d.code, text, d).then((fixed) => {
                 if (fixed == null || view.state.doc.toString() !== text) return;
                 view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: fixed } });
               });

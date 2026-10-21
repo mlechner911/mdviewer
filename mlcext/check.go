@@ -109,6 +109,8 @@ func Check(md string, opt Options) []Diagnostic {
 	}
 
 	checkComments(md, add)
+	checkGlyphs(md, add)
+	checkTables(md, add)
 
 	slices.SortStableFunc(ds, func(a, b Diagnostic) int {
 		if a.Line != b.Line {

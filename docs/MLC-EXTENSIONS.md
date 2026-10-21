@@ -144,6 +144,18 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
     show placeholders for all images (switch "Bilder" in its bar); export
     and print always embed them. Raw HTML `<img>` is not set by mlcdoc; use
     `![Text](bild.png)`.
+  - **Table column widths** follow mlcmd2pdf: a separator row up to 72
+    characters sizes the columns by content; a longer one makes the table
+    full width with shares in proportion to the dashes. The check warns
+    (`table-column-narrow`) when a column gets too narrow for its text; a
+    right click in a table offers "automatic" (`---` per column) and "full
+    width, shares by content" (`mlcext.FitTableColumns`).
+  - **Symbols and emoji:** the PDF fonts are Liberation Sans and DejaVu Sans.
+    ✅ ❌ ❎ and the colored dots 🔴🟠🟡🟢🔵🟣🟤 become colored symbols; many
+    symbols print as they are (☐ ☑ ⚠ ℹ ★ ⚙ ⚡ ☎ ✉, arrows, shapes, some
+    faces); pictographs such as 🧠 📌 🔒 print as an empty box. The check
+    reports them (`pdf-glyph-missing`); the editor's symbol menu offers only
+    characters that print (`mlcext.PDFSymbols`).
   - **Printing** renders the same PDF and opens it in the system's PDF
     viewer, which prints it, so the paper looks like the export.
   - Front matter keys `mlcdoc` does not know (tags, event_kinds …) are left

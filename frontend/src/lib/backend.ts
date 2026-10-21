@@ -30,6 +30,7 @@ import {
   MLCMoveHeader,
   MLCSignatureState,
   MLCRemoveSignature,
+  MLCFitTable,
   OpenTemplatesFolder,
   TemplatesFolder,
   PrintPDF,
@@ -348,4 +349,10 @@ export async function getPDFPreviewNoImages(): Promise<boolean> {
 export async function setPDFPreviewNoImages(v: boolean): Promise<void> {
   if (!isWailsReady()) return;
   try { await SetPDFPreviewNoImages(v); } catch (err) { console.error('setPDFPreviewNoImages failed:', err); }
+}
+
+/** Column widths of the table at line: "auto" or "content"; null when there is no table. */
+export async function mlcFitTable(md: string, line: number, mode: 'auto' | 'content'): Promise<string | null> {
+  if (!isWailsReady()) return null;
+  try { return (await MLCFitTable(md, line, mode)) || null; } catch (err) { console.error('mlcFitTable failed:', err); return null; }
 }

@@ -23,7 +23,8 @@
     onchange,
     onscroll,
     mlcSource,
-    onmlcanalysis
+    onmlcanalysis,
+    tableFit
   } = $props<{
     value: string;
     theme: EffectiveTheme_t;
@@ -34,7 +35,22 @@
     /** MLC Markdown Extension (non-standard) support: analysis from mlcext. */
     mlcSource?: MlcSource;
     onmlcanalysis?: (analysis: MlcAnalysis) => void;
+    /** Column widths of the table at line (mlcext.FitTableColumns); null: no table. */
+    tableFit?: (md: string, line: number, mode: 'auto' | 'content') => Promise<string | null>;
   }>();
+
+  // Right-click in a table: column widths for the PDF.
+  let tableMenu = $state<{ x: number; y: number; line: number } | null>(null);
+  async function fitTable(mode: 'auto' | 'content') {
+    const menu = tableMenu;
+    tableMenu = null;
+    if (!menu || !editorView || !tableFit) return;
+    const text = editorView.state.doc.toString();
+    const fixed = await tableFit(text, menu.line, mode);
+    if (fixed == null || !editorView || editorView.state.doc.toString() !== text) return;
+    editorView.dispatch({ changes: { from: 0, to: text.length, insert: fixed } });
+    editorView.focus();
+  }
 
   let containerEl = $state<HTMLDivElement>();
   let editorView: EditorView | null = null;
@@ -223,6 +239,14 @@
     editorView.focus();
   }
 
+  /** insertText puts text at the cursor (replacing a selection). */
+  export function insertText(text: string) {
+    if (!editorView) return;
+    const { from, to } = editorView.state.selection.main;
+    editorView.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
+    editorView.focus();
+  }
+
   /**
    * insertAlert turns the selected lines (or the current line) into an alert
    * box "> [!WARNING]" (GitHub/GitLab; mlcdoc sets it as a box too).
@@ -274,6 +298,18 @@
         markdown(),
         languageCompartment.of(languageExtensions($locale)),
         EditorView.lineWrapping,
+        EditorView.domEventHandlers({
+          contextmenu(e, view) {
+            if (!tableFit) return false;
+            const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
+            if (pos == null) return false;
+            const line = view.state.doc.lineAt(pos);
+            if (!line.text.includes('|')) return false;
+            e.preventDefault();
+            tableMenu = { x: e.clientX, y: e.clientY, line: line.number };
+            return true;
+          },
+        }),
         ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a) })] : []),
         themeCompartment.of(isDark ? marksafeDarkTheme : marksafeLightTheme),
         highlightCompartment.of(syntaxHighlighting(isDark ? marksafeDarkHighlighting : marksafeLightHighlighting)),
@@ -348,7 +384,21 @@
 
 <div bind:this={containerEl} class="cm-editor-wrapper h-full w-full overflow-hidden select-text"></div>
 
+
+{#if tableMenu}
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div class="fixed inset-0 z-[90]" onclick={() => (tableMenu = null)} oncontextmenu={(e) => { e.preventDefault(); tableMenu = null; }}></div>
+  <div class="table-menu fixed z-[91] py-1 rounded border shadow-lg text-xs {theme === 'light' ? 'tm-light' : ''}" style="left: {tableMenu.x}px; top: {tableMenu.y}px">
+    <div class="px-3 py-1 opacity-60">{$tr('tableMenuTitle')}</div>
+    <button class="w-full text-left px-3 py-1" onclick={() => fitTable('auto')}>{$tr('tableFitAuto')}</button>
+    <button class="w-full text-left px-3 py-1" onclick={() => fitTable('content')}>{$tr('tableFitContent')}</button>
+  </div>
+{/if}
+
 <style>
+  .table-menu { background: var(--tm-bg, #1f2937); color: var(--tm-fg, #f3f4f6); border-color: rgba(127,127,127,.4); min-width: 16rem; }
+  .table-menu button:hover { background: rgba(127,127,127,.2); }
+  .table-menu.tm-light { --tm-bg: #ffffff; --tm-fg: #111827; }
   .cm-editor-wrapper {
     display: flex;
     flex-direction: column;

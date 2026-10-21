@@ -17,6 +17,11 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    tableMenuTitle: 'Column widths in the PDF',
+    tableFitAuto: 'Automatic (by content, as wide as needed)',
+    tableFitContent: 'Full width, shares by content',
+    symbolInsertTitle: 'Insert symbol (prints in the PDF)',
+    symbolInsertNote: 'Only symbols the PDF fonts have. Other emoji print as an empty box; the check reports them.',
     alertInsertTitle: 'Alert box (note, tip, warning …)',
     alertNote: 'Note',
     alertTip: 'Tip',
@@ -149,6 +154,11 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    tableMenuTitle: 'Spaltenbreiten im PDF',
+    tableFitAuto: 'Automatisch (nach Inhalt, so breit wie nötig)',
+    tableFitContent: 'Volle Breite, Anteile nach Inhalt',
+    symbolInsertTitle: 'Symbol einfügen (erscheint auch im PDF)',
+    symbolInsertNote: 'Nur Zeichen, die die Schrift des PDFs hat. Andere Emojis erscheinen dort als leeres Kästchen; die Prüfung meldet sie.',
     alertInsertTitle: 'Hinweisbox (Hinweis, Tipp, Warnung …)',
     alertNote: 'Hinweis',
     alertTip: 'Tipp',
@@ -281,6 +291,11 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    tableMenuTitle: 'Anchos de columna en el PDF',
+    tableFitAuto: 'Automático (según el contenido)',
+    tableFitContent: 'Ancho completo, proporciones según el contenido',
+    symbolInsertTitle: 'Insertar símbolo (también en el PDF)',
+    symbolInsertNote: 'Solo caracteres que tiene la fuente del PDF. Otros emojis aparecen como un cuadro vacío; la revisión los indica.',
     alertInsertTitle: 'Cuadro de aviso (nota, consejo, advertencia …)',
     alertNote: 'Nota',
     alertTip: 'Consejo',
@@ -413,6 +428,11 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    tableMenuTitle: 'Largeurs de colonnes dans le PDF',
+    tableFitAuto: 'Automatique (selon le contenu)',
+    tableFitContent: 'Pleine largeur, parts selon le contenu',
+    symbolInsertTitle: 'Insérer un symbole (aussi dans le PDF)',
+    symbolInsertNote: 'Uniquement les caractères de la police du PDF. Les autres emojis y apparaissent comme une case vide ; la vérification les signale.',
     alertInsertTitle: 'Encadré (remarque, astuce, avertissement …)',
     alertNote: 'Remarque',
     alertTip: 'Astuce',
