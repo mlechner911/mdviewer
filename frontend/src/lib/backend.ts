@@ -37,7 +37,12 @@ import {
   GetPDFWatermark,
   SetPDFWatermark,
   GetPDFPreviewNoImages,
-  SetPDFPreviewNoImages
+  SetPDFPreviewNoImages,
+  GetSensorMonitorStatus,
+  SetSensorMonitorURL,
+  SensorMonitorStartLogin,
+  SensorMonitorCancelLogin,
+  SensorMonitorLogout
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -355,4 +360,38 @@ export async function setPDFPreviewNoImages(v: boolean): Promise<void> {
 export async function mlcFitTable(md: string, line: number, mode: 'auto' | 'content'): Promise<string | null> {
   if (!isWailsReady()) return null;
   try { return (await MLCFitTable(md, line, mode)) || null; } catch (err) { console.error('mlcFitTable failed:', err); return null; }
+}
+
+// --- Sensor Monitor (off until an address is set; see sensor.go) ---
+
+export type SensorMonitorStatus = { address: string; signedIn: boolean; email: string; expires: string };
+export type SensorLoginCode = { userCode: string; url: string; expiresIn: number };
+
+const SENSOR_OFF: SensorMonitorStatus = { address: '', signedIn: false, email: '', expires: '' };
+
+export async function sensorMonitorStatus(): Promise<SensorMonitorStatus> {
+  if (!isWailsReady()) return SENSOR_OFF;
+  try { return ((await GetSensorMonitorStatus()) as SensorMonitorStatus) ?? SENSOR_OFF; } catch { return SENSOR_OFF; }
+}
+
+/** Stores the address ("" turns the connection off); returns it normalized. Throws with the reason. */
+export async function setSensorMonitorURL(address: string): Promise<string> {
+  if (!isWailsReady()) return '';
+  return (await SetSensorMonitorURL(address)) ?? '';
+}
+
+/** Starts the device login; the result comes as the event "sensormonitor-login". Throws with the reason. */
+export async function sensorMonitorStartLogin(): Promise<SensorLoginCode | null> {
+  if (!isWailsReady()) return null;
+  return ((await SensorMonitorStartLogin()) as SensorLoginCode) ?? null;
+}
+
+export async function sensorMonitorCancelLogin(): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await SensorMonitorCancelLogin(); } catch { /* ignore */ }
+}
+
+export async function sensorMonitorLogout(): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await SensorMonitorLogout(); } catch { /* ignore */ }
 }

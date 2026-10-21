@@ -14,14 +14,23 @@
     charCount, 
     readingTime, 
     activeTab,
-    diagnostics = []
+    diagnostics = [],
+    sensor = null
   } = $props<{
     wordCount: number;
     charCount: number;
     readingTime: number;
     activeTab: any;
     diagnostics?: MLCDiagnostic[];
+    /** Sensor Monitor connection; shown only while signed in. */
+    sensor?: { signedIn: boolean; email: string; expires: string } | null;
   }>();
+
+  const sensorUntil = $derived(
+    sensor?.signedIn && sensor.expires
+      ? new Date(sensor.expires).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '',
+  );
 
   // --- Svelte 5 Runes: Derived ---
   const statusClass = $derived(STYLE.status[$effectiveAppTheme]);
@@ -50,6 +59,10 @@
       {#if mlcWarnings > 0}<span class="text-amber-500 font-semibold">{$t('mlcWarnings', mlcWarnings)}</span>{/if}
       {#if mlcErrors === 0 && mlcWarnings === 0}<span class="text-green-500">{$t('mlcOk')}</span>{/if}
     </div>
+    <div class="h-3 w-px {dividerClass}"></div>
+  {/if}
+  {#if sensor?.signedIn}
+    <div class="text-green-500" title={sensor.email}>{sensorUntil ? $t('smStatus', sensorUntil) : $t('smSignedIn')}</div>
     <div class="h-3 w-px {dividerClass}"></div>
   {/if}
   <div>{$t('readingTime', readingTime)}</div>

@@ -25,6 +25,9 @@ type AppConfig struct {
 	// PDFPreviewNoImages shows placeholders instead of images in the PDF
 	// preview (faster with many images); export and print keep them.
 	PDFPreviewNoImages bool `json:"pdf_preview_no_images,omitempty"`
+	// SensorMonitorURL is the address of an MLC Sensor Monitor (scheme and
+	// host). Empty: the connection is off and nothing of it is shown.
+	SensorMonitorURL string `json:"sensor_monitor_url,omitempty"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.
@@ -136,6 +139,21 @@ func (m *ConfigManager) GetPDFPreviewNoImages() bool {
 func (m *ConfigManager) SetPDFPreviewNoImages(v bool) error {
 	m.mu.Lock()
 	m.config.PDFPreviewNoImages = v
+	m.mu.Unlock()
+	return m.Save()
+}
+
+// GetSensorMonitorURL returns the Sensor Monitor address ("" when off).
+func (m *ConfigManager) GetSensorMonitorURL() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.config.SensorMonitorURL
+}
+
+// SetSensorMonitorURL stores the Sensor Monitor address ("" turns it off).
+func (m *ConfigManager) SetSensorMonitorURL(u string) error {
+	m.mu.Lock()
+	m.config.SensorMonitorURL = u
 	m.mu.Unlock()
 	return m.Save()
 }

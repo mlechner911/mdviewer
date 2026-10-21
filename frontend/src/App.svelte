@@ -23,6 +23,8 @@
   import StatusBar from './components/StatusBar.svelte';
   import PdfPreview from './components/PdfPreview.svelte';
   import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
+  import SettingsModal from './components/SettingsModal.svelte';
+  import SensorLoginModal from './components/SensorLoginModal.svelte';
 
   // State & Config
   import { getTheme } from './themes';
@@ -115,6 +117,15 @@
 
   // New document of the MLC Markdown Extension from a template.
   let showTemplateModal = $state(false);
+  let showSettings = $state(false);
+  let showSensorLogin = $state(false);
+  // Sensor Monitor connection: off (address "") for everyone who has not
+  // set it up; then nothing of it is shown.
+  let sensorStatus = $state<backend.SensorMonitorStatus>({ address: '', signedIn: false, email: '', expires: '' });
+  async function refreshSensor() {
+    sensorStatus = await backend.sensorMonitorStatus();
+    updateNativeMenu(get(locale)); // the "Sensor Monitor" submenu follows address and sign-in
+  }
   function createFromTemplate(content: string, fileName: string) {
     const newTab = createNewTab(fileName || $t('untitled'), content);
     tabs = [...tabs, newTab];
@@ -258,6 +269,10 @@
       menuItalic: tMap.menuItalic,
       menuCodeBlock: tMap.menuCodeBlock,
       menuAbout: tMap.menuAbout,
+      menuSettings: tMap.menuSettings,
+      menuSensorMonitor: tMap.menuSensorMonitor,
+      menuSensorLogin: tMap.menuSensorLogin,
+      menuSensorLogout: tMap.menuSensorLogout,
       aboutTitle: tMap.aboutTitle,
       aboutBody: tMap.aboutBody.replace('%s', get(appVersion))
     };
@@ -573,6 +588,13 @@
           EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
           EventsOn("set-locale", (l: string) => locale.set(l));
           EventsOn("menu-about", () => openAbout());
+          EventsOn("menu-settings", () => (showSettings = true));
+          EventsOn("menu-sm-login", () => (showSensorLogin = true));
+          EventsOn("sensormonitor-login", (r: any) => {
+            if (r?.ok) showToast($t('smSignedIn'));
+            else if (r?.error === 'signed-out') showToast($t('smSignedOut'));
+            void refreshSensor();
+          });
           EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
       const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
@@ -637,12 +659,17 @@
         if (import.meta.env.DEV && !wailsReady) isReady = true;
 
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
-        if (wailsReady) updateNativeMenu(get(locale));
+        if (wailsReady) await refreshSensor(); // also builds the native menu
       } else {
         setTimeout(init, 50);
       }
     };
     init();
+    // The sign-in runs out after an hour (no refresh): then menu and status
+    // bar go back to "not signed in".
+    const sensorTimer = setInterval(() => {
+      if (sensorStatus.expires && Date.parse(sensorStatus.expires) <= Date.now()) void refreshSensor();
+    }, 30_000);
     updateEffectiveTheme();
     // Restore editor visibility (last persisted state).
     try {
@@ -659,7 +686,7 @@
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
       EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html"); EventsOff("menu-print");
-      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("set-theme");
+      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("menu-sm-login"); EventsOff("sensormonitor-login"); clearInterval(sensorTimer); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
@@ -819,6 +846,22 @@
   theme={$effectiveAppTheme}
 />
 
+{#if showSettings}
+  <SettingsModal
+    address={sensorStatus.address}
+    theme={$effectiveAppTheme}
+    onSaved={() => { showSettings = false; void refreshSensor(); }}
+    onClose={() => (showSettings = false)}
+  />
+{/if}
+{#if showSensorLogin}
+  <SensorLoginModal
+    theme={$effectiveAppTheme}
+    onDone={() => (showSensorLogin = false)}
+    onClose={() => (showSensorLogin = false)}
+  />
+{/if}
+
 <NewFromTemplateModal
   show={showTemplateModal}
   theme={$effectiveAppTheme}
@@ -880,7 +923,7 @@
       onViewResetZoom={() => fontSize = 100}
       onViewBrowse={() => toggleBrowseMode()}
       onHelpAbout={() => openAbout()}
-      onOpenSettings={() => console.log('settings')}
+      onOpenSettings={() => (showSettings = true)}
       onAboutWails={() => alert('MarkSafe')}
       onOpenProductPage={() => window.open('https://mlcgo.eu/products/marksafe/', '_blank')}
       onHelpShowShortcuts={() => void 0}
@@ -1171,7 +1214,7 @@
     </div>
   </div>
 
-  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} />
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} sensor={sensorStatus} />
 
   {#if $dropMessage}
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>

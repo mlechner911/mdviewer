@@ -46,6 +46,7 @@ type App struct {
 	initialFile string
 	pdf         pdfTool
 	templates   templateSeed
+	sensor      sensorState
 }
 
 // templateSeed copies the built-in templates into the user's template
@@ -168,7 +169,20 @@ func (a *App) UpdateMenu(t map[string]string) {
 	exportMenu.Add(label(t, "menuExportHtml", "As HTML…")).OnClick(func(*application.Context) {
 		emit("menu-export-html")
 	})
+	// Submenu: Sensor Monitor, only with an address in the settings: for
+	// everyone else MarkSafe shows nothing of it.
+	if a.config.GetSensorMonitorURL() != "" {
+		smMenu := fileMenu.AddSubmenu(label(t, "menuSensorMonitor", "Sensor Monitor"))
+		if a.sensorLogin() == nil {
+			smMenu.Add(label(t, "menuSensorLogin", "Sign In…")).OnClick(func(*application.Context) { emit("menu-sm-login") })
+		} else {
+			smMenu.Add(label(t, "menuSensorLogout", "Sign Out")).OnClick(func(*application.Context) { a.SensorMonitorLogout() })
+		}
+	}
 	fileMenu.AddSeparator()
+	fileMenu.Add(label(t, "menuSettings", "Settings…")).SetAccelerator("CmdOrCtrl+,").OnClick(func(*application.Context) {
+		emit("menu-settings")
+	})
 	fileMenu.Add(t["menuAbout"]).OnClick(func(*application.Context) {
 		// Themed in-app dialog (frontend) instead of the native one,
 		// so About follows the active Dark/Light mode.
