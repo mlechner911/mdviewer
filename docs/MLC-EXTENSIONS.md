@@ -137,6 +137,13 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
     Signatur"; an edited document gets none.
   - **Watermark:** a text of the user's setting (empty by default), set in
     the bar of the PDF preview; it applies to preview, export and printing.
+  - **Images:** local files and base64 (`data:`) images are embedded. mlcdoc
+    loads nothing from the network, so MarkSafe fetches `http(s)` images
+    itself, only from whitelisted hosts (as the HTML preview); others become
+    mlcdoc's placeholder "Abbildung nicht verfügbar". The PDF preview can
+    show placeholders for all images (switch "Bilder" in its bar); export
+    and print always embed them. Raw HTML `<img>` is not set by mlcdoc; use
+    `![Text](bild.png)`.
   - **Printing** renders the same PDF and opens it in the system's PDF
     viewer, which prints it, so the paper looks like the export.
   - Front matter keys `mlcdoc` does not know (tags, event_kinds …) are left

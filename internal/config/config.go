@@ -22,6 +22,9 @@ type AppConfig struct {
 	// (export, preview, print); empty for none. A setting of the user,
 	// never part of a document.
 	PDFWatermark string `json:"pdf_watermark,omitempty"`
+	// PDFPreviewNoImages shows placeholders instead of images in the PDF
+	// preview (faster with many images); export and print keep them.
+	PDFPreviewNoImages bool `json:"pdf_preview_no_images,omitempty"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.
@@ -120,6 +123,21 @@ func (m *ConfigManager) GetPDFWatermark() string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.config.PDFWatermark
+}
+
+// GetPDFPreviewNoImages: placeholders instead of images in the PDF preview.
+func (m *ConfigManager) GetPDFPreviewNoImages() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.config.PDFPreviewNoImages
+}
+
+// SetPDFPreviewNoImages stores the preview image setting.
+func (m *ConfigManager) SetPDFPreviewNoImages(v bool) error {
+	m.mu.Lock()
+	m.config.PDFPreviewNoImages = v
+	m.mu.Unlock()
+	return m.Save()
 }
 
 // SetPDFWatermark stores the watermark text for PDFs.

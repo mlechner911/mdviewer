@@ -16,9 +16,12 @@ package mlcdoc
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,6 +114,14 @@ type Request struct {
 	// copied next to the temporary copy (mlcdoc reads only inside its
 	// root). Empty for unsaved documents.
 	BaseDir string
+	// Images are remote images the caller fetched (URL → file content):
+	// mlcdoc loads nothing from the network, so they are written next to
+	// the document and the URLs point there. The caller decides which URLs
+	// may be fetched (MarkSafe: its whitelist).
+	Images map[string][]byte
+	// NoImages replaces every image by mlcdoc's placeholder ("Abbildung
+	// nicht verfügbar: …"), for a fast preview of image-heavy documents.
+	NoImages bool
 	// Layout is a YAML layout file (mlcext.LayoutYAML: header with id and
 	// version, watermark …) that mlcdoc lays over the document's front
 	// matter; the document stays unchanged. Empty for none.
@@ -139,8 +150,9 @@ type Pages struct {
 // RenderPDF renders req to a PDF.
 func (c *Client) RenderPDF(ctx context.Context, req Request) (*Document, error) {
 	md, ignored := Prepare(req.Markdown)
+	md, files := imageFiles(md, req)
 	var doc *Document
-	err := c.run(ctx, md, req.BaseDir, req.Layout, []map[string]any{
+	err := c.run(ctx, md, req.BaseDir, req.Layout, files, []map[string]any{
 		{"tool": "md_to_pdf", "args": mdToPDFArgs(req.Layout)},
 	}, func(dir string, info stepInfo) error {
 		b, err := os.ReadFile(filepath.Join(dir, "doc.pdf"))
@@ -159,15 +171,16 @@ func (c *Client) RenderPages(ctx context.Context, req Request, dpi int) (*Pages,
 		dpi = 110
 	}
 	md, ignored := Prepare(req.Markdown)
+	md, files := imageFiles(md, req)
 	var pages *Pages
-	err := c.run(ctx, md, req.BaseDir, req.Layout, []map[string]any{
+	err := c.run(ctx, md, req.BaseDir, req.Layout, files, []map[string]any{
 		{"tool": "md_to_pdf", "args": mdToPDFArgs(req.Layout)},
 		{"tool": "doc_open", "args": map[string]any{"path": "doc.pdf"}},
 		{"tool": "doc_export_images", "args": map[string]any{"doc": 1, "folder": "pages", "dpi": dpi}},
 	}, func(dir string, info stepInfo) error {
 		files, _ := filepath.Glob(filepath.Join(dir, "pages", "*.png"))
 		sort.Slice(files, func(i, j int) bool { return pageNo(files[i]) < pageNo(files[j]) })
-		pages = &Pages{Warnings: info.Warnings, Ignored: ignored}
+		pages = &Pages{Warnings: withoutPlaceholderWarnings(info.Warnings), Ignored: ignored}
 		for _, f := range files {
 			b, err := os.ReadFile(f)
 			if err != nil {
@@ -199,7 +212,7 @@ func mdToPDFArgs(layout string) map[string]any {
 
 // run writes md (and the layout file) into a fresh directory, runs the
 // script there and hands the directory to collect before removing it.
-func (c *Client) run(ctx context.Context, md, baseDir, layout string, script []map[string]any, collect func(string, stepInfo) error) error {
+func (c *Client) run(ctx context.Context, md, baseDir, layout string, files map[string][]byte, script []map[string]any, collect func(string, stepInfo) error) error {
 	select {
 	case c.sem <- struct{}{}:
 		defer func() { <-c.sem }()
@@ -219,6 +232,15 @@ func (c *Client) run(ctx context.Context, md, baseDir, layout string, script []m
 	}
 	if layout != "" {
 		if err := os.WriteFile(filepath.Join(dir, "layout.yaml"), []byte(layout), 0o600); err != nil {
+			return err
+		}
+	}
+	for name, b := range files {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+			return err
+		}
+		if err := os.WriteFile(p, b, 0o600); err != nil {
 			return err
 		}
 	}
@@ -343,6 +365,84 @@ func pageNo(path string) int {
 }
 
 var imageRe = regexp.MustCompile(`!\[[^\]]*\]\(\s*<?([^)\s>]+)>?`)
+
+// noImageTarget is the image path used for placeholders; it never exists.
+const noImageTarget = "mlc-ohne-bild"
+
+// RemoteImages are the http(s) image URLs of md (Markdown images), for a
+// caller that fetches them before rendering.
+func RemoteImages(md string) []string {
+	var urls []string
+	seen := map[string]bool{}
+	for _, m := range imageRe.FindAllStringSubmatch(md, -1) {
+		u := m[1]
+		if (strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://")) && !seen[u] {
+			seen[u] = true
+			urls = append(urls, u)
+		}
+	}
+	return urls
+}
+
+// imageFiles applies req.Images and req.NoImages to the prepared md: the
+// files to write next to it and md pointing at them.
+func imageFiles(md string, req Request) (string, map[string][]byte) {
+	if req.NoImages {
+		return imageRe.ReplaceAllStringFunc(md, func(m string) string {
+			sm := imageRe.FindStringSubmatchIndex(m)
+			return m[:sm[2]] + noImageTarget + m[sm[3]:]
+		}), nil
+	}
+	if len(req.Images) == 0 {
+		return md, nil
+	}
+	files := map[string][]byte{}
+	names := map[string]string{}
+	for u, b := range req.Images {
+		sum := sha256.Sum256([]byte(u))
+		name := "remote/" + hex.EncodeToString(sum[:8]) + imageExt(b)
+		files[name] = b
+		names[u] = name
+	}
+	md = imageRe.ReplaceAllStringFunc(md, func(m string) string {
+		sm := imageRe.FindStringSubmatchIndex(m)
+		if name, ok := names[m[sm[2]:sm[3]]]; ok {
+			return m[:sm[2]] + name + m[sm[3]:]
+		}
+		return m
+	})
+	return md, files
+}
+
+// withoutPlaceholderWarnings drops mlcdoc's "skipped missing image" for the
+// placeholders NoImages asked for.
+func withoutPlaceholderWarnings(ws []string) []string {
+	out := ws[:0:0]
+	for _, w := range ws {
+		if !strings.Contains(w, noImageTarget) {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+// imageExt is the file extension for image data (mlcdoc looks at it).
+func imageExt(b []byte) string {
+	switch http.DetectContentType(b) {
+	case "image/png":
+		return ".png"
+	case "image/jpeg":
+		return ".jpg"
+	case "image/gif":
+		return ".gif"
+	case "image/webp":
+		return ".webp"
+	}
+	if bytes.Contains(b[:min(len(b), 512)], []byte("<svg")) {
+		return ".svg"
+	}
+	return ".png"
+}
 
 // copyImages copies relative images of md from baseDir into dir, keeping
 // their relative path. Anything outside baseDir is skipped.

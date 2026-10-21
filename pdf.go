@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/mlechner911/mdviewer/mlcext"
 	"github.com/mlechner911/mdviewer/mlcext/mlcdoc"
@@ -18,11 +22,85 @@ import (
 // which MarkSafe ships next to its executable. Preview and export work for
 // any Markdown document; front matter mlcdoc does not know is left out.
 
-// pdfTool finds mlcdoc once and keeps the client.
+// pdfTool finds mlcdoc once and keeps the client, and the remote images
+// fetched for it (the preview renders again after every pause in typing).
 type pdfTool struct {
 	once   sync.Once
 	client *mlcdoc.Client
 	err    error
+
+	mu     sync.Mutex
+	images map[string][]byte // URL → content; nil entry: fetching failed
+	size   int
+}
+
+const (
+	remoteImageMax   = 20 << 20  // one image
+	remoteImageCache = 100 << 20 // all images kept
+)
+
+// remoteImages fetches the http(s) images of md whose host is whitelisted
+// (the same rule as the HTML preview): mlcdoc itself loads nothing from the
+// network. Others stay out and become mlcdoc's placeholder.
+func (a *App) remoteImages(md string) map[string][]byte {
+	urls := mlcdoc.RemoteImages(md)
+	if len(urls) == 0 {
+		return nil
+	}
+	out := map[string][]byte{}
+	for _, u := range urls {
+		if !a.config.IsURLAllowed(u) {
+			continue
+		}
+		if b := a.pdf.fetch(u); b != nil {
+			out[u] = b
+		}
+	}
+	return out
+}
+
+func (p *pdfTool) fetch(u string) []byte {
+	p.mu.Lock()
+	b, seen := p.images[u]
+	p.mu.Unlock()
+	if seen {
+		return b
+	}
+	b = download(u)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.images == nil || p.size+len(b) > remoteImageCache {
+		p.images, p.size = map[string][]byte{}, 0
+	}
+	p.images[u] = b
+	p.size += len(b)
+	return b
+}
+
+// download reads an image (at most remoteImageMax bytes, 15 s); nil when
+// it is no image or cannot be loaded.
+func download(u string) []byte {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger().Warn("Image not loaded", "url", u, "error", err)
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger().Warn("Image not loaded", "url", u, "status", resp.StatusCode)
+		return nil
+	}
+	b, err := io.ReadAll(io.LimitReader(resp.Body, remoteImageMax+1))
+	if err != nil || len(b) > remoteImageMax || !strings.HasPrefix(http.DetectContentType(b), "image/") && !bytes.Contains(b[:min(len(b), 512)], []byte("<svg")) {
+		return nil
+	}
+	return b
 }
 
 func (p *pdfTool) get() (*mlcdoc.Client, error) {
@@ -84,7 +162,19 @@ func (a *App) pdfRequest(md, docPath string) mlcdoc.Request {
 		Markdown: md,
 		BaseDir:  a.baseDirOf(docPath),
 		Layout:   mlcext.LayoutYAML(md, mlcext.LayoutOptions{Watermark: a.config.GetPDFWatermark()}),
+		Images:   a.remoteImages(md),
 	}
+}
+
+// GetPDFPreviewNoImages: the PDF preview shows placeholders for images.
+func (a *App) GetPDFPreviewNoImages() bool {
+	return a.config.GetPDFPreviewNoImages()
+}
+
+// SetPDFPreviewNoImages switches placeholders in the PDF preview; export
+// and print always embed the images.
+func (a *App) SetPDFPreviewNoImages(v bool) error {
+	return a.config.SetPDFPreviewNoImages(v)
 }
 
 // GetPDFWatermark is the watermark for PDFs from MarkSafe ("" for none).
@@ -103,7 +193,11 @@ func (a *App) PreviewPDF(md string, docPath string) PDFResult {
 	if err != nil {
 		return pdfError(err)
 	}
-	res, err := c.RenderPages(context.Background(), a.pdfRequest(md, docPath), 110)
+	req := a.pdfRequest(md, docPath)
+	if a.config.GetPDFPreviewNoImages() {
+		req.NoImages, req.Images = true, nil
+	}
+	res, err := c.RenderPages(context.Background(), req, 110)
 	if err != nil {
 		return pdfError(err)
 	}

@@ -11,6 +11,9 @@
   import { tags as t } from '@lezer/highlight';
   import type { EffectiveTheme_t } from '../lib/constants';
   import { mlcExtension, insertMlcSnippet, type MlcSource, type MlcAnalysis, type MlcSnippet } from '../../../packages/mlcext-editor/src/index';
+  import { editorPhrases } from '../lib/editor/phrases';
+  import { dataUriFolding } from '../lib/editor/dataUri';
+  import { locale, t as tr } from '../i18n';
 
   // --- Svelte 5 Runes: Props ---
   let { 
@@ -39,6 +42,8 @@
   let scrollLock = false;
 
   const themeCompartment = new Compartment();
+
+  const languageCompartment = new Compartment();
   const highlightCompartment = new Compartment();
 
   // Dark Theme Definition
@@ -219,6 +224,27 @@
   }
 
   /**
+   * insertAlert turns the selected lines (or the current line) into an alert
+   * box "> [!WARNING]" (GitHub/GitLab; mlcdoc sets it as a box too).
+   */
+  export function insertAlert(kind: 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION') {
+    if (!editorView) return;
+    const state = editorView.state;
+    const { from, to } = state.selection.main;
+    const first = state.doc.lineAt(from);
+    const last = state.doc.lineAt(to);
+    const lines: string[] = [];
+    for (let n = first.number; n <= last.number; n++) {
+      const text = state.doc.line(n).text.replace(/^>\s?/, '');
+      lines.push('> ' + text);
+    }
+    const insert = `> [!${kind}]\n` + lines.join('\n');
+    const cursor = first.from + insert.length;
+    editorView.dispatch({ changes: { from: first.from, to: last.to, insert }, selection: { anchor: cursor } });
+    editorView.focus();
+  }
+
+  /**
    * insertSnippet inserts a building block of the MLC Markdown Extension.
    */
   export function insertSnippet(snippet: MlcSnippet) {
@@ -246,6 +272,7 @@
       extensions: [
         basicSetup,
         markdown(),
+        languageCompartment.of(languageExtensions($locale)),
         EditorView.lineWrapping,
         ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a) })] : []),
         themeCompartment.of(isDark ? marksafeDarkTheme : marksafeLightTheme),
@@ -273,6 +300,20 @@
       editorView?.destroy();
       editorView = null;
     };
+  });
+
+  // CodeMirror's own texts and the data: URL boxes follow the interface language.
+  function languageExtensions(loc: string) {
+    return [
+      editorPhrases(loc),
+      dataUriFolding({ image: $tr('dataUriImage'), expandHint: $tr('dataUriExpand'), locale: loc }),
+    ];
+  }
+  $effect(() => {
+    const loc = $locale;
+    if (editorView) {
+      untrack(() => editorView?.dispatch({ effects: languageCompartment.reconfigure(languageExtensions(loc)) }));
+    }
   });
 
   // Reconfigure theme dynamically on Dark/Light change

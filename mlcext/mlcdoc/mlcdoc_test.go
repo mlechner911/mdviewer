@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"image"
+	"image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -219,5 +222,40 @@ func TestLayoutWatermarkAndSignatureInPDF(t *testing.T) {
 	out, _ = exec.Command("pdftotext", f, "-").Output()
 	if strings.Contains(string(out), "Dr. Anna Berger") {
 		t.Errorf("edited document must not carry the signature note:\n%s", out)
+	}
+}
+
+// Remote images the caller fetched are embedded; NoImages gives mlcdoc's
+// placeholder (needs mlcdoc and pdftotext).
+func TestRemoteImagesAndPlaceholders(t *testing.T) {
+	c := client(t)
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 16, 16)))
+	pngData := buf.Bytes()
+	md := "# Bilder\n\n![Fern](https://example.org/a.png)\n\n![Inline](data:image/png;base64," + base64.StdEncoding.EncodeToString(pngData) + ")\n"
+	if got := RemoteImages(md); len(got) != 1 || got[0] != "https://example.org/a.png" {
+		t.Fatalf("RemoteImages: %v", got)
+	}
+	doc, err := c.RenderPDF(context.Background(), Request{Markdown: md, Images: map[string][]byte{"https://example.org/a.png": pngData}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Warnings) > 0 {
+		t.Errorf("fetched image must embed without warnings: %v", doc.Warnings)
+	}
+	doc, err = c.RenderPDF(context.Background(), Request{Markdown: md, NoImages: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := exec.LookPath("pdftotext"); err != nil {
+		t.Skip("pdftotext not installed")
+	}
+	f := filepath.Join(t.TempDir(), "d.pdf")
+	_ = os.WriteFile(f, doc.PDF, 0o600)
+	out, _ := exec.Command("pdftotext", f, "-").Output()
+	for _, want := range []string{"nicht verfügbar: Fern", "nicht verfügbar: Inline"} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("placeholder %q missing:\n%s", want, out)
+		}
 	}
 }

@@ -169,3 +169,11 @@ describe('fixture of the MLC extension', () => {
     expect(d.querySelector('table')).not.toBeNull();
   });
 });
+
+describe('table alignment', () => {
+  it('keeps the align of the separator row on header and cells (styled by the stylesheet)', () => {
+    const d = doc(html('| A | B | C |\n| :-- | --: | :-: |\n| 1 | 2 | 3 |\n'));
+    expect([...d.querySelectorAll('th')].map((c) => c.getAttribute('align'))).toEqual(['left', 'right', 'center']);
+    expect([...d.querySelectorAll('td')].map((c) => c.getAttribute('align'))).toEqual(['left', 'right', 'center']);
+  });
+});

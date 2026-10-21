@@ -34,7 +34,9 @@ import {
   TemplatesFolder,
   PrintPDF,
   GetPDFWatermark,
-  SetPDFWatermark
+  SetPDFWatermark,
+  GetPDFPreviewNoImages,
+  SetPDFPreviewNoImages
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -335,4 +337,15 @@ export async function openTemplatesFolder(): Promise<void> {
 export async function templatesFolder(): Promise<string> {
   if (!isWailsReady()) return '';
   try { return (await TemplatesFolder()) ?? ''; } catch { return ''; }
+}
+
+/** Placeholders instead of images in the PDF preview (export and print keep them). */
+export async function getPDFPreviewNoImages(): Promise<boolean> {
+  if (!isWailsReady()) return false;
+  try { return !!(await GetPDFPreviewNoImages()); } catch { return false; }
+}
+
+export async function setPDFPreviewNoImages(v: boolean): Promise<void> {
+  if (!isWailsReady()) return;
+  try { await SetPDFPreviewNoImages(v); } catch (err) { console.error('setPDFPreviewNoImages failed:', err); }
 }

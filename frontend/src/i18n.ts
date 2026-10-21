@@ -17,6 +17,16 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    alertInsertTitle: 'Alert box (note, tip, warning …)',
+    alertNote: 'Note',
+    alertTip: 'Tip',
+    alertImportant: 'Important',
+    alertWarning: 'Warning',
+    alertCaution: 'Caution',
+    pdfImages: 'Images',
+    pdfImagesHelp: 'Off: placeholders instead of images in this preview (faster with many images). Export and print always contain the images.',
+    dataUriImage: 'Image',
+    dataUriExpand: 'Embedded as base64. Click to show the full text.',
     watermarkHelp: 'Text across every page of PDFs from MarkSafe (preview, export, print), e.g. DRAFT. A setting, not part of the document.',
     watermarkNone: 'none',
     watermark: 'Watermark',
@@ -139,6 +149,16 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    alertInsertTitle: 'Hinweisbox (Hinweis, Tipp, Warnung …)',
+    alertNote: 'Hinweis',
+    alertTip: 'Tipp',
+    alertImportant: 'Wichtig',
+    alertWarning: 'Warnung',
+    alertCaution: 'Vorsicht',
+    pdfImages: 'Bilder',
+    pdfImagesHelp: 'Aus: Platzhalter statt Bildern in dieser Vorschau (schneller bei vielen Bildern). Export und Drucken enthalten die Bilder immer.',
+    dataUriImage: 'Bild',
+    dataUriExpand: 'Als base64 eingebettet. Klicken zeigt den vollständigen Text.',
     watermarkHelp: 'Text quer über jeder Seite der PDFs aus MarkSafe (Vorschau, Export, Drucken), z. B. ENTWURF. Eine Einstellung, nicht Teil des Dokuments.',
     watermarkNone: 'keins',
     watermark: 'Wasserzeichen',
@@ -261,6 +281,16 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    alertInsertTitle: 'Cuadro de aviso (nota, consejo, advertencia …)',
+    alertNote: 'Nota',
+    alertTip: 'Consejo',
+    alertImportant: 'Importante',
+    alertWarning: 'Advertencia',
+    alertCaution: 'Precaución',
+    pdfImages: 'Imágenes',
+    pdfImagesHelp: 'Desactivado: marcadores en lugar de imágenes en esta vista previa (más rápido con muchas imágenes). La exportación y la impresión siempre contienen las imágenes.',
+    dataUriImage: 'Imagen',
+    dataUriExpand: 'Incrustada como base64. Haga clic para ver el texto completo.',
     watermarkHelp: 'Texto sobre cada página de los PDF de MarkSafe (vista previa, exportación, impresión), p. ej. BORRADOR. Un ajuste, no parte del documento.',
     watermarkNone: 'ninguna',
     watermark: 'Marca de agua',
@@ -383,6 +413,16 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    alertInsertTitle: 'Encadré (remarque, astuce, avertissement …)',
+    alertNote: 'Remarque',
+    alertTip: 'Astuce',
+    alertImportant: 'Important',
+    alertWarning: 'Avertissement',
+    alertCaution: 'Attention',
+    pdfImages: 'Images',
+    pdfImagesHelp: "Désactivé : espaces réservés au lieu des images dans cet aperçu (plus rapide avec beaucoup d'images). L'export et l'impression contiennent toujours les images.",
+    dataUriImage: 'Image',
+    dataUriExpand: 'Intégrée en base64. Cliquez pour afficher le texte complet.',
     watermarkHelp: 'Texte sur chaque page des PDF de MarkSafe (aperçu, export, impression), p. ex. BROUILLON. Un réglage, pas une partie du document.',
     watermarkNone: 'aucun',
     watermark: 'Filigrane',

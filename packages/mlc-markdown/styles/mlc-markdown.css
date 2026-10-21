@@ -113,6 +113,10 @@
 .mlc-md table.mlc-md-table-full { width: 100%; }
 .mlc-md th, .mlc-md td { border: 1px solid var(--mlc-md-border); padding: 0.35em 0.6em; text-align: left; vertical-align: top; }
 .mlc-md th { background: var(--mlc-md-table-head-bg); font-weight: 600; }
+/* Alignment from the separator row (:--, :-:, --:), like mlcdoc: the rule
+   above sets left for every cell, so the column's own alignment wins here. */
+.mlc-md th[align='right'], .mlc-md td[align='right'] { text-align: right; }
+.mlc-md th[align='center'], .mlc-md td[align='center'] { text-align: center; }
 .mlc-md tbody tr:nth-child(even) td { background: var(--mlc-md-table-stripe); }
 
 /* ---------- Quotes and alerts ---------- */

@@ -283,6 +283,14 @@
     fixLabel: (code: string) => (code === 'header-in-body' ? $t('fixMoveHeader') : null),
     fix: (code: string, md: string) => (code === 'header-in-body' ? backend.mlcMoveHeader(md) : Promise.resolve(null)),
   };
+  // Alert boxes for the toolbar, colors as in mlc-markdown.css.
+  const ALERTS = [
+    { kind: 'NOTE', label: 'alertNote', color: '#0969da' },
+    { kind: 'TIP', label: 'alertTip', color: '#1a7f37' },
+    { kind: 'IMPORTANT', label: 'alertImportant', color: '#8250df' },
+    { kind: 'WARNING', label: 'alertWarning', color: '#9a6700' },
+    { kind: 'CAUTION', label: 'alertCaution', color: '#cf222e' },
+  ] as const;
   const mlcMenu = $derived(mlcAnalysis?.detected ? mlcSnippets(mlcAnalysis.lists) : []);
 
   // PDF preview rendered by mlcdoc, offered for MLC documents when mlcdoc
@@ -482,6 +490,12 @@
 
   // Watermark for PDFs (setting; changed in the PDF preview bar).
   let pdfWatermark = $state('');
+  // Placeholders instead of images in the PDF preview (setting).
+  let pdfNoImages = $state(false);
+  async function changeNoImages(v: boolean) {
+    await backend.setPDFPreviewNoImages(v);
+    pdfNoImages = v;
+  }
   async function changeWatermark(text: string) {
     await backend.setPDFWatermark(text);
     pdfWatermark = text.trim();
@@ -526,6 +540,7 @@
       appVersion.set(version);
       backend.mlcdocVersion().then((v) => (mlcdocVersion = v));
       backend.getPDFWatermark().then((w) => (pdfWatermark = w));
+      backend.getPDFPreviewNoImages().then((v) => (pdfNoImages = v));
       const wailsReady = checkWailsReady();
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
@@ -909,6 +924,21 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
         </button>
+        <!-- Alert boxes (GitHub/GitLab "> [!NOTE]" …; also boxes in the PDF) -->
+        <details class="mlc-menu relative shrink-0">
+          <summary
+            class="list-none cursor-pointer px-1.5 h-6 flex items-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 {buttonClass}"
+            title={$t('alertInsertTitle')}
+          >! ▾</summary>
+          <div class="fixed z-50 mt-1 py-1 min-w-44 rounded border shadow-lg text-xs {toolbarClass}">
+            {#each ALERTS as a}
+              <button
+                class="w-full text-left px-3 py-1 flex items-center gap-2 hover:bg-black/10 dark:hover:bg-white/10"
+                onclick={(e) => { editorComponent?.insertAlert(a.kind); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+              ><span class="inline-block w-1 h-3.5 rounded-sm" style="background: {a.color}"></span><span>{$t(a.label)}</span><span class="ml-auto opacity-50 font-mono">[!{a.kind}]</span></button>
+            {/each}
+          </div>
+        </details>
         {#if mlcMenu.length > 0}
           <!-- MLC Markdown Extension (non-standard): only for MLC documents -->
           <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
@@ -1033,7 +1063,7 @@
         {/if}
       </div>
       {#if showPdfPreview}
-        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} />
+        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
       {/if}
       <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview}>
       <Preview 
