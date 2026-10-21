@@ -29,7 +29,7 @@ edit() {
   out=$(V="$V" perl -0p -e "$expr" "$f")
   if [ "$out" != "$(cat "$f")" ]; then
     changed+=("$f")
-    [ $CHECK -eq 1 ] || printf '%s\n' "$out" > "$f"
+    [ $CHECK -eq 1 ] || V="$V" perl -0pi -e "$expr" "$f"
   fi
 }
 
