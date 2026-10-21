@@ -149,9 +149,9 @@ tasks:
         echo "→ Source synced to {{.MAC_HOST}}:{{.REMOTE_DIR}}"
       # 2 — build and sign on macstudio
       - |
-        KEYCHAIN_PASS="${MARKSAFE_KEYCHAIN_PASS:-${MLCTERM_KEYCHAIN_PASS:-${KEYCHAIN_PASS:-}}}"
+        KEYCHAIN_PASS="${MAC_KEYCHAIN_PASS:-${MARKSAFE_KEYCHAIN_PASS:-${MLCTERM_KEYCHAIN_PASS:-${KEYCHAIN_PASS:-}}}}"
         if [ -z "$KEYCHAIN_PASS" ]; then
-          echo "HINWEIS: MARKSAFE_KEYCHAIN_PASS (oder MLCTERM_KEYCHAIN_PASS) ist nicht gesetzt."
+          echo "HINWEIS: MAC_KEYCHAIN_PASS (oder MARKSAFE_/MLCTERM_KEYCHAIN_PASS) ist nicht gesetzt."
           echo "Ohne Passwort bleibt der Mac-Schlüsselbund gesperrt; codesign & Notarisierung werden übersprungen."
         fi
         ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS MLCDOC_VERSION={{.MLCDOC_VERSION}} bash -s" << 'ENDSSH'
