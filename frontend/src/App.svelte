@@ -25,6 +25,8 @@
   import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import SensorLoginModal from './components/SensorLoginModal.svelte';
+  import SensorOpenModal from './components/SensorOpenModal.svelte';
+  import SensorDraftModal from './components/SensorDraftModal.svelte';
 
   // State & Config
   import { getTheme } from './themes';
@@ -46,6 +48,8 @@
     path: string | null;
     content: string;
     isDirty: boolean;
+    /** Opened from the Sensor Monitor: the version it came from. */
+    sensor?: { ref: string; id: string; version: string; status: string; filename: string };
   }
 
   // --- Svelte 5 Runes: State ---
@@ -119,12 +123,95 @@
   let showTemplateModal = $state(false);
   let showSettings = $state(false);
   let showSensorLogin = $state(false);
+  // MLC Markdown Extension analysis of the active document (status bar,
+  // Sensor Monitor); set in debouncedUpdate.
+  let mlcAnalysis = $state<backend.MLCAnalysis | null>(null);
   // Sensor Monitor connection: off (address "") for everyone who has not
   // set it up; then nothing of it is shown.
   let sensorStatus = $state<backend.SensorMonitorStatus>({ address: '', signedIn: false, email: '', expires: '' });
   async function refreshSensor() {
     sensorStatus = await backend.sensorMonitorStatus();
     updateNativeMenu(get(locale)); // the "Sensor Monitor" submenu follows address and sign-in
+  }
+
+  // Sensor Monitor actions need a sign-in: without one, sign in first and
+  // run the action afterwards.
+  let showSensorOpen = $state(false);
+  let showSensorDraft = $state(false);
+  let afterSensorLogin: (() => void) | null = null;
+  function requireSensor(action: () => void) {
+    if (sensorStatus.signedIn) { action(); return; }
+    afterSensorLogin = action;
+    showSensorLogin = true;
+  }
+  function sensorLoginDone() {
+    showSensorLogin = false;
+    const next = afterSensorLogin;
+    afterSensorLogin = null;
+    void refreshSensor().then(() => next?.());
+  }
+
+  function openFromSensor(text: string, doc: backend.SensorDocument) {
+    showSensorOpen = false;
+    const ref = doc.ref_no || '';
+    const tab = createNewTab([ref, doc.version && `v${doc.version}`].filter(Boolean).join(' ') || doc.filename || $t('untitled'), text);
+    tab.sensor = { ref, id: doc.id, version: doc.version, status: doc.status, filename: doc.filename };
+    tabs = [...tabs, tab];
+    activeTabIndex = tabs.length - 1;
+    showToast($t('smOpened', tab.title), 3000, 'info');
+  }
+
+  function draftSaved(d: backend.SensorSavedDraft) {
+    showSensorDraft = false;
+    const tab = tabs[activeTabIndex];
+    if (tab) tab.sensor = { ref: d.ref_no, id: d.id, version: d.version, status: d.status, filename: d.filename };
+    const n = d.warnings?.length ?? 0;
+    showToast($t('smDraftSaved', d.doc_no, d.version || '–') + (n ? ' · ' + $t('smDraftWarnings', n) : ''), n ? 6000 : 3500, 'info');
+    sensorCompare = null; // compare again
+    scheduleSensorCompare(0);
+  }
+
+  // Comparison with the Sensor Monitor (signed in, document with doc_id):
+  // does the working copy match the approved version? Shown in the status
+  // bar; it suggests the watermark ENTWURF when printing.
+  let sensorCompare = $state<{ ref: string; content: string; result: backend.SensorComparison } | null>(null);
+  let sensorCompareTimer: ReturnType<typeof setTimeout> | undefined;
+  const sensorRef = $derived(sensorStatus.signedIn ? (mlcAnalysis?.document?.refNo ?? '') : '');
+  function scheduleSensorCompare(delay = 1500) {
+    clearTimeout(sensorCompareTimer);
+    sensorCompareTimer = setTimeout(async () => {
+      const ref = sensorRef;
+      const content = markdown;
+      if (!ref) { sensorCompare = null; return; }
+      const res = await backend.sensorMonitorCompare(ref, content);
+      if (res.comparison && ref === sensorRef) sensorCompare = { ref, content, result: res.comparison };
+      else if (res.error) sensorCompare = null;
+    }, delay);
+  }
+  $effect(() => {
+    // Re-run when the id, the text or the sign-in changes.
+    void sensorRef; void markdown;
+    untrack(() => scheduleSensorCompare());
+  });
+  const sensorCompareInfo = $derived.by(() => {
+    const c = sensorCompare;
+    if (!c || c.ref !== sensorRef) return null;
+    const r = c.result;
+    if (r.matches_approved && r.approved) return { text: $t('smCmpApproved', c.ref, r.approved.version), ok: true };
+    if (r.matches_draft && r.draft) return { text: $t('smCmpDraft', c.ref, r.draft.version), ok: false };
+    if (r.approved) return { text: $t('smCmpDiffers', c.ref, r.approved.version), ok: false };
+    if (r.draft) return { text: `${c.ref}: ${$t('smDraft')} ${r.draft.version}`, ok: false };
+    return { text: $t('smCmpNew', c.ref), ok: false };
+  });
+
+  // Suggest the watermark ENTWURF for a document that does not match the
+  // approved version, never enforce it (MarkSafe is not only for the Sensor
+  // Monitor). "" keeps the setting.
+  async function suggestedWatermark(): Promise<string> {
+    const c = sensorCompare;
+    if (pdfWatermark || !c || c.ref !== sensorRef || c.content !== markdown || c.result.matches_approved) return '';
+    const yes = await askConfirm($t('smWmTitle'), $t('smWmMessage'), $t('smWmYes'), $t('smWmNo'));
+    return yes ? 'ENTWURF' : '';
   }
   function createFromTemplate(content: string, fileName: string) {
     const newTab = createNewTab(fileName || $t('untitled'), content);
@@ -273,6 +360,8 @@
       menuSensorMonitor: tMap.menuSensorMonitor,
       menuSensorLogin: tMap.menuSensorLogin,
       menuSensorLogout: tMap.menuSensorLogout,
+      menuSensorOpen: tMap.menuSensorOpen,
+      menuSensorSaveDraft: tMap.menuSensorSaveDraft,
       aboutTitle: tMap.aboutTitle,
       aboutBody: tMap.aboutBody.replace('%s', get(appVersion))
     };
@@ -291,7 +380,6 @@
 
   // MLC Markdown Extension (non-standard) analysis of the active document:
   // status bar, editor menu. The editor gets its own via mlcSource.
-  let mlcAnalysis = $state<backend.MLCAnalysis | null>(null);
   const mlcSource = {
     analyze: (md: string) => backend.analyzeMLC(md),
     // Quick fix for the legacy header line (mlcext.MoveHeaderToFrontMatter).
@@ -331,7 +419,7 @@
   async function handleExportPdf() {
     const tab = tabs[activeTabIndex];
     if (!tab || !mlcdocVersion) return;
-    const res = await backend.exportPDF(tab.content, tab.path ?? '');
+    const res = await backend.exportPDF(tab.content, tab.path ?? '', await suggestedWatermark());
     if (res.error) {
       showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
       return;
@@ -388,9 +476,9 @@
   let isSaving = false;
 
   // A yes/no question as a promise (ConfirmModal below).
-  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; resolve: (ok: boolean) => void } | null>(null);
-  function askConfirm(title: string, message: string, confirmLabel: string): Promise<boolean> {
-    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, resolve }));
+  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; cancelLabel?: string; resolve: (ok: boolean) => void } | null>(null);
+  function askConfirm(title: string, message: string, confirmLabel: string, cancelLabel?: string): Promise<boolean> {
+    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, cancelLabel, resolve }));
   }
   function answerConfirm(ok: boolean) {
     confirmAsk?.resolve(ok);
@@ -505,8 +593,9 @@
       showToast($t('printNeedsMlcdoc'), 5000, 'error');
       return;
     }
+    const wm = await suggestedWatermark();
     showToast($t('printPreparing'), 2000, 'info');
-    const res = await backend.printPDF(tab.content, tab.path ?? '');
+    const res = await backend.printPDF(tab.content, tab.path ?? '', wm);
     if (res.error) {
       showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
       return;
@@ -590,6 +679,8 @@
           EventsOn("menu-about", () => openAbout());
           EventsOn("menu-settings", () => (showSettings = true));
           EventsOn("menu-sm-login", () => (showSensorLogin = true));
+          EventsOn("menu-sm-open", () => requireSensor(() => (showSensorOpen = true)));
+          EventsOn("menu-sm-save-draft", () => requireSensor(() => (showSensorDraft = true)));
           EventsOn("sensormonitor-login", (r: any) => {
             if (r?.ok) showToast($t('smSignedIn'));
             else if (r?.error === 'signed-out') showToast($t('smSignedOut'));
@@ -686,7 +777,7 @@
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
       EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html"); EventsOff("menu-print");
-      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("menu-sm-login"); EventsOff("sensormonitor-login"); clearInterval(sensorTimer); EventsOff("set-theme");
+      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("menu-sm-login"); EventsOff("menu-sm-open"); EventsOff("menu-sm-save-draft"); EventsOff("sensormonitor-login"); clearInterval(sensorTimer); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
@@ -857,8 +948,31 @@
 {#if showSensorLogin}
   <SensorLoginModal
     theme={$effectiveAppTheme}
-    onDone={() => (showSensorLogin = false)}
-    onClose={() => (showSensorLogin = false)}
+    onDone={sensorLoginDone}
+    onClose={() => { showSensorLogin = false; afterSensorLogin = null; }}
+  />
+{/if}
+{#if showSensorOpen}
+  <SensorOpenModal
+    initialRef={mlcAnalysis?.document?.refNo ?? ''}
+    theme={$effectiveAppTheme}
+    onOpen={openFromSensor}
+    onSignIn={() => { showSensorOpen = false; requireSensor(() => (showSensorOpen = true)); }}
+    onClose={() => (showSensorOpen = false)}
+  />
+{/if}
+{#if showSensorDraft && tabs[activeTabIndex]}
+  <SensorDraftModal
+    markdown={tabs[activeTabIndex].content}
+    filename={tabs[activeTabIndex].path?.split(/[\\/]/).pop() || tabs[activeTabIndex].sensor?.filename || ''}
+    refNo={mlcAnalysis?.document?.refNo ?? ''}
+    version={mlcAnalysis?.document?.version ?? ''}
+    title={mlcAnalysis?.document?.title ?? ''}
+    hasErrors={(mlcAnalysis?.diagnostics ?? []).some((d) => d.severity === 'error')}
+    theme={$effectiveAppTheme}
+    onSaved={draftSaved}
+    onSignIn={() => { showSensorDraft = false; requireSensor(() => (showSensorDraft = true)); }}
+    onClose={() => (showSensorDraft = false)}
   />
 {/if}
 
@@ -875,7 +989,7 @@
     title={confirmAsk.title}
     message={confirmAsk.message}
     confirmLabel={confirmAsk.confirmLabel}
-    cancelLabel={$t('cancel')}
+    cancelLabel={confirmAsk.cancelLabel ?? $t('cancel')}
     theme={$effectiveAppTheme}
     onConfirm={() => answerConfirm(true)}
     onCancel={() => answerConfirm(false)}
@@ -1214,7 +1328,7 @@
     </div>
   </div>
 
-  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} sensor={sensorStatus} />
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} sensor={sensorStatus} sensorCompare={sensorCompareInfo} />
 
   {#if $dropMessage}
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>

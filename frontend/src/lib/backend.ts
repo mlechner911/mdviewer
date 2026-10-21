@@ -42,7 +42,11 @@ import {
   SetSensorMonitorURL,
   SensorMonitorStartLogin,
   SensorMonitorCancelLogin,
-  SensorMonitorLogout
+  SensorMonitorLogout,
+  SensorMonitorLookup,
+  SensorMonitorSource,
+  SensorMonitorCompare,
+  SensorMonitorSaveDraft
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -128,10 +132,10 @@ export async function previewPDF(md: string, docPath: string): Promise<PDFResult
 
 /** Render with mlcdoc and save via a dialog; path "" when cancelled. */
 /** Print through the PDF: rendered like the export, opened in the system's PDF viewer. */
-export async function printPDF(md: string, docPath: string): Promise<PDFResult> {
+export async function printPDF(md: string, docPath: string, watermark = ''): Promise<PDFResult> {
   if (!isWailsReady()) return pdfFailure('Wails not ready');
   try {
-    return (await PrintPDF(md, docPath)) as PDFResult;
+    return (await PrintPDF(md, docPath, watermark)) as PDFResult;
   } catch (err) {
     return pdfFailure(err);
   }
@@ -148,10 +152,10 @@ export async function setPDFWatermark(text: string): Promise<void> {
   try { await SetPDFWatermark(text); } catch (err) { console.error('setPDFWatermark failed:', err); }
 }
 
-export async function exportPDF(md: string, docPath: string): Promise<PDFResult> {
+export async function exportPDF(md: string, docPath: string, watermark = ''): Promise<PDFResult> {
   if (!isWailsReady()) return pdfFailure('Wails not ready');
   try {
-    return (await ExportPDF(md, docPath)) as PDFResult;
+    return (await ExportPDF(md, docPath, watermark)) as PDFResult;
   } catch (err) {
     return pdfFailure(err);
   }
@@ -394,4 +398,38 @@ export async function sensorMonitorCancelLogin(): Promise<void> {
 export async function sensorMonitorLogout(): Promise<void> {
   if (!isWailsReady()) return;
   try { await SensorMonitorLogout(); } catch { /* ignore */ }
+}
+
+export type SensorError = { code: string; message: string; params: Record<string, string>; signIn: boolean };
+export type SensorDocument = {
+  id: string; doc_no: string; ref_no: string; version: string; title: string; filename: string; status: string;
+  approved_at: string; approved_by_label: string; uploaded_by_label: string; valid_until: string; created_at: string;
+};
+export type SensorStand = { ref_no: string; approved: SensorDocument | null; draft: SensorDocument | null };
+export type SensorComparison = SensorStand & { matches_approved: boolean; matches_draft: boolean };
+export type SensorFinding = { line: number; col: number; severity: string; code: string; message: string };
+export type SensorSavedDraft = SensorDocument & { warnings: SensorFinding[] | null };
+
+function sensorFailure(err: any): SensorError {
+  return { code: '', message: String(err?.message ?? err), params: {}, signIn: false };
+}
+
+export async function sensorMonitorLookup(ref: string): Promise<{ stand: SensorStand | null; error: SensorError | null }> {
+  if (!isWailsReady()) return { stand: null, error: sensorFailure('Wails not ready') };
+  try { return (await SensorMonitorLookup(ref)) as any; } catch (err) { return { stand: null, error: sensorFailure(err) }; }
+}
+
+export async function sensorMonitorSource(id: string): Promise<{ text: string; error: SensorError | null }> {
+  if (!isWailsReady()) return { text: '', error: sensorFailure('Wails not ready') };
+  try { return (await SensorMonitorSource(id)) as any; } catch (err) { return { text: '', error: sensorFailure(err) }; }
+}
+
+export async function sensorMonitorCompare(ref: string, md: string): Promise<{ comparison: SensorComparison | null; error: SensorError | null }> {
+  if (!isWailsReady()) return { comparison: null, error: sensorFailure('Wails not ready') };
+  try { return (await SensorMonitorCompare(ref, md)) as any; } catch (err) { return { comparison: null, error: sensorFailure(err) }; }
+}
+
+export async function sensorMonitorSaveDraft(md: string, filename: string, reason: string, pin: string): Promise<{ draft: SensorSavedDraft | null; error: SensorError | null }> {
+  if (!isWailsReady()) return { draft: null, error: sensorFailure('Wails not ready') };
+  try { return (await SensorMonitorSaveDraft(md, filename, reason, pin)) as any; } catch (err) { return { draft: null, error: sensorFailure(err) }; }
 }

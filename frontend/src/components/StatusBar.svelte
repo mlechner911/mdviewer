@@ -15,7 +15,8 @@
     readingTime, 
     activeTab,
     diagnostics = [],
-    sensor = null
+    sensor = null,
+    sensorCompare = null
   } = $props<{
     wordCount: number;
     charCount: number;
@@ -24,6 +25,8 @@
     diagnostics?: MLCDiagnostic[];
     /** Sensor Monitor connection; shown only while signed in. */
     sensor?: { signedIn: boolean; email: string; expires: string } | null;
+    /** Comparison of the document with the Sensor Monitor. */
+    sensorCompare?: { text: string; ok: boolean } | null;
   }>();
 
   const sensorUntil = $derived(
@@ -59,6 +62,10 @@
       {#if mlcWarnings > 0}<span class="text-amber-500 font-semibold">{$t('mlcWarnings', mlcWarnings)}</span>{/if}
       {#if mlcErrors === 0 && mlcWarnings === 0}<span class="text-green-500">{$t('mlcOk')}</span>{/if}
     </div>
+    <div class="h-3 w-px {dividerClass}"></div>
+  {/if}
+  {#if sensor?.signedIn && sensorCompare}
+    <div class={sensorCompare.ok ? 'text-green-500' : 'text-amber-500'}>{sensorCompare.text}</div>
     <div class="h-3 w-px {dividerClass}"></div>
   {/if}
   {#if sensor?.signedIn}

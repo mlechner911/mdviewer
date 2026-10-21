@@ -182,3 +182,115 @@ func (a *App) endSensorLogin() {
 	}
 	a.sensor.login = nil
 }
+
+// SensorError is a refusal for the frontend to translate by Code
+// (ERR_DOCUMENT_DRAFT_PENDING …; "not-signed-in" before any request).
+// SignIn: the sign-in is missing or ran out; sign in and try again.
+type SensorError struct {
+	Code    string            `json:"code"`
+	Message string            `json:"message"`
+	Params  map[string]string `json:"params"`
+	SignIn  bool              `json:"signIn"`
+}
+
+func (a *App) sensorError(err error) *SensorError {
+	if err == nil {
+		return nil
+	}
+	e := &SensorError{Message: err.Error(), Params: map[string]string{}}
+	var se *sensormonitor.Error
+	if errors.As(err, &se) {
+		e.Code, e.Message = se.Code, se.Message
+		for k := range se.Params {
+			e.Params[k] = se.Param(k)
+		}
+	}
+	if sensormonitor.IsUnauthorized(err) {
+		// The token expired or was revoked: forget it, the menu follows.
+		e.SignIn = true
+		a.endSensorLogin()
+		emit("sensormonitor-login", SensorLoginResult{Error: "session-ended"})
+	}
+	return e
+}
+
+// signedInClient is the client with a valid sign-in, or the refusal.
+func (a *App) signedInClient() (*sensormonitor.Client, *SensorError) {
+	if a.sensorLogin() == nil {
+		return nil, &SensorError{Code: "not-signed-in", SignIn: true, Params: map[string]string{}}
+	}
+	c, err := a.sensorClient()
+	if err != nil {
+		return nil, &SensorError{Message: err.Error(), Params: map[string]string{}}
+	}
+	return c, nil
+}
+
+// SensorStandResult answers SensorMonitorLookup.
+type SensorStandResult struct {
+	Stand *sensormonitor.Stand `json:"stand"`
+	Error *SensorError         `json:"error"`
+}
+
+// SensorMonitorLookup returns the approved version and the waiting draft
+// of document id ref.
+func (a *App) SensorMonitorLookup(ref string) SensorStandResult {
+	c, e := a.signedInClient()
+	if e != nil {
+		return SensorStandResult{Error: e}
+	}
+	s, err := c.ByRef(context.Background(), ref)
+	return SensorStandResult{Stand: s, Error: a.sensorError(err)}
+}
+
+// SensorSourceResult answers SensorMonitorSource.
+type SensorSourceResult struct {
+	Text  string       `json:"text"`
+	Error *SensorError `json:"error"`
+}
+
+// SensorMonitorSource returns the text of version id to edit (front matter
+// from the document's data, no signature).
+func (a *App) SensorMonitorSource(id string) SensorSourceResult {
+	c, e := a.signedInClient()
+	if e != nil {
+		return SensorSourceResult{Error: e}
+	}
+	text, err := c.Source(context.Background(), id)
+	return SensorSourceResult{Text: text, Error: a.sensorError(err)}
+}
+
+// SensorCompareResult answers SensorMonitorCompare.
+type SensorCompareResult struct {
+	Comparison *sensormonitor.Comparison `json:"comparison"`
+	Error      *SensorError              `json:"error"`
+}
+
+// SensorMonitorCompare compares md with the stored versions of its doc_id.
+// Nothing is saved.
+func (a *App) SensorMonitorCompare(ref, md string) SensorCompareResult {
+	c, e := a.signedInClient()
+	if e != nil {
+		return SensorCompareResult{Error: e}
+	}
+	r, err := c.Compare(context.Background(), ref, md)
+	return SensorCompareResult{Comparison: r, Error: a.sensorError(err)}
+}
+
+// SensorDraftResult answers SensorMonitorSaveDraft.
+type SensorDraftResult struct {
+	Draft *sensormonitor.SavedDraft `json:"draft"`
+	Error *SensorError              `json:"error"`
+}
+
+// SensorMonitorSaveDraft stores md as a draft (never approved): a new
+// version of the approved document with its doc_id, else a new document.
+// reason and pin only when the organisation asks for them.
+func (a *App) SensorMonitorSaveDraft(md, filename, reason, pin string) SensorDraftResult {
+	c, e := a.signedInClient()
+	if e != nil {
+		return SensorDraftResult{Error: e}
+	}
+	d, err := c.SaveDraft(context.Background(), md, sensormonitor.DraftOptions{Filename: filename, Reason: reason, PIN: pin})
+	return SensorDraftResult{Draft: d, Error: a.sensorError(err)}
+}

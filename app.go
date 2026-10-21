@@ -173,6 +173,9 @@ func (a *App) UpdateMenu(t map[string]string) {
 	// everyone else MarkSafe shows nothing of it.
 	if a.config.GetSensorMonitorURL() != "" {
 		smMenu := fileMenu.AddSubmenu(label(t, "menuSensorMonitor", "Sensor Monitor"))
+		smMenu.Add(label(t, "menuSensorOpen", "Open…")).OnClick(func(*application.Context) { emit("menu-sm-open") })
+		smMenu.Add(label(t, "menuSensorSaveDraft", "Save as Draft…")).OnClick(func(*application.Context) { emit("menu-sm-save-draft") })
+		smMenu.AddSeparator()
 		if a.sensorLogin() == nil {
 			smMenu.Add(label(t, "menuSensorLogin", "Sign In…")).OnClick(func(*application.Context) { emit("menu-sm-login") })
 		} else {

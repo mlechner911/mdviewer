@@ -155,13 +155,17 @@ func (a *App) baseDirOf(docPath string) string {
 }
 
 // pdfRequest is md for mlcdoc: a layout file with the page header (kind,
-// id and version of documents of the MLC extension) and the watermark of
-// the user's setting.
-func (a *App) pdfRequest(md, docPath string) mlcdoc.Request {
+// id and version of documents of the MLC extension) and the watermark:
+// watermark when given (for this PDF only), else the user's setting.
+func (a *App) pdfRequest(md, docPath string, watermark ...string) mlcdoc.Request {
+	wm := a.config.GetPDFWatermark()
+	if len(watermark) > 0 && strings.TrimSpace(watermark[0]) != "" {
+		wm = strings.TrimSpace(watermark[0])
+	}
 	return mlcdoc.Request{
 		Markdown: md,
 		BaseDir:  a.baseDirOf(docPath),
-		Layout:   mlcext.LayoutYAML(md, mlcext.LayoutOptions{Watermark: a.config.GetPDFWatermark()}),
+		Layout:   mlcext.LayoutYAML(md, mlcext.LayoutOptions{Watermark: wm}),
 		Images:   a.remoteImages(md),
 	}
 }
@@ -209,13 +213,14 @@ func (a *App) PreviewPDF(md string, docPath string) PDFResult {
 }
 
 // ExportPDF renders md to a PDF and asks where to save it (next to the
-// document, else in the document folder).
-func (a *App) ExportPDF(md string, docPath string) PDFResult {
+// document, else in the document folder). watermark, when not empty,
+// replaces the setting for this PDF (the suggested "ENTWURF").
+func (a *App) ExportPDF(md string, docPath string, watermark string) PDFResult {
 	c, err := a.pdf.get()
 	if err != nil {
 		return pdfError(err)
 	}
-	doc, err := c.RenderPDF(context.Background(), a.pdfRequest(md, docPath))
+	doc, err := c.RenderPDF(context.Background(), a.pdfRequest(md, docPath, watermark))
 	if err != nil {
 		return pdfError(err)
 	}
@@ -259,12 +264,13 @@ func (a *App) ExportPDF(md string, docPath string) PDFResult {
 // PrintPDF prints through the PDF: md is rendered like the export and
 // opened in the system's PDF viewer, which prints it. The page then looks
 // exactly like the exported PDF (and like the Sensor Monitor's).
-func (a *App) PrintPDF(md string, docPath string) PDFResult {
+// watermark as with ExportPDF.
+func (a *App) PrintPDF(md string, docPath string, watermark string) PDFResult {
 	c, err := a.pdf.get()
 	if err != nil {
 		return pdfError(err)
 	}
-	doc, err := c.RenderPDF(context.Background(), a.pdfRequest(md, docPath))
+	doc, err := c.RenderPDF(context.Background(), a.pdfRequest(md, docPath, watermark))
 	if err != nil {
 		return pdfError(err)
 	}

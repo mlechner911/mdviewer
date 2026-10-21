@@ -49,7 +49,7 @@
       const r = Array.isArray(res) ? res[0] : res;
       if (!r) return;
       if (r.ok) { code = null; onDone(); return; }
-      if (r.error === 'cancelled' || r.error === 'signed-out') return;
+      if (r.error === 'cancelled' || r.error === 'signed-out' || r.error === 'session-ended') return;
       code = null;
       error = r.error === 'denied' ? $t('smLoginDenied') : r.error === 'expired' ? $t('smLoginExpired') : $t('smLoginFailed', r.error);
     });
