@@ -5,7 +5,7 @@
    */
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
-  import { effectiveAppTheme, isPrinting } from '../lib/stores';
+  import { effectiveAppTheme } from '../lib/stores';
   import type { MLCDiagnostic } from '../lib/backend';
 
   // --- Svelte 5 Runes: Props ---
@@ -39,8 +39,7 @@
   );
 </script>
 
-{#if !$isPrinting}
-<div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} py-3 print:hidden">
+<div class="h-6 border-t flex items-center px-4 gap-6 shrink-0 text-[10px] font-medium {statusClass} py-3">
   <div class="flex gap-4">
       <span>{wordCount} {$t('words')}</span>
       <span>{charCount} {$t('characters')}</span>
@@ -63,4 +62,4 @@
   <div class="h-3 w-px {dividerClass}"></div>
   <div class="uppercase tracking-tighter opacity-80">{activeTab?.path || $t('untitled')}</div>
 </div>
-{/if}
+

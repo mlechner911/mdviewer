@@ -21,7 +21,6 @@ export const effectiveAppTheme = writable<EffectiveTheme_t>('dark');
 export const splitWidth = writable(50);
 export const isFocusMode = writable(false);
 export const isEditorHidden = writable(false);
-export const isPrinting = writable(false);
 export const menuVisible = writable(false);
 
 // Global UI feedback

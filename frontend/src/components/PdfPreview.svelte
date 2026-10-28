@@ -125,11 +125,4 @@
      aids. The page images carry their own margins, so the sheet has none
      (this also drops the browser's date/title lines). */
   @page { margin: 0; }
-  @media print {
-    .pdf-preview { background: none; overflow: visible; }
-    .pdf-bar, .pdf-msg { display: none; }
-    .pdf-pages { display: block; padding: 0; }
-    .pdf-pages img { max-width: none; box-shadow: none; break-after: page; display: block; }
-    .pdf-pages img:last-child { break-after: auto; }
-  }
 </style>

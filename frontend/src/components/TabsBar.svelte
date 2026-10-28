@@ -4,7 +4,7 @@
    * Refactored for Svelte 5 Runes.
    */
   import { STYLE } from '../lib/constants';
-  import { effectiveAppTheme, isFocusMode, isPrinting } from '../lib/stores';
+  import { effectiveAppTheme, isFocusMode } from '../lib/stores';
   import { t } from '../i18n';
 
   // --- Svelte 5 Runes: Props ---
@@ -25,8 +25,8 @@
   const inactiveTabClass = $derived(STYLE.tab.inactive[$effectiveAppTheme]);
 </script>
 
-{#if !$isFocusMode && !$isPrinting}
-<div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass} print:hidden">
+{#if !$isFocusMode}
+<div class="flex overflow-x-auto no-scrollbar border-b {toolbarClass}">
   {#each tabs as tab, i}
     <div 
       role="tab"

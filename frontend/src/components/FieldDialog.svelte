@@ -111,7 +111,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print:hidden" role="dialog" aria-modal="true" aria-label={start ? $t('fieldDialogEdit') : $t('fieldDialogInsert')}>
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={start ? $t('fieldDialogEdit') : $t('fieldDialogInsert')}>
   <div class="max-w-xl w-full rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <form class="p-6 text-sm" onsubmit={(e) => { e.preventDefault(); apply(); }}>
       <h3 class="text-lg font-bold mb-4">{start ? $t('fieldDialogEdit') : $t('fieldDialogInsert')}</h3>

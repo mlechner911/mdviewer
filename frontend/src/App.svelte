@@ -37,7 +37,7 @@
   import { c_welcomeMarkdown } from './lib/devdefmd.js';
   import { 
     appTheme, effectiveAppTheme, splitWidth, isFocusMode, 
-    isEditorHidden, isPrinting, dropMessage, showToast,
+    isEditorHidden, dropMessage, showToast,
     appVersion, toastType
   } from './lib/stores';
 
@@ -1112,8 +1112,8 @@
 
   <div class="flex flex-1 overflow-hidden relative">
     {#if !$isEditorHidden && !$isFocusMode}
-    <div class="flex flex-col min-w-0 border-r relative {editorClass} print:hidden" style="width: {$splitWidth}%;">
-      <div class="h-10 border-b flex items-center px-3 gap-1 shrink-0 {toolbarClass} print:hidden overflow-x-auto select-none">
+    <div class="flex flex-col min-w-0 border-r relative {editorClass}" style="width: {$splitWidth}%;">
+      <div class="h-10 border-b flex items-center px-3 gap-1 shrink-0 {toolbarClass} overflow-x-auto select-none">
         <span class="text-xs font-bold uppercase tracking-wider opacity-50 mr-1 shrink-0">{$t('editor')}</span>
         <div class="h-4 w-px {dividerClass} shrink-0 mx-1"></div>
         <button 
@@ -1297,7 +1297,7 @@
 
     <div class="flex-1 min-w-0 flex flex-col relative">
       {#if isResizing} <div class="absolute inset-0 z-50"></div> {/if}
-      <div class="p-2 h-10 border-b flex flex-nowrap items-center px-4 gap-4 shrink-0 whitespace-nowrap overflow-hidden {toolbarClass} print:hidden">
+      <div class="p-2 h-10 border-b flex flex-nowrap items-center px-4 gap-4 shrink-0 whitespace-nowrap overflow-hidden {toolbarClass}">
         <div class="flex items-center gap-2">
             <!-- Focus mode always hides the editor, so the editor toggle would do nothing there -->
             {#if !$isFocusMode}
@@ -1450,14 +1450,4 @@
   .drop-toast.error { background: #ef4444; }
   @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-  @media print {
-    :global(body), main {
-      background: white !important;
-      background-color: white !important;
-      color: #111827 !important;
-      height: auto !important;
-      overflow: visible !important;
-      display: block !important;
-    }
-  }
 </style>

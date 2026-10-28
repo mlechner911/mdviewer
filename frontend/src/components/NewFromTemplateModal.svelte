@@ -103,7 +103,7 @@
 
 {#if show}
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print:hidden" onkeydown={onKeydown}>
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onkeydown={onKeydown}>
   <div class="max-w-xl w-full max-h-[90vh] flex flex-col rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <div class="p-6 flex flex-col gap-3 text-sm overflow-y-auto">
       <h3 class="text-lg font-bold">{$t('tplHeading')}</h3>

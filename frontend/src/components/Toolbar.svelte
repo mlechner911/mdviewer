@@ -5,7 +5,7 @@
    */
   import { t, locale } from '../i18n';
   import { STYLE, APP_THEME } from '../lib/constants';
-  import { appTheme, effectiveAppTheme, isFocusMode, isPrinting, appVersion } from '../lib/stores';
+  import { appTheme, effectiveAppTheme, isFocusMode, appVersion } from '../lib/stores';
 
   // --- Svelte 5 Runes: Props ---
   let { 
@@ -33,8 +33,8 @@
   }
 </script>
 
-{#if !$isFocusMode && !$isPrinting}
-<div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass} print:hidden">
+{#if !$isFocusMode}
+<div class="h-12 border-b flex items-center px-4 gap-4 shrink-0 z-20 {toolbarClass}">
   <span class="text-sm font-semibold opacity-70">MarkSafe v{$appVersion}</span>
 
   <div class="flex-1"></div>

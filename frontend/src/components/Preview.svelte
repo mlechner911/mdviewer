@@ -210,19 +210,4 @@
 <style>
   .preview-container :global(.mlc-md) { font-size: calc(1rem * var(--preview-scale, 1)); }
 
-  @media print {
-    :global(html), :global(body), :global(#app), :global(main), .preview-container {
-      background: #ffffff !important;
-      color: #111827 !important;
-      height: auto !important;
-      min-height: 0 !important;
-      overflow: visible !important;
-      display: block !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-  }
 </style>

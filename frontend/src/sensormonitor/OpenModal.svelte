@@ -75,7 +75,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm print:hidden" role="dialog" aria-modal="true" aria-label={$t('smOpenTitle')}>
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={$t('smOpenTitle')}>
   <div class="max-w-lg w-full rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <div class="p-6">
       <h3 class="text-lg font-bold mb-4">{$t('smOpenTitle')}</h3>

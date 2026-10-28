@@ -79,5 +79,4 @@
   .missing { color: var(--mlc-md-alert-warning); font-style: italic; }
   .error { color: var(--mlc-md-alert-caution); font-weight: 600; }
   .tag { display: inline-block; padding: 0.05rem 0.45rem; margin: 0 0.25rem 0.1rem 0; font-family: var(--mlc-md-font-mono); font-size: 0.72rem; border-radius: 9999px; background: var(--mlc-md-border); }
-  @media print { .mlc-docinfo { display: none; } }
 </style>
