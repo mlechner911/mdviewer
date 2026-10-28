@@ -59,7 +59,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | Variables | `{{doc_id}}`, `{{version}}`, `{{title}}` in the text | replaced with the front matter values when rendering | ✅ checked; ⏳ replaced in the preview |
 | Signature | `<!--mlc-signature … -->` at the end of the file (old form: a `signature:` block before the front matter) | seal of the Sensor Monitor; not part of the content | ✅ recognised, left out of the content; ⏳ "signed by … on …" in the preview |
 | Signature field | `[@Unterschrift: Rolle]`, `[@#name Unterschrift: Rolle]` (English `Signature:`, either case) | room to sign above a line, the role below it; an empty PDF signature field (mlcmd2pdf 3.28.0) | ✅ checked, highlighted; preview shows the line and the role |
-| Filled-in form | front matter `meta:` with `schema: mlc-form-record/v1`, values in the fields | not printed (mlcdoc does not read `meta`) | ✅ checked (`mlcext.FillFields`, `FieldValues`, `FormSchema`); ⏳ fill mode |
+| Filled-in form | front matter `meta:` with `schema: mlc-form-record/v1`, values in the fields | not printed (mlcdoc does not read `meta`) | ✅ checked (`mlcext.FillFields`, `FieldValues`, `FormSchema`, `SetFormRecord`); fill mode with input mask |
 | Layout front matter | `header`, `footer`, `signatures`, `toc`, `page-size` … | page header/footer, signature block, layout | ⏳ generic metadata table |
 
 ✅ supported · ⏳ planned (see roadmap below)
@@ -247,6 +247,22 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   editors validate templates with it. A created document must pass the
   checker; whether its ID is free among the approved documents only the
   Sensor Monitor can tell, on upload.
+- **Filling in a form** ("Ausfüllen" in the preview bar, for a document
+  with form fields): the form opens in a new tab without a file, and an
+  input mask takes the place of the preview. Every entry goes straight into
+  the fields of the Markdown (`mlcext.FillFields`), so editor, preview and
+  PDF show the record as it will be saved. The labels come from the text
+  around each field (`mlcext.FormSchema`), the field name stands next to
+  them. "Werte laden…" sets values from a JSON file (`{"feld": "Wert"}`,
+  `true`/`false` for a check box). Signature fields are shown, not filled.
+  - **Saving** asks who filled it in (a name, never an e-mail address;
+    remembered for next time), writes the `meta:` block (form with id,
+    version and SHA-256, `filled_by`, `completed_at`) and suggests
+    `<doc_id>_<date>.md`. A file that is not itself a filled-in form, the
+    form above all, is never overwritten. A saved record opens like any
+    document and can be filled on in its own tab.
+  - Prefilling from an event of the Sensor Monitor follows with the server
+    side (plan P-SENS-20261028-01 Phase 3).
 - **Document folder** (File → "Choose Document Folder…", "Open Document
   Folder", `Ctrl+Shift+D`): one fixed base folder for the document
   collection, like an Obsidian vault. It is a workspace only: status,

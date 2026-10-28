@@ -22,6 +22,7 @@
   import TabsBar from './components/TabsBar.svelte';
   import StatusBar from './components/StatusBar.svelte';
   import PdfPreview from './components/PdfPreview.svelte';
+  import FormFillPanel from './components/FormFillPanel.svelte';
   import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import SensorLoginModal from './components/SensorLoginModal.svelte';
@@ -50,6 +51,8 @@
     isDirty: boolean;
     /** Opened from the Sensor Monitor: the version it came from. */
     sensor?: { ref: string; id: string; version: string; status: string; filename: string };
+    /** Being filled in: the form it comes from (mlcext.FormRef). */
+    form?: { ref: backend.MLCFormRef };
   }
 
   // --- Svelte 5 Runes: State ---
@@ -218,6 +221,79 @@
     tabs = [...tabs, newTab];
     activeTabIndex = tabs.length - 1;
     showTemplateModal = false;
+  }
+
+  // --- Filling in a form (P-SENS-20261028-01 Phase 2) ---
+  // "Fill in" opens the form in a new tab without a file, so saving can
+  // never replace the form; a record that is already saved is filled on in
+  // its own tab. Saving writes the record's meta block (backend).
+  const readStore = (k: string) => { try { return localStorage.getItem(k) ?? ''; } catch { return ''; } };
+  let filledBy = $state(readStore('marksafe_filled_by'));
+  function setFilledBy(name: string) {
+    filledBy = name;
+    try { localStorage.setItem('marksafe_filled_by', name); } catch { /* private mode */ }
+  }
+  const canFill = $derived(!!mlcAnalysis?.fields?.length && !tabs[activeTabIndex]?.form);
+
+  async function startFill() {
+    const tab = tabs[activeTabIndex];
+    if (!tab) return;
+    const ref = await backend.mlcFormRef(tab.content);
+    if (tab.path && (await backend.mlcIsFormRecord(tab.content))) {
+      tabs[activeTabIndex].form = { ref };
+    } else {
+      const newTab = createNewTab(`${(tab.title || $t('untitled')).replace(/\.md$/, '')} – ${$t('formFillTab')}`, tab.content);
+      newTab.form = { ref };
+      tabs = [...tabs, newTab];
+      activeTabIndex = tabs.length - 1;
+    }
+    previewMode = 'html';
+  }
+
+  function fillChanged(md: string) {
+    const tab = tabs[activeTabIndex];
+    if (!tab || tab.content === md) return;
+    tab.content = md;
+    tab.isDirty = true;
+  }
+
+  async function loadFillValues() {
+    const tab = tabs[activeTabIndex];
+    if (!tab) return;
+    try {
+      const values = await backend.loadFormValues();
+      if (!values) return;
+      fillChanged(await backend.mlcFillForm(tab.content, values));
+      showToast($t('formFillLoaded', String(Object.keys(values).length)), 2500, 'info');
+    } catch (err) {
+      showToast(String(err), 6000, 'error');
+    }
+  }
+
+  async function saveFilledForm() {
+    const index = activeTabIndex;
+    const tab = tabs[index];
+    if (!tab?.form || isSaving) return;
+    if (!filledBy.trim()) {
+      showToast($t('formFillByMissing'), 4000, 'error');
+      return;
+    }
+    try {
+      isSaving = true;
+      const res = await backend.saveFilledForm(tab.content, tab.form.ref, filledBy.trim(), tab.path ?? '');
+      if (!res) return; // cancelled
+      tabs[index].path = res.path;
+      tabs[index].content = res.content;
+      tabs[index].title = await backend.getFileTitle(res.path);
+      tabs[index].isDirty = false;
+      await backend.addPathToWhitelist(await backend.getParentDir(res.path));
+      showToast($t('formFillSaved', res.path), 3000, 'info');
+      updateNativeMenu(get(locale));
+    } catch (err) {
+      showToast(String(err), 7000, 'error');
+    } finally {
+      isSaving = false;
+    }
   }
 
   function addNewTab() {
@@ -561,6 +637,7 @@
     if (!isReady || !checkWailsReady() || isSaving) return;
     const tab = activeTab;
     if (!tab) return;
+    if (tab.form) return saveFilledForm();
 
     // If document has no filename/path yet, route to Save As
     if (!tab.path) {
@@ -590,6 +667,11 @@
     if (!isReady || !checkWailsReady() || isSaving) return;
     const tab = activeTab;
     if (!tab) return;
+    // A filled-in form is saved as a record, under a new name.
+    if (tab.form) {
+      tab.path = null;
+      return saveFilledForm();
+    }
 
     try {
       isSaving = true;
@@ -1327,6 +1409,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
         </button>
         {/if}
+        {#if canFill}
+          <button onclick={startFill} title={$t('formFillStartHint')} class="px-1.5 h-6 rounded text-[11px] font-bold transition-colors {buttonClass}">{$t('formFillStart')}</button>
+        {/if}
         {#if canPdfPreview}
           <button
             onclick={() => (previewMode = previewMode === 'pdf' ? 'html' : 'pdf')}
@@ -1370,7 +1455,18 @@
       {#if showPdfPreview}
         <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
       {/if}
-      <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview}>
+      {#if tabs[activeTabIndex]?.form && !showPdfPreview}
+        <FormFillPanel
+          md={tabs[activeTabIndex].content}
+          {filledBy}
+          onchange={fillChanged}
+          onfilledby={setFilledBy}
+          onsave={saveFilledForm}
+          onload={loadFillValues}
+          onclose={() => (tabs[activeTabIndex].form = undefined)}
+        />
+      {/if}
+      <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview || !!tabs[activeTabIndex]?.form}>
       <Preview 
         bind:this={previewComponent}
         source={markdown}

@@ -48,7 +48,13 @@ import {
   SensorMonitorCompare,
   SensorMonitorSaveDraft,
   SetUnsavedChanges,
-  CloseApp
+  CloseApp,
+  MLCFormSchema,
+  MLCFillForm,
+  MLCFormRefOf,
+  SaveFilledForm,
+  LoadFormValues,
+  MLCIsFormRecord
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -56,7 +62,10 @@ import type {
   TemplateInfo as MLCTemplate,
   TemplateInput as MLCTemplateField,
   RenderResult as MLCRenderResult,
+  FormField as MLCFormField,
+  FormRef as MLCFormRef,
 } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
+export type { MLCFormField, MLCFormRef };
 import { get } from 'svelte/store';
 import { t } from '../i18n';
 
@@ -446,4 +455,44 @@ export async function setUnsavedChanges(unsaved: boolean): Promise<void> {
 export async function closeApp(): Promise<void> {
   if (!isWailsReady()) return;
   try { await CloseApp(); } catch (err) { console.error('closeApp failed:', err); }
+}
+
+// --- Filling in a form (mlcext.FormSchema / FillFields, P-SENS-20261028-01) ---
+
+/** The fields of md for the input mask. */
+export async function mlcFormSchema(md: string): Promise<MLCFormField[]> {
+  if (!isWailsReady()) return [];
+  try { return ((await MLCFormSchema(md)) ?? []).filter((f): f is MLCFormField => !!f); } catch (err) { console.error('mlcFormSchema failed:', err); return []; }
+}
+
+/** md with values (field name → value) set into its fields. */
+export async function mlcFillForm(md: string, values: Record<string, string>): Promise<string> {
+  if (!isWailsReady()) return md;
+  try { return await MLCFillForm(md, values); } catch (err) { console.error('mlcFillForm failed:', err); return md; }
+}
+
+/** The form md is filled from (doc_id, version, SHA-256). */
+export async function mlcFormRef(md: string): Promise<MLCFormRef> {
+  const none = { docId: '', version: '', docNo: '', sha256: '' };
+  if (!isWailsReady()) return none;
+  try { return (await MLCFormRefOf(md)) ?? none; } catch (err) { console.error('mlcFormRef failed:', err); return none; }
+}
+
+/** md is a filled-in form (meta.schema mlc-form-record/v1). */
+export async function mlcIsFormRecord(md: string): Promise<boolean> {
+  if (!isWailsReady()) return false;
+  try { return await MLCIsFormRecord(md); } catch { return false; }
+}
+
+/** Save md as a filled-in form; null when cancelled. Errors are thrown. */
+export async function saveFilledForm(md: string, form: MLCFormRef, filledBy: string, path: string): Promise<FileResult | null> {
+  if (!isWailsReady()) return null;
+  return (await SaveFilledForm(md, form, filledBy, path)) ?? null;
+}
+
+/** Field values from a JSON file; null when cancelled. Errors are thrown. */
+export async function loadFormValues(): Promise<Record<string, string> | null> {
+  if (!isWailsReady()) return null;
+  const v = await LoadFormValues();
+  return v ? (Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined)) as Record<string, string>) : null;
 }

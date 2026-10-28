@@ -5,6 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- **Fill in a form** ("Ausfüllen" in the preview bar): input mask next to the editor, values straight into the fields, "Werte laden…" from JSON, saving as a filled-in form with the `meta:` block (who, when, which form version) under `<doc_id>_<date>.md`; the form is never overwritten. `mlcext.SetFormRecord`, `FormRecordOf`, `FormRefOf`.
 - **Signature field** `[@Unterschrift: Rolle]` / `[@#name Unterschrift: Rolle]` (English `Signature:`, as mlcmd2pdf 3.28.0): names who signs; checker, preview (line with the role below) and the editor's building blocks know it. Filling leaves it alone.
 - **Ticked check box** `[@x]` / `[@#name x]` (as mlcmd2pdf 3.27.0): the checker and the preview know it, the preview draws a cross.
 - **Filling forms** in `mlcext` (plan P-SENS-20261028-01): `FillFields` puts values into the fields (also unnamed ones, check boxes ticked by `x`), `FieldValues` reads them back, `FormSchema` describes the fields for an input mask with a label taken from the text around them; moved here from the Sensor Monitor.
