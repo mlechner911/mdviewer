@@ -102,13 +102,16 @@
 
   const defaultMarkdown = () => get(t)('welcomeTitle') + (c_welcomeMarkdown[$locale as 'en'|'de'|'es'|'fr'] ?? c_welcomeMarkdown.en);
 
-  // Re-render welcome tabs when the app language changes.
+  // Re-render welcome tabs when the app language changes (only tabs that
+  // still show the welcome text, not e.g. a document from a template).
   let prevLocale = $locale;
+  let prevWelcome = defaultMarkdown();
   $effect(() => {
     if ($locale === prevLocale) return;
     prevLocale = $locale;
-    const newContent = defaultMarkdown();
-    tabs = tabs.map(tab => (!tab.path && !tab.isDirty) ? { ...tab, content: newContent } : tab);
+    const oldContent = prevWelcome;
+    const newContent = prevWelcome = defaultMarkdown();
+    tabs = tabs.map(tab => (!tab.path && !tab.isDirty && tab.content === oldContent) ? { ...tab, content: newContent } : tab);
   });
 
   function createNewTab(title = $t('untitled'), content = "", path: string | null = null): Tab {
@@ -163,6 +166,7 @@
   }
   function createFromTemplate(content: string, fileName: string) {
     const newTab = createNewTab(fileName || $t('untitled'), content);
+    newTab.isDirty = true; // not saved yet: closing asks
     tabs = [...tabs, newTab];
     activeTabIndex = tabs.length - 1;
     showTemplateModal = false;
