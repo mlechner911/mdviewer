@@ -14,6 +14,8 @@
     "paths": {
       "@codemirror/*": ["./node_modules/@codemirror/*"],
       "mlc-markdown": ["../packages/mlc-markdown/src/index.ts"],
+      // type-checks the module itself; the build picks the variant (vite.config.ts)
+      "$sensormonitor": ["./src/sensormonitor/index.ts"],
       "mlc-markdown-svelte": ["../packages/mlc-markdown-svelte/src/index.d.ts"],
       "marked": ["./node_modules/marked"],
       "dompurify": ["./node_modules/dompurify"],

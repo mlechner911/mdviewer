@@ -48,3 +48,4 @@ mlcplan.md
 /mlcprodweb/
 build/mlcdoc/
 packages/*/dist/
+frontend/.variant

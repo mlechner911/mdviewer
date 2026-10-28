@@ -46,8 +46,9 @@ type App struct {
 	initialFile string
 	pdf         pdfTool
 	templates   templateSeed
-	sensor      sensorState
 	closing     closeState
+	// extensions built in with a build tag (extensions.go)
+	extensions []extension
 }
 
 // templateSeed copies the built-in templates into the user's template
@@ -170,23 +171,17 @@ func (a *App) UpdateMenu(t map[string]string) {
 	exportMenu.Add(label(t, "menuExportHtml", "As HTML…")).OnClick(func(*application.Context) {
 		emit("menu-export-html")
 	})
-	// Submenu: Sensor Monitor, only with an address in the settings: for
-	// everyone else MarkSafe shows nothing of it.
-	if a.config.GetSensorMonitorURL() != "" {
-		smMenu := fileMenu.AddSubmenu(label(t, "menuSensorMonitor", "Sensor Monitor"))
-		smMenu.Add(label(t, "menuSensorOpen", "Open…")).OnClick(func(*application.Context) { emit("menu-sm-open") })
-		smMenu.Add(label(t, "menuSensorSaveDraft", "Save as Draft…")).OnClick(func(*application.Context) { emit("menu-sm-save-draft") })
-		smMenu.AddSeparator()
-		if a.sensorLogin() == nil {
-			smMenu.Add(label(t, "menuSensorLogin", "Sign In…")).OnClick(func(*application.Context) { emit("menu-sm-login") })
-		} else {
-			smMenu.Add(label(t, "menuSensorLogout", "Sign Out")).OnClick(func(*application.Context) { a.SensorMonitorLogout() })
-		}
+	// Entries of built-in extensions (extensions.go), e.g. "Sensor Monitor".
+	for _, e := range a.extensions {
+		e.FileMenu(fileMenu, func(key, fallback string) string { return label(t, key, fallback) })
 	}
 	fileMenu.AddSeparator()
-	fileMenu.Add(label(t, "menuSettings", "Settings…")).SetAccelerator("CmdOrCtrl+,").OnClick(func(*application.Context) {
-		emit("menu-settings")
-	})
+	// Settings only exist for extensions so far: without one, no entry.
+	if a.hasSettings() {
+		fileMenu.Add(label(t, "menuSettings", "Settings…")).SetAccelerator("CmdOrCtrl+,").OnClick(func(*application.Context) {
+			emit("menu-settings")
+		})
+	}
 	fileMenu.Add(t["menuAbout"]).OnClick(func(*application.Context) {
 		// Themed in-app dialog (frontend) instead of the native one,
 		// so About follows the active Dark/Light mode.

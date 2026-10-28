@@ -23,7 +23,7 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
 - ** Export to HTML**: Export standalone HTML documents with embedded CSS and styles.
 ** Multilingual**: Support for English, German, Spanish, and French.
 - ** Real-time Rendering**: Instant preview as you type.
-- ** MLC Sensor Monitor** *(optional, off by default)*: open SOPs and forms from the Sensor Monitor, save changes as drafts and see whether a file matches the approved version — see **[docs/SENSOR-MONITOR.md](./docs/SENSOR-MONITOR.md)**.
+- ** MLC Sensor Monitor** *(optional module, not in the public builds)*: open SOPs and forms from the Sensor Monitor, save changes as drafts and see whether a file matches the approved version — see **[docs/SENSOR-MONITOR.md](./docs/SENSOR-MONITOR.md)**.
 - ** Browser Mode**: Open the current document's directory in a standalone window — recursive tree, fuzzy full-text search (`Ctrl+K`), validated intra-doc links, directory indexes, and the same theme as the main window.
 
 ## 🛡️ Security First

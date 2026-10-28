@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+- **The connection to the MLC Sensor Monitor is an optional module.** Public builds no longer contain it; `task … SENSOR=1` builds it in (Go tag `sensormonitor`, frontend variant). Its code lives in `sensormonitor/` and `frontend/src/sensormonitor/`, its address in its own `sensormonitor.json` (taken over once from `config.json`). File › Settings… only appears when a module has settings. See `docs/SENSOR-MONITOR.md`.
+
 ### Added
 - **Fill in a form** ("Ausfüllen" in the preview bar): input mask next to the editor, values straight into the fields, "Werte laden…" from JSON, saving as a filled-in form with the `meta:` block (who, when, which form version) under `<doc_id>_<date>.md`; the form is never overwritten. `mlcext.SetFormRecord`, `FormRecordOf`, `FormRefOf`.
 - **Signature field** `[@Unterschrift: Rolle]` / `[@#name Unterschrift: Rolle]` (English `Signature:`, as mlcmd2pdf 3.28.0): names who signs; checker, preview (line with the role below) and the editor's building blocks know it. Filling leaves it alone.

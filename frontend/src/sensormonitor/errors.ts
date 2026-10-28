@@ -1,6 +1,6 @@
 // Refusals of the Sensor Monitor, translated by their fixed code; the
 // server's own text is only an English fallback.
-import type { SensorError } from './backend';
+import type { SensorError } from './api';
 
 type T = (key: string, ...args: any[]) => string;
 

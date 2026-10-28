@@ -1,29 +1,166 @@
-package main
-
-// Connection to an MLC Sensor Monitor (internal/sensormonitor): off until
-// an address is set; then sign-in by device login, the token only in
-// memory. See plan P-MARKS-20261021-01.
+// Package sensormonitor is MarkSafe's optional connection to an MLC Sensor
+// Monitor: open SOPs and forms from it, save them there as drafts and
+// compare the working copy with the approved version.
+//
+// It is built in only with the build tag "sensormonitor" (task … SENSOR=1,
+// see ../sensormonitor_on.go); public MarkSafe builds contain none of it.
+// Even when built in it stays off until an address is set. The frontend
+// part lives in frontend/src/sensormonitor/ and calls the methods of
+// Service by name.
+//
+// Sign-in is the device login of mlcauth on the same host; the token lives
+// only in memory. MarkSafe cannot approve, set a status or "valid from",
+// or delete: that stays in the Sensor Monitor.
+package sensormonitor
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"marksafe/internal/sensormonitor"
+	"marksafe/sensormonitor/api"
 )
 
-type sensorState struct {
-	mu     sync.Mutex
-	login  *sensormonitor.Login
-	cancel context.CancelFunc // a running device login
+// Service is the Wails service of the connection.
+type Service struct {
+	version string
+	cfgPath string
+
+	mu      sync.Mutex
+	address string     // "" = off
+	login   *api.Login // valid sign-in, nil when signed out
+	cancel  context.CancelFunc
 }
 
-// SensorMonitorStatus is what the frontend shows of the connection.
-type SensorMonitorStatus struct {
+// settings is the module's own file next to MarkSafe's config.json.
+type settings struct {
+	Address string `json:"address,omitempty"`
+}
+
+// New returns the service; version goes into the User-Agent.
+func New(version string) *Service {
+	s := &Service{version: version}
+	if dir, err := os.UserConfigDir(); err == nil {
+		s.cfgPath = filepath.Join(dir, "marksafe", "sensormonitor.json")
+		s.load(filepath.Join(dir, "marksafe", "config.json"))
+	}
+	return s
+}
+
+// load reads the settings; MarkSafe 1.8 kept the address in config.json
+// ("sensor_monitor_url"), which is taken over once.
+func (s *Service) load(legacy string) {
+	var st settings
+	if b, err := os.ReadFile(s.cfgPath); err == nil {
+		_ = json.Unmarshal(b, &st)
+	} else if b, err := os.ReadFile(legacy); err == nil {
+		var old struct {
+			URL string `json:"sensor_monitor_url"`
+		}
+		if json.Unmarshal(b, &old) == nil && old.URL != "" {
+			st.Address = old.URL
+			s.address = st.Address
+			_ = s.save()
+		}
+	}
+	s.address = st.Address
+}
+
+func (s *Service) save() error {
+	if s.cfgPath == "" {
+		return errors.New("no config folder")
+	}
+	b, err := json.MarshalIndent(settings{Address: s.address}, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(s.cfgPath), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(s.cfgPath, b, 0o600)
+}
+
+func emit(name string, data ...any) {
+	if app := application.Get(); app != nil {
+		app.Event.Emit(name, data...)
+	}
+}
+
+// Extension is how MarkSafe sees the module: the Wails service plus its
+// menu entries and settings. Service itself carries only the methods the
+// frontend calls (every exported method of a service is bound).
+type Extension struct {
+	svc *Service
+}
+
+// NewExtension returns the module; version goes into the User-Agent.
+func NewExtension(version string) *Extension {
+	return &Extension{svc: New(version)}
+}
+
+// Service is the Wails service to register.
+func (e *Extension) Service() application.Service {
+	return application.NewService(e.svc)
+}
+
+// FileMenu adds the submenu "Sensor Monitor" to MarkSafe's File menu, only
+// with an address: for everyone else nothing of it is shown.
+func (e *Extension) FileMenu(menu *application.Menu, label func(key, fallback string) string) {
+	s := e.svc
+	if s.currentAddress() == "" {
+		return
+	}
+	sm := menu.AddSubmenu(label("menuSensorMonitor", "Sensor Monitor"))
+	sm.Add(label("menuSensorOpen", "Open…")).OnClick(func(*application.Context) { emit("menu-sm-open") })
+	sm.Add(label("menuSensorSaveDraft", "Save as Draft…")).OnClick(func(*application.Context) { emit("menu-sm-save-draft") })
+	sm.AddSeparator()
+	if s.signedIn() == nil {
+		sm.Add(label("menuSensorLogin", "Sign In…")).OnClick(func(*application.Context) { emit("menu-sm-login") })
+	} else {
+		sm.Add(label("menuSensorLogout", "Sign Out")).OnClick(func(*application.Context) { s.Logout() })
+	}
+}
+
+// HasSettings: the module has a section in File › Settings….
+func (e *Extension) HasSettings() bool { return true }
+
+func (s *Service) currentAddress() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.address
+}
+
+// signedIn returns the sign-in while it is valid.
+func (s *Service) signedIn() *api.Login {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if l := s.login; l != nil && (l.Expires.IsZero() || time.Now().Before(l.Expires)) {
+		return l
+	}
+	s.login = nil
+	return nil
+}
+
+func (s *Service) client() (*api.Client, error) {
+	c, err := api.New(s.currentAddress())
+	if err != nil {
+		return nil, err
+	}
+	c.UserAgent = "MarkSafe/" + s.version
+	if l := s.signedIn(); l != nil {
+		c.Token = l.Token
+	}
+	return c, nil
+}
+
+// Status is what the frontend shows of the connection.
+type Status struct {
 	// Address is "" when the connection is off.
 	Address  string `json:"address"`
 	SignedIn bool   `json:"signedIn"`
@@ -32,87 +169,68 @@ type SensorMonitorStatus struct {
 	Expires string `json:"expires"`
 }
 
-// SensorLoginCode is the code the user confirms in the browser.
-type SensorLoginCode struct {
+// GetStatus returns the connection state.
+func (s *Service) GetStatus() Status {
+	st := Status{Address: s.currentAddress()}
+	if st.Address == "" {
+		return st
+	}
+	if l := s.signedIn(); l != nil {
+		st.SignedIn, st.Email = true, l.Email
+		if !l.Expires.IsZero() {
+			st.Expires = l.Expires.Format(time.RFC3339)
+		}
+	}
+	return st
+}
+
+// SetAddress stores the address (normalized; "" turns the connection off)
+// and returns it. A new address ends the sign-in. The frontend rebuilds
+// the menu afterwards.
+func (s *Service) SetAddress(address string) (string, error) {
+	u := ""
+	if address != "" {
+		var err error
+		if u, err = api.NormalizeURL(address); err != nil {
+			return "", err
+		}
+	}
+	if u != s.currentAddress() {
+		s.endLogin()
+	}
+	s.mu.Lock()
+	s.address = u
+	err := s.save()
+	s.mu.Unlock()
+	return u, err
+}
+
+// LoginCode is the code the user confirms in the browser.
+type LoginCode struct {
 	UserCode string `json:"userCode"`
 	URL      string `json:"url"`
 	// ExpiresIn seconds.
 	ExpiresIn int `json:"expiresIn"`
 }
 
-// SensorLoginResult is the "sensormonitor-login" event at the end of a
-// device login. Error is "denied", "expired", "cancelled" or a message.
-type SensorLoginResult struct {
+// LoginResult is the "sensormonitor-login" event at the end of a device
+// login. Error is "denied", "expired", "cancelled", "signed-out",
+// "session-ended" or a message.
+type LoginResult struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error"`
 }
 
-// sensorLogin returns the sign-in while it is valid.
-func (a *App) sensorLogin() *sensormonitor.Login {
-	a.sensor.mu.Lock()
-	defer a.sensor.mu.Unlock()
-	if l := a.sensor.login; l != nil && (l.Expires.IsZero() || time.Now().Before(l.Expires)) {
-		return l
-	}
-	a.sensor.login = nil
-	return nil
-}
-
-func (a *App) sensorClient() (*sensormonitor.Client, error) {
-	c, err := sensormonitor.New(a.config.GetSensorMonitorURL())
-	if err != nil {
-		return nil, err
-	}
-	c.UserAgent = "MarkSafe/" + a.GetVersion()
-	if l := a.sensorLogin(); l != nil {
-		c.Token = l.Token
-	}
-	return c, nil
-}
-
-// GetSensorMonitorStatus returns the connection state.
-func (a *App) GetSensorMonitorStatus() SensorMonitorStatus {
-	s := SensorMonitorStatus{Address: a.config.GetSensorMonitorURL()}
-	if s.Address == "" {
-		return s
-	}
-	if l := a.sensorLogin(); l != nil {
-		s.SignedIn, s.Email = true, l.Email
-		if !l.Expires.IsZero() {
-			s.Expires = l.Expires.Format(time.RFC3339)
-		}
-	}
-	return s
-}
-
-// SetSensorMonitorURL stores the address (normalized; "" turns the
-// connection off) and returns it. A new address ends the sign-in. The
-// frontend rebuilds the menu afterwards.
-func (a *App) SetSensorMonitorURL(address string) (string, error) {
-	u := ""
-	if address != "" {
-		var err error
-		if u, err = sensormonitor.NormalizeURL(address); err != nil {
-			return "", err
-		}
-	}
-	if u != a.config.GetSensorMonitorURL() {
-		a.endSensorLogin()
-	}
-	return u, a.config.SetSensorMonitorURL(u)
-}
-
-// SensorMonitorStartLogin requests a code, opens the confirmation page in
-// the browser and waits in the background; the result comes as the event
+// StartLogin requests a code, opens the confirmation page in the browser
+// and waits in the background; the result comes as the event
 // "sensormonitor-login".
-func (a *App) SensorMonitorStartLogin() (*SensorLoginCode, error) {
-	c, err := a.sensorClient()
+func (s *Service) StartLogin() (*LoginCode, error) {
+	c, err := s.client()
 	if err != nil {
 		return nil, err
 	}
-	host, _ := os.Hostname()
 	name := "MarkSafe"
-	if host != "" {
+	if host, _ := os.Hostname(); host != "" {
 		name += " auf " + host
 	}
 	dc, err := c.StartLogin(context.Background(), name)
@@ -120,24 +238,24 @@ func (a *App) SensorMonitorStartLogin() (*SensorLoginCode, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(dc.ExpiresIn+30)*time.Second)
-	a.sensor.mu.Lock()
-	if a.sensor.cancel != nil {
-		a.sensor.cancel()
+	s.mu.Lock()
+	if s.cancel != nil {
+		s.cancel()
 	}
-	a.sensor.cancel = cancel
-	a.sensor.mu.Unlock()
+	s.cancel = cancel
+	s.mu.Unlock()
 	go func() {
 		defer cancel()
 		l, err := c.WaitLogin(ctx, dc)
-		res := SensorLoginResult{OK: err == nil}
+		res := LoginResult{OK: err == nil}
 		switch {
 		case err == nil:
-			a.sensor.mu.Lock()
-			a.sensor.login = l
-			a.sensor.mu.Unlock()
-		case errors.Is(err, sensormonitor.ErrLoginDenied):
+			s.mu.Lock()
+			s.login = l
+			s.mu.Unlock()
+		case errors.Is(err, api.ErrLoginDenied):
 			res.Error = "denied"
-		case errors.Is(err, sensormonitor.ErrLoginExpired), errors.Is(err, context.DeadlineExceeded):
+		case errors.Is(err, api.ErrLoginExpired), errors.Is(err, context.DeadlineExceeded):
 			res.Error = "expired"
 		case errors.Is(err, context.Canceled):
 			res.Error = "cancelled"
@@ -153,144 +271,144 @@ func (a *App) SensorMonitorStartLogin() (*SensorLoginCode, error) {
 	if app := application.Get(); app != nil {
 		_ = app.Browser.OpenURL(u)
 	}
-	return &SensorLoginCode{UserCode: dc.UserCode, URL: u, ExpiresIn: dc.ExpiresIn}, nil
+	return &LoginCode{UserCode: dc.UserCode, URL: u, ExpiresIn: dc.ExpiresIn}, nil
 }
 
-// SensorMonitorCancelLogin stops a running device login.
-func (a *App) SensorMonitorCancelLogin() {
-	a.sensor.mu.Lock()
-	defer a.sensor.mu.Unlock()
-	if a.sensor.cancel != nil {
-		a.sensor.cancel()
-		a.sensor.cancel = nil
+// CancelLogin stops a running device login.
+func (s *Service) CancelLogin() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cancel != nil {
+		s.cancel()
+		s.cancel = nil
 	}
 }
 
-// SensorMonitorLogout forgets the token. The event "sensormonitor-login"
-// with ok false lets the frontend update menu and status bar.
-func (a *App) SensorMonitorLogout() {
-	a.endSensorLogin()
-	emit("sensormonitor-login", SensorLoginResult{Error: "signed-out"})
+// Logout forgets the token. The event "sensormonitor-login" with ok false
+// lets the frontend update menu and status bar.
+func (s *Service) Logout() {
+	s.endLogin()
+	emit("sensormonitor-login", LoginResult{Error: "signed-out"})
 }
 
-func (a *App) endSensorLogin() {
-	a.sensor.mu.Lock()
-	defer a.sensor.mu.Unlock()
-	if a.sensor.cancel != nil {
-		a.sensor.cancel()
-		a.sensor.cancel = nil
+func (s *Service) endLogin() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cancel != nil {
+		s.cancel()
+		s.cancel = nil
 	}
-	a.sensor.login = nil
+	s.login = nil
 }
 
-// SensorError is a refusal for the frontend to translate by Code
+// Error is a refusal for the frontend to translate by Code
 // (ERR_DOCUMENT_DRAFT_PENDING …; "not-signed-in" before any request).
 // SignIn: the sign-in is missing or ran out; sign in and try again.
-type SensorError struct {
+type Error struct {
 	Code    string            `json:"code"`
 	Message string            `json:"message"`
 	Params  map[string]string `json:"params"`
 	SignIn  bool              `json:"signIn"`
 }
 
-func (a *App) sensorError(err error) *SensorError {
+func (s *Service) refusal(err error) *Error {
 	if err == nil {
 		return nil
 	}
-	e := &SensorError{Message: err.Error(), Params: map[string]string{}}
-	var se *sensormonitor.Error
-	if errors.As(err, &se) {
-		e.Code, e.Message = se.Code, se.Message
-		for k := range se.Params {
-			e.Params[k] = se.Param(k)
+	e := &Error{Message: err.Error(), Params: map[string]string{}}
+	var ae *api.Error
+	if errors.As(err, &ae) {
+		e.Code, e.Message = ae.Code, ae.Message
+		for k := range ae.Params {
+			e.Params[k] = ae.Param(k)
 		}
 	}
-	if sensormonitor.IsUnauthorized(err) {
+	if api.IsUnauthorized(err) {
 		// The token expired or was revoked: forget it, the menu follows.
 		e.SignIn = true
-		a.endSensorLogin()
-		emit("sensormonitor-login", SensorLoginResult{Error: "session-ended"})
+		s.endLogin()
+		emit("sensormonitor-login", LoginResult{Error: "session-ended"})
 	}
 	return e
 }
 
 // signedInClient is the client with a valid sign-in, or the refusal.
-func (a *App) signedInClient() (*sensormonitor.Client, *SensorError) {
-	if a.sensorLogin() == nil {
-		return nil, &SensorError{Code: "not-signed-in", SignIn: true, Params: map[string]string{}}
+func (s *Service) signedInClient() (*api.Client, *Error) {
+	if s.signedIn() == nil {
+		return nil, &Error{Code: "not-signed-in", SignIn: true, Params: map[string]string{}}
 	}
-	c, err := a.sensorClient()
+	c, err := s.client()
 	if err != nil {
-		return nil, &SensorError{Message: err.Error(), Params: map[string]string{}}
+		return nil, &Error{Message: err.Error(), Params: map[string]string{}}
 	}
 	return c, nil
 }
 
-// SensorStandResult answers SensorMonitorLookup.
-type SensorStandResult struct {
-	Stand *sensormonitor.Stand `json:"stand"`
-	Error *SensorError         `json:"error"`
+// StandResult answers Lookup.
+type StandResult struct {
+	Stand *api.Stand `json:"stand"`
+	Error *Error     `json:"error"`
 }
 
-// SensorMonitorLookup returns the approved version and the waiting draft
-// of document id ref.
-func (a *App) SensorMonitorLookup(ref string) SensorStandResult {
-	c, e := a.signedInClient()
+// Lookup returns the approved version and the waiting draft of document
+// id ref.
+func (s *Service) Lookup(ref string) StandResult {
+	c, e := s.signedInClient()
 	if e != nil {
-		return SensorStandResult{Error: e}
+		return StandResult{Error: e}
 	}
-	s, err := c.ByRef(context.Background(), ref)
-	return SensorStandResult{Stand: s, Error: a.sensorError(err)}
+	st, err := c.ByRef(context.Background(), ref)
+	return StandResult{Stand: st, Error: s.refusal(err)}
 }
 
-// SensorSourceResult answers SensorMonitorSource.
-type SensorSourceResult struct {
-	Text  string       `json:"text"`
-	Error *SensorError `json:"error"`
+// SourceResult answers Source.
+type SourceResult struct {
+	Text  string `json:"text"`
+	Error *Error `json:"error"`
 }
 
-// SensorMonitorSource returns the text of version id to edit (front matter
-// from the document's data, no signature).
-func (a *App) SensorMonitorSource(id string) SensorSourceResult {
-	c, e := a.signedInClient()
+// Source returns the text of version id to edit (front matter from the
+// document's data, no signature).
+func (s *Service) Source(id string) SourceResult {
+	c, e := s.signedInClient()
 	if e != nil {
-		return SensorSourceResult{Error: e}
+		return SourceResult{Error: e}
 	}
 	text, err := c.Source(context.Background(), id)
-	return SensorSourceResult{Text: text, Error: a.sensorError(err)}
+	return SourceResult{Text: text, Error: s.refusal(err)}
 }
 
-// SensorCompareResult answers SensorMonitorCompare.
-type SensorCompareResult struct {
-	Comparison *sensormonitor.Comparison `json:"comparison"`
-	Error      *SensorError              `json:"error"`
+// CompareResult answers Compare.
+type CompareResult struct {
+	Comparison *api.Comparison `json:"comparison"`
+	Error      *Error          `json:"error"`
 }
 
-// SensorMonitorCompare compares md with the stored versions of its doc_id.
-// Nothing is saved.
-func (a *App) SensorMonitorCompare(ref, md string) SensorCompareResult {
-	c, e := a.signedInClient()
+// Compare compares md with the stored versions of its doc_id. Nothing is
+// saved.
+func (s *Service) Compare(ref, md string) CompareResult {
+	c, e := s.signedInClient()
 	if e != nil {
-		return SensorCompareResult{Error: e}
+		return CompareResult{Error: e}
 	}
 	r, err := c.Compare(context.Background(), ref, md)
-	return SensorCompareResult{Comparison: r, Error: a.sensorError(err)}
+	return CompareResult{Comparison: r, Error: s.refusal(err)}
 }
 
-// SensorDraftResult answers SensorMonitorSaveDraft.
-type SensorDraftResult struct {
-	Draft *sensormonitor.SavedDraft `json:"draft"`
-	Error *SensorError              `json:"error"`
+// DraftResult answers SaveDraft.
+type DraftResult struct {
+	Draft *api.SavedDraft `json:"draft"`
+	Error *Error          `json:"error"`
 }
 
-// SensorMonitorSaveDraft stores md as a draft (never approved): a new
-// version of the approved document with its doc_id, else a new document.
-// reason and pin only when the organisation asks for them.
-func (a *App) SensorMonitorSaveDraft(md, filename, reason, pin string) SensorDraftResult {
-	c, e := a.signedInClient()
+// SaveDraft stores md as a draft (never approved): a new version of the
+// approved document with its doc_id, else a new document. reason and pin
+// only when the organisation asks for them.
+func (s *Service) SaveDraft(md, filename, reason, pin string) DraftResult {
+	c, e := s.signedInClient()
 	if e != nil {
-		return SensorDraftResult{Error: e}
+		return DraftResult{Error: e}
 	}
-	d, err := c.SaveDraft(context.Background(), md, sensormonitor.DraftOptions{Filename: filename, Reason: reason, PIN: pin})
-	return SensorDraftResult{Draft: d, Error: a.sensorError(err)}
+	d, err := c.SaveDraft(context.Background(), md, api.DraftOptions{Filename: filename, Reason: reason, PIN: pin})
+	return DraftResult{Draft: d, Error: s.refusal(err)}
 }

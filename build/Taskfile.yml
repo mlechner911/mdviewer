@@ -84,6 +84,8 @@ tasks:
       # on purpose: task fingerprints cannot see outside files, and a
       # blind spot once shipped a stale bundle, see 63f3dfc).
       - "**/*"
+      # build variant (SENSOR=1); "**/*" skips dot files
+      - .variant
       - exclude: node_modules/**/*
     generates:
       - dist/**/*

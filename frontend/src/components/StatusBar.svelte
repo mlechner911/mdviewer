@@ -15,25 +15,16 @@
     readingTime, 
     activeTab,
     diagnostics = [],
-    sensor = null,
-    sensorCompare = null
+    extraItems = []
   } = $props<{
     wordCount: number;
     charCount: number;
     readingTime: number;
     activeTab: any;
     diagnostics?: MLCDiagnostic[];
-    /** Sensor Monitor connection; shown only while signed in. */
-    sensor?: { signedIn: boolean; email: string; expires: string } | null;
-    /** Comparison of the document with the Sensor Monitor. */
-    sensorCompare?: { text: string; ok: boolean } | null;
+    /** Entries of built-in modules (e.g. the Sensor Monitor's comparison). */
+    extraItems?: { text: string; tone?: 'ok' | 'warn'; title?: string }[];
   }>();
-
-  const sensorUntil = $derived(
-    sensor?.signedIn && sensor.expires
-      ? new Date(sensor.expires).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : '',
-  );
 
   // --- Svelte 5 Runes: Derived ---
   const statusClass = $derived(STYLE.status[$effectiveAppTheme]);
@@ -64,14 +55,10 @@
     </div>
     <div class="h-3 w-px {dividerClass}"></div>
   {/if}
-  {#if sensor?.signedIn && sensorCompare}
-    <div class={sensorCompare.ok ? 'text-green-500' : 'text-amber-500'}>{sensorCompare.text}</div>
+  {#each extraItems as item}
+    <div class={item.tone === 'ok' ? 'text-green-500' : item.tone === 'warn' ? 'text-amber-500' : ''} title={item.title}>{item.text}</div>
     <div class="h-3 w-px {dividerClass}"></div>
-  {/if}
-  {#if sensor?.signedIn}
-    <div class="text-green-500" title={sensor.email}>{sensorUntil ? $t('smStatus', sensorUntil) : $t('smSignedIn')}</div>
-    <div class="h-3 w-px {dividerClass}"></div>
-  {/if}
+  {/each}
   <div>{$t('readingTime', readingTime)}</div>
   <div class="h-3 w-px {dividerClass}"></div>
   <div class="uppercase tracking-tighter opacity-80">{activeTab?.path || $t('untitled')}</div>

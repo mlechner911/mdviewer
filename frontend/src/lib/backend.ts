@@ -38,15 +38,6 @@ import {
   SetPDFWatermark,
   GetPDFPreviewNoImages,
   SetPDFPreviewNoImages,
-  GetSensorMonitorStatus,
-  SetSensorMonitorURL,
-  SensorMonitorStartLogin,
-  SensorMonitorCancelLogin,
-  SensorMonitorLogout,
-  SensorMonitorLookup,
-  SensorMonitorSource,
-  SensorMonitorCompare,
-  SensorMonitorSaveDraft,
   SetUnsavedChanges,
   CloseApp,
   MLCFormSchema,
@@ -375,74 +366,6 @@ export async function setPDFPreviewNoImages(v: boolean): Promise<void> {
 export async function mlcFitTable(md: string, line: number, mode: 'auto' | 'content'): Promise<string | null> {
   if (!isWailsReady()) return null;
   try { return (await MLCFitTable(md, line, mode)) || null; } catch (err) { console.error('mlcFitTable failed:', err); return null; }
-}
-
-// --- Sensor Monitor (off until an address is set; see sensor.go) ---
-
-export type SensorMonitorStatus = { address: string; signedIn: boolean; email: string; expires: string };
-export type SensorLoginCode = { userCode: string; url: string; expiresIn: number };
-
-const SENSOR_OFF: SensorMonitorStatus = { address: '', signedIn: false, email: '', expires: '' };
-
-export async function sensorMonitorStatus(): Promise<SensorMonitorStatus> {
-  if (!isWailsReady()) return SENSOR_OFF;
-  try { return ((await GetSensorMonitorStatus()) as SensorMonitorStatus) ?? SENSOR_OFF; } catch { return SENSOR_OFF; }
-}
-
-/** Stores the address ("" turns the connection off); returns it normalized. Throws with the reason. */
-export async function setSensorMonitorURL(address: string): Promise<string> {
-  if (!isWailsReady()) return '';
-  return (await SetSensorMonitorURL(address)) ?? '';
-}
-
-/** Starts the device login; the result comes as the event "sensormonitor-login". Throws with the reason. */
-export async function sensorMonitorStartLogin(): Promise<SensorLoginCode | null> {
-  if (!isWailsReady()) return null;
-  return ((await SensorMonitorStartLogin()) as SensorLoginCode) ?? null;
-}
-
-export async function sensorMonitorCancelLogin(): Promise<void> {
-  if (!isWailsReady()) return;
-  try { await SensorMonitorCancelLogin(); } catch { /* ignore */ }
-}
-
-export async function sensorMonitorLogout(): Promise<void> {
-  if (!isWailsReady()) return;
-  try { await SensorMonitorLogout(); } catch { /* ignore */ }
-}
-
-export type SensorError = { code: string; message: string; params: Record<string, string>; signIn: boolean };
-export type SensorDocument = {
-  id: string; doc_no: string; ref_no: string; version: string; title: string; filename: string; status: string;
-  approved_at: string; approved_by_label: string; uploaded_by_label: string; valid_until: string; created_at: string;
-};
-export type SensorStand = { ref_no: string; approved: SensorDocument | null; draft: SensorDocument | null };
-export type SensorComparison = SensorStand & { matches_approved: boolean; matches_draft: boolean };
-export type SensorFinding = { line: number; col: number; severity: string; code: string; message: string };
-export type SensorSavedDraft = SensorDocument & { warnings: SensorFinding[] | null };
-
-function sensorFailure(err: any): SensorError {
-  return { code: '', message: String(err?.message ?? err), params: {}, signIn: false };
-}
-
-export async function sensorMonitorLookup(ref: string): Promise<{ stand: SensorStand | null; error: SensorError | null }> {
-  if (!isWailsReady()) return { stand: null, error: sensorFailure('Wails not ready') };
-  try { return (await SensorMonitorLookup(ref)) as any; } catch (err) { return { stand: null, error: sensorFailure(err) }; }
-}
-
-export async function sensorMonitorSource(id: string): Promise<{ text: string; error: SensorError | null }> {
-  if (!isWailsReady()) return { text: '', error: sensorFailure('Wails not ready') };
-  try { return (await SensorMonitorSource(id)) as any; } catch (err) { return { text: '', error: sensorFailure(err) }; }
-}
-
-export async function sensorMonitorCompare(ref: string, md: string): Promise<{ comparison: SensorComparison | null; error: SensorError | null }> {
-  if (!isWailsReady()) return { comparison: null, error: sensorFailure('Wails not ready') };
-  try { return (await SensorMonitorCompare(ref, md)) as any; } catch (err) { return { comparison: null, error: sensorFailure(err) }; }
-}
-
-export async function sensorMonitorSaveDraft(md: string, filename: string, reason: string, pin: string): Promise<{ draft: SensorSavedDraft | null; error: SensorError | null }> {
-  if (!isWailsReady()) return { draft: null, error: sensorFailure('Wails not ready') };
-  try { return (await SensorMonitorSaveDraft(md, filename, reason, pin)) as any; } catch (err) { return { draft: null, error: sensorFailure(err) }; }
 }
 
 /** Whether a tab has unsaved changes: then closing the window asks first. */

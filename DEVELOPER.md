@@ -80,6 +80,18 @@ Build output goes to `bin/`.
 | Release | `task release` | Build and copy installers to `/mnt/data2tb/dropzone/` |
 | Check | `task check` | Run `svelte-check` and `go test` |
 
+## Optional modules
+
+The connection to the MLC Sensor Monitor is built in only with `SENSOR=1`
+(for example `task build:windows SENSOR=1`); public builds do not contain
+it. Go: build tag `sensormonitor` (`sensormonitor_on.go` registers it via
+`extensions.go`). Frontend: `$sensormonitor` resolves to
+`frontend/src/sensormonitor/` or to the empty `frontend/src/sensormonitor-off/`
+by `frontend/.variant` (`frontend/vite.config.ts`). MarkSafe itself only
+offers generic hooks: File menu entries, settings sections, status bar
+entries, a watermark suggestion before a PDF and opening a tab. Details:
+`docs/SENSOR-MONITOR.md`.
+
 ## Version
 
 The version lives in one place: the file `VERSION` (e.g. `1.6.2`). The app

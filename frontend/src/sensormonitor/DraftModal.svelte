@@ -6,8 +6,8 @@
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import * as backend from '../lib/backend';
-  import { sensorErrorText, needsPin } from '../lib/sensorErrors';
+  import * as api from './api';
+  import { sensorErrorText, needsPin } from './errors';
 
   let { markdown, filename = '', refNo = '', version = '', title = '', hasErrors = false, onSaved, onSignIn, onClose, theme = 'dark' } = $props<{
     markdown: string;
@@ -17,7 +17,7 @@
     title?: string;
     /** The local check reports errors (the server would refuse). */
     hasErrors?: boolean;
-    onSaved: (draft: backend.SensorSavedDraft) => void;
+    onSaved: (draft: api.SavedDraft) => void;
     onSignIn: () => void;
     onClose: () => void;
     theme?: EffectiveTheme_t;
@@ -36,7 +36,7 @@
 
   async function save() {
     busy = true; error = '';
-    const res = await backend.sensorMonitorSaveDraft(markdown, filename, reason.trim(), showPin ? pin : '');
+    const res = await api.saveDraft(markdown, filename, reason.trim(), showPin ? pin : '');
     busy = false;
     if (res.error) {
       if (res.error.signIn) { onSignIn(); return; }

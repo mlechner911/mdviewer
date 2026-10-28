@@ -1,4 +1,4 @@
-// Package sensormonitor talks to the document API of the MLC Sensor Monitor
+// Package api talks to the document API of the MLC Sensor Monitor
 // (mlcmonit): open an SOP or form, save the working copy as a draft, and
 // compare it with the approved version. Sign-in is the device login of
 // mlcauth on the same host (RFC 8628); the token lives only in memory.
@@ -8,7 +8,7 @@
 //
 // The API is described in mlcsensormonitor/.mlcai/MARKSAFE.md, section
 // "Schnittstelle für MarkSafe".
-package sensormonitor
+package api
 
 import (
 	"bytes"

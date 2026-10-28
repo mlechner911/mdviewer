@@ -22,6 +22,16 @@ vars:
   # Wails v3 beta defaults Linux to GTK4 + WebKitGTK 6.0; `gtk3` selects
   # GTK3 + webkit2gtk-4.1, which is what our build hosts and CI provide.
   LINUX_TAGS: gtk3
+  # Optional modules, off for public builds. SENSOR=1 builds the connection
+  # to the MLC Sensor Monitor in (Go tag "sensormonitor", frontend variant
+  # in frontend/.variant, see sensormonitor/ and frontend/vite.config.ts).
+  SENSOR: '{{.SENSOR | default ""}}'
+  SENSOR_TAG: '{{if eq .SENSOR "1"}}sensormonitor{{end}}'
+  # Build tags of the platform builds (the Windows and macOS tasks read it
+  # globally); Linux adds LINUX_TAGS in the build task.
+  EXTRA_TAGS: '{{.SENSOR_TAG}}'
+  # Output names of a module build: marksafe-1.9.0-sensormonitor-…
+  VARIANT_SUFFIX: '{{if .SENSOR_TAG}}-sensormonitor{{end}}'
   VERSION:
     sh: cat VERSION 2>/dev/null || echo "1.5.1"
   DROPZONE: /mnt/data2tb/dropzone
@@ -44,14 +54,15 @@ tasks:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   build:
-    desc: Build the application for the host OS (or GOOS=...)
+    desc: Build the application for the host OS (or GOOS=...); SENSOR=1 with the Sensor Monitor module
     cmds:
       # The version from VERSION in every file (installers, packages, page).
       - task: version:sync
+      - task: variant
       - task: "{{.GOOS}}:build"
         vars:
           DEV: '{{.DEV}}'
-          EXTRA_TAGS: '{{if eq .GOOS "linux"}}{{.LINUX_TAGS}}{{end}}'
+          EXTRA_TAGS: '{{if eq .GOOS "linux"}}{{.LINUX_TAGS}}{{if .SENSOR_TAG}},{{end}}{{end}}{{.SENSOR_TAG}}'
       # Linux: mlcdoc ships next to the binary (and in the deb/rpm, nfpm.yaml).
       - task: mlcdoc:fetch
       - '{{if eq .GOOS "linux"}}cp "{{.MLCDOC_DIR}}/linux/mlcdoc" "{{.BIN_DIR}}/mlcdoc"{{else}}true{{end}}'
@@ -59,9 +70,15 @@ tasks:
   package:
     desc: Package a production build for the host OS (or GOOS=...)
     cmds:
+      - task: variant
       - task: "{{.GOOS}}:package"
         vars:
-          EXTRA_TAGS: '{{if eq .GOOS "linux"}}{{.LINUX_TAGS}}{{end}}'
+          EXTRA_TAGS: '{{if eq .GOOS "linux"}}{{.LINUX_TAGS}}{{if .SENSOR_TAG}},{{end}}{{end}}{{.SENSOR_TAG}}'
+
+  variant:
+    desc: Write the frontend build variant (frontend/.variant) for SENSOR=1 or the standard build
+    cmds:
+      - echo "{{if .SENSOR_TAG}}sensormonitor{{else}}standard{{end}}" > frontend/.variant
 
   run:
     desc: Run the built application
@@ -71,7 +88,7 @@ tasks:
   bindings:
     desc: Generate the TypeScript bindings (frontend/bindings)
     cmds:
-      - wails3 generate bindings -f '-tags {{.LINUX_TAGS}}' -clean=true -ts -i
+      - wails3 generate bindings -f '-tags {{.LINUX_TAGS}}{{if .SENSOR_TAG}},{{.SENSOR_TAG}}{{end}}' -clean=true -ts -i
 
   version:sync:
     desc: Write the version from VERSION into config, installers, packages, README and the product page
@@ -111,10 +128,11 @@ tasks:
       - echo "mlcdoc {{.MLCDOC_VERSION}} ready in {{.MLCDOC_DIR}}"
 
   build:windows:
-    desc: Build the Windows executable & NSIS installer (AMD64, cross-compiled), with mlcdoc
+    desc: Build the Windows executable & NSIS installer (AMD64, cross-compiled), with mlcdoc; SENSOR=1 with the Sensor Monitor module
     cmds:
       # The version from VERSION in every file (installers, packages, page).
       - task: version:sync
+      - task: variant
       - task: mlcdoc:fetch
       - task: windows:package
         vars:
@@ -137,6 +155,7 @@ tasks:
     cmds:
       # The version from VERSION in every file (installers, packages, page).
       - task: version:sync
+      - task: variant
       # 0 — mlcdoc ships inside marksafe.app (build/mlcdoc is synced along)
       - task: mlcdoc:fetch
       # 1 — sync source to macstudio
@@ -154,7 +173,7 @@ tasks:
           echo "HINWEIS: MAC_KEYCHAIN_PASS (oder MARKSAFE_/MLCTERM_KEYCHAIN_PASS) ist nicht gesetzt."
           echo "Ohne Passwort bleibt der Mac-Schlüsselbund gesperrt; codesign & Notarisierung werden übersprungen."
         fi
-        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS MLCDOC_VERSION={{.MLCDOC_VERSION}} bash -s" << 'ENDSSH'
+        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS MLCDOC_VERSION={{.MLCDOC_VERSION}} EXTRA_TAGS={{.SENSOR_TAG}} bash -s" << 'ENDSSH'
           set -e
           export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:/opt/homebrew/bin
           export NVM_DIR="$HOME/.nvm"
@@ -164,7 +183,8 @@ tasks:
           VERSION=$(cat VERSION 2>/dev/null || echo "1.5.1")
           echo "→ Building MarkSafe v${VERSION} on macOS (universal)..."
 
-          wails3 task darwin:package:universal
+          # EXTRA_TAGS: sensormonitor for SENSOR=1 (frontend/.variant came along)
+          wails3 task darwin:package:universal ${EXTRA_TAGS:+EXTRA_TAGS=$EXTRA_TAGS}
 
           # mlcdoc next to the executable (PDF preview/export finds it there)
           MLCDOC_SRC="build/mlcdoc/${MLCDOC_VERSION}/darwin"
@@ -215,10 +235,10 @@ tasks:
         ENDSSH
       # 3 — copy .dmg back to dropzone
       - mkdir -p {{.DROPZONE}} {{.BIN_DIR}}
-      - scp "{{.MAC_HOST}}:{{.REMOTE_DIR}}/build/release/marksafe-{{.VERSION}}.dmg" {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg
-      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.DROPZONE}}/marksafe.dmg
-      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.BIN_DIR}}/marksafe-{{.VERSION}}.dmg
-      - echo "Successfully published macOS DMG to {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg"
+      - scp "{{.MAC_HOST}}:{{.REMOTE_DIR}}/build/release/marksafe-{{.VERSION}}.dmg" {{.DROPZONE}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg
+      - '{{if not .SENSOR_TAG}}cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.DROPZONE}}/marksafe.dmg{{else}}true{{end}}'
+      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg {{.BIN_DIR}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg
+      - echo "Successfully published macOS DMG to {{.DROPZONE}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg"
 
   build:all:
     desc: Build Linux binary and Windows installer
@@ -227,23 +247,29 @@ tasks:
       - task: build:windows
 
   release:
-    desc: Build all platforms and copy installers to dropzone
+    desc: Build all platforms and copy installers to dropzone (SENSOR=1 → files named …-sensormonitor-…, not for publish:downloads)
+    vars:
+      N: 'marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}'
     cmds:
       - task: build:all
       - mkdir -p {{.DROPZONE}}
-      - cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows-setup.exe
-      - cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-amd64-installer.exe
-      - cp {{.BIN_DIR}}/marksafe.exe {{.DROPZONE}}/marksafe-{{.VERSION}}-windows.exe
-      - cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/marksafe-{{.VERSION}}-linux-amd64
-      - cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/marksafe
+      - cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/{{.N}}-windows-setup.exe
+      - cp {{.BIN_DIR}}/marksafe.exe {{.DROPZONE}}/{{.N}}-windows.exe
+      - cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/{{.N}}-linux-amd64
+      # Unversioned names only for the public (standard) build.
+      - '{{if not .SENSOR_TAG}}cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-amd64-installer.exe && cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/marksafe{{else}}true{{end}}'
       # Portable Windows/Linux: zip with mlcdoc next to MarkSafe (PDF preview/export).
-      - cd {{.BIN_DIR}} && rm -f marksafe-{{.VERSION}}-windows-portable.zip && 7z a -tzip -bso0 marksafe-{{.VERSION}}-windows-portable.zip marksafe.exe mlcdoc.exe
-      - cd {{.BIN_DIR}} && tar -czf marksafe-{{.VERSION}}-linux-amd64.tar.gz marksafe mlcdoc
-      - cp {{.BIN_DIR}}/marksafe-{{.VERSION}}-windows-portable.zip {{.BIN_DIR}}/marksafe-{{.VERSION}}-linux-amd64.tar.gz {{.DROPZONE}}/
-      - echo "Successfully published MarkSafe {{.VERSION}} to {{.DROPZONE}}"
+      - cd {{.BIN_DIR}} && rm -f {{.N}}-windows-portable.zip && 7z a -tzip -bso0 {{.N}}-windows-portable.zip marksafe.exe mlcdoc.exe
+      - cd {{.BIN_DIR}} && tar -czf {{.N}}-linux-amd64.tar.gz marksafe mlcdoc
+      - cp {{.BIN_DIR}}/{{.N}}-windows-portable.zip {{.BIN_DIR}}/{{.N}}-linux-amd64.tar.gz {{.DROPZONE}}/
+      - echo "Successfully published MarkSafe {{.VERSION}}{{.VARIANT_SUFFIX}} to {{.DROPZONE}}"
 
   publish:downloads:
     desc: "Upload release binaries from dropzone to mlcgo.eu:/var/www/html/downloads/marksafe"
+    # Public downloads are the standard build only (no Sensor Monitor module).
+    preconditions:
+      - sh: '[ -z "{{.SENSOR_TAG}}" ]'
+        msg: "Builds with the Sensor Monitor module (SENSOR=1) are not published."
     vars:
       WEB_DEST: '{{.WEB_DEST | default "mlc@mlcgo.eu:/var/www/html/downloads/marksafe"}}'
     cmds:
@@ -283,6 +309,9 @@ tasks:
       - task: bindings
       - cd frontend && npm run check
       - go test -tags {{.LINUX_TAGS}} ./...
+      # the optional Sensor Monitor module (built in only with SENSOR=1)
+      - go vet -tags {{.LINUX_TAGS}},sensormonitor . ./sensormonitor/...
+      - go test -tags {{.LINUX_TAGS}},sensormonitor ./sensormonitor/...
       # mlcext is its own module (MLC Markdown Extension checker), not part of ./...
       - cd mlcext && go test ./...
 

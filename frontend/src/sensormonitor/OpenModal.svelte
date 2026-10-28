@@ -7,13 +7,13 @@
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import * as backend from '../lib/backend';
-  import { sensorErrorText } from '../lib/sensorErrors';
+  import * as api from './api';
+  import { sensorErrorText } from './errors';
 
   let { initialRef = '', onOpen, onSignIn, onClose, theme = 'dark' } = $props<{
     initialRef?: string;
     /** Open text as a new tab; doc is the version it came from. */
-    onOpen: (text: string, doc: backend.SensorDocument) => void;
+    onOpen: (text: string, doc: api.SensorDocument) => void;
     /** The sign-in ran out: sign in again. */
     onSignIn: () => void;
     onClose: () => void;
@@ -22,7 +22,7 @@
 
   // svelte-ignore state_referenced_locally
   let ref = $state(initialRef);
-  let stand = $state<backend.SensorStand | null>(null);
+  let stand = $state<api.Stand | null>(null);
   let error = $state('');
   let busy = $state(false);
 
@@ -32,7 +32,7 @@
   const inputClass = $derived(currentTheme === 'dark' ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300');
   const cardClass = $derived(currentTheme === 'dark' ? 'border-slate-600' : 'border-gray-300');
 
-  function fail(e: backend.SensorError) {
+  function fail(e: api.SensorError) {
     if (e.signIn) { onSignIn(); return; }
     error = sensorErrorText(e, $t);
   }
@@ -41,15 +41,15 @@
     const r = ref.trim();
     if (!r) return;
     busy = true; error = ''; stand = null;
-    const res = await backend.sensorMonitorLookup(r);
+    const res = await api.lookup(r);
     busy = false;
     if (res.error) { fail(res.error); return; }
     stand = res.stand;
   }
 
-  async function open(doc: backend.SensorDocument) {
+  async function open(doc: api.SensorDocument) {
     busy = true; error = '';
-    const res = await backend.sensorMonitorSource(doc.id);
+    const res = await api.source(doc.id);
     busy = false;
     if (res.error) { fail(res.error); return; }
     onOpen(res.text, doc);

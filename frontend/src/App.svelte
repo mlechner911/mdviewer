@@ -25,13 +25,13 @@
   import FormFillPanel from './components/FormFillPanel.svelte';
   import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
-  import SensorLoginModal from './components/SensorLoginModal.svelte';
-  import SensorOpenModal from './components/SensorOpenModal.svelte';
-  import SensorDraftModal from './components/SensorDraftModal.svelte';
+  // Optional Sensor Monitor module: the real one in the Sensor Monitor
+  // variant, null in the standard build (vite.config.ts).
+  import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts } from '$sensormonitor';
 
   // State & Config
   import { getTheme } from './themes';
-  import { t, locale, translations } from './i18n';
+  import { t, locale, translations, addTranslations } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
   import { c_welcomeMarkdown } from './lib/devdefmd.js';
   import { 
@@ -49,8 +49,6 @@
     path: string | null;
     content: string;
     isDirty: boolean;
-    /** Opened from the Sensor Monitor: the version it came from. */
-    sensor?: { ref: string; id: string; version: string; status: string; filename: string };
     /** Being filled in: the form it comes from (mlcext.FormRef). */
     form?: { ref: backend.MLCFormRef };
   }
@@ -125,96 +123,23 @@
   // New document of the MLC Markdown Extension from a template.
   let showTemplateModal = $state(false);
   let showSettings = $state(false);
-  let showSensorLogin = $state(false);
   // MLC Markdown Extension analysis of the active document (status bar,
-  // Sensor Monitor); set in debouncedUpdate.
+  // modules); set in debouncedUpdate.
   let mlcAnalysis = $state<backend.MLCAnalysis | null>(null);
-  // Sensor Monitor connection: off (address "") for everyone who has not
-  // set it up; then nothing of it is shown.
-  let sensorStatus = $state<backend.SensorMonitorStatus>({ address: '', signedIn: false, email: '', expires: '' });
-  async function refreshSensor() {
-    sensorStatus = await backend.sensorMonitorStatus();
-    updateNativeMenu(get(locale)); // the "Sensor Monitor" submenu follows address and sign-in
-  }
 
-  // Sensor Monitor actions need a sign-in: without one, sign in first and
-  // run the action afterwards.
-  let showSensorOpen = $state(false);
-  let showSensorDraft = $state(false);
-  let afterSensorLogin: (() => void) | null = null;
-  function requireSensor(action: () => void) {
-    if (sensorStatus.signedIn) { action(); return; }
-    afterSensorLogin = action;
-    showSensorLogin = true;
-  }
-  function sensorLoginDone() {
-    showSensorLogin = false;
-    const next = afterSensorLogin;
-    afterSensorLogin = null;
-    void refreshSensor().then(() => next?.());
-  }
-
-  function openFromSensor(text: string, doc: backend.SensorDocument) {
-    showSensorOpen = false;
-    const ref = doc.ref_no || '';
-    const tab = createNewTab([ref, doc.version && `v${doc.version}`].filter(Boolean).join(' ') || doc.filename || $t('untitled'), text);
-    tab.sensor = { ref, id: doc.id, version: doc.version, status: doc.status, filename: doc.filename };
-    tabs = [...tabs, tab];
+  // Built-in modules (so far only the optional Sensor Monitor): their
+  // texts, settings sections, status bar entries and the watermark
+  // suggestion before a PDF.
+  addTranslations(sensorMonitorTexts);
+  const settingsSections = [SensorMonitorSettings].filter((c): c is NonNullable<typeof c> => !!c);
+  let sensorMonitor = $state<any>(null);
+  let moduleStatus = $state<{ text: string; tone?: 'ok' | 'warn'; title?: string }[]>([]);
+  function openModuleTab(title: string, text: string) {
+    tabs = [...tabs, createNewTab(title, text)];
     activeTabIndex = tabs.length - 1;
-    showToast($t('smOpened', tab.title), 3000, 'info');
   }
-
-  function draftSaved(d: backend.SensorSavedDraft) {
-    showSensorDraft = false;
-    const tab = tabs[activeTabIndex];
-    if (tab) tab.sensor = { ref: d.ref_no, id: d.id, version: d.version, status: d.status, filename: d.filename };
-    const n = d.warnings?.length ?? 0;
-    showToast($t('smDraftSaved', d.doc_no, d.version || '–') + (n ? ' · ' + $t('smDraftWarnings', n) : ''), n ? 6000 : 3500, 'info');
-    sensorCompare = null; // compare again
-    scheduleSensorCompare(0);
-  }
-
-  // Comparison with the Sensor Monitor (signed in, document with doc_id):
-  // does the working copy match the approved version? Shown in the status
-  // bar; it suggests the watermark ENTWURF when printing.
-  let sensorCompare = $state<{ ref: string; content: string; result: backend.SensorComparison } | null>(null);
-  let sensorCompareTimer: ReturnType<typeof setTimeout> | undefined;
-  const sensorRef = $derived(sensorStatus.signedIn ? (mlcAnalysis?.document?.refNo ?? '') : '');
-  function scheduleSensorCompare(delay = 1500) {
-    clearTimeout(sensorCompareTimer);
-    sensorCompareTimer = setTimeout(async () => {
-      const ref = sensorRef;
-      const content = markdown;
-      if (!ref) { sensorCompare = null; return; }
-      const res = await backend.sensorMonitorCompare(ref, content);
-      if (res.comparison && ref === sensorRef) sensorCompare = { ref, content, result: res.comparison };
-      else if (res.error) sensorCompare = null;
-    }, delay);
-  }
-  $effect(() => {
-    // Re-run when the id, the text or the sign-in changes.
-    void sensorRef; void markdown;
-    untrack(() => scheduleSensorCompare());
-  });
-  const sensorCompareInfo = $derived.by(() => {
-    const c = sensorCompare;
-    if (!c || c.ref !== sensorRef) return null;
-    const r = c.result;
-    if (r.matches_approved && r.approved) return { text: $t('smCmpApproved', c.ref, r.approved.version), ok: true };
-    if (r.matches_draft && r.draft) return { text: $t('smCmpDraft', c.ref, r.draft.version), ok: false };
-    if (r.approved) return { text: $t('smCmpDiffers', c.ref, r.approved.version), ok: false };
-    if (r.draft) return { text: `${c.ref}: ${$t('smDraft')} ${r.draft.version}`, ok: false };
-    return { text: $t('smCmpNew', c.ref), ok: false };
-  });
-
-  // Suggest the watermark ENTWURF for a document that does not match the
-  // approved version, never enforce it (MarkSafe is not only for the Sensor
-  // Monitor). "" keeps the setting.
   async function suggestedWatermark(): Promise<string> {
-    const c = sensorCompare;
-    if (pdfWatermark || !c || c.ref !== sensorRef || c.content !== markdown || c.result.matches_approved) return '';
-    const yes = await askConfirm($t('smWmTitle'), $t('smWmMessage'), $t('smWmYes'), $t('smWmNo'));
-    return yes ? 'ENTWURF' : '';
+    return (await sensorMonitor?.suggestWatermark?.(pdfWatermark)) ?? '';
   }
   function createFromTemplate(content: string, fileName: string) {
     const newTab = createNewTab(fileName || $t('untitled'), content);
@@ -440,12 +365,8 @@
       menuItalic: tMap.menuItalic,
       menuCodeBlock: tMap.menuCodeBlock,
       menuAbout: tMap.menuAbout,
-      menuSettings: tMap.menuSettings,
-      menuSensorMonitor: tMap.menuSensorMonitor,
-      menuSensorLogin: tMap.menuSensorLogin,
-      menuSensorLogout: tMap.menuSensorLogout,
-      menuSensorOpen: tMap.menuSensorOpen,
-      menuSensorSaveDraft: tMap.menuSensorSaveDraft,
+      // every menu text, also those of built-in modules (menuSensor…)
+      ...Object.fromEntries(Object.entries(tMap).filter(([k]) => k.startsWith('menu'))),
       aboutTitle: tMap.aboutTitle,
       aboutBody: tMap.aboutBody.replace('%s', get(appVersion))
     };
@@ -814,16 +735,8 @@
           EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
           EventsOn("set-locale", (l: string) => locale.set(l));
           EventsOn("menu-about", () => openAbout());
-          EventsOn("menu-settings", () => (showSettings = true));
+          EventsOn("menu-settings", () => { if (settingsSections.length) showSettings = true; });
           EventsOn("app-close-requested", () => void closeRequested());
-          EventsOn("menu-sm-login", () => (showSensorLogin = true));
-          EventsOn("menu-sm-open", () => requireSensor(() => (showSensorOpen = true)));
-          EventsOn("menu-sm-save-draft", () => requireSensor(() => (showSensorDraft = true)));
-          EventsOn("sensormonitor-login", (r: any) => {
-            if (r?.ok) showToast($t('smSignedIn'));
-            else if (r?.error === 'signed-out') showToast($t('smSignedOut'));
-            void refreshSensor();
-          });
           EventsOn("set-theme", (t: string) => appTheme.set(t as any));
 
       const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
@@ -888,17 +801,12 @@
         if (import.meta.env.DEV && !wailsReady) isReady = true;
 
         debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
-        if (wailsReady) await refreshSensor(); // also builds the native menu
+        if (wailsReady) updateNativeMenu(get(locale));
       } else {
         setTimeout(init, 50);
       }
     };
     init();
-    // The sign-in runs out after an hour (no refresh): then menu and status
-    // bar go back to "not signed in".
-    const sensorTimer = setInterval(() => {
-      if (sensorStatus.expires && Date.parse(sensorStatus.expires) <= Date.now()) void refreshSensor();
-    }, 30_000);
     updateEffectiveTheme();
     // Restore editor visibility (last persisted state).
     try {
@@ -915,7 +823,7 @@
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
       EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html"); EventsOff("menu-print");
-      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("app-close-requested"); EventsOff("menu-sm-login"); EventsOff("menu-sm-open"); EventsOff("menu-sm-save-draft"); EventsOff("sensormonitor-login"); clearInterval(sensorTimer); EventsOff("set-theme");
+      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("app-close-requested"); EventsOff("set-theme");
       EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
     };
   });
@@ -1076,41 +984,19 @@
 />
 
 {#if showSettings}
-  <SettingsModal
-    address={sensorStatus.address}
-    theme={$effectiveAppTheme}
-    onSaved={() => { showSettings = false; void refreshSensor(); }}
-    onClose={() => (showSettings = false)}
-  />
+  <SettingsModal sections={settingsSections} theme={$effectiveAppTheme} onClose={() => (showSettings = false)} />
 {/if}
-{#if showSensorLogin}
-  <SensorLoginModal
-    theme={$effectiveAppTheme}
-    onDone={sensorLoginDone}
-    onClose={() => { showSensorLogin = false; afterSensorLogin = null; }}
-  />
-{/if}
-{#if showSensorOpen}
-  <SensorOpenModal
-    initialRef={mlcAnalysis?.document?.refNo ?? ''}
-    theme={$effectiveAppTheme}
-    onOpen={openFromSensor}
-    onSignIn={() => { showSensorOpen = false; requireSensor(() => (showSensorOpen = true)); }}
-    onClose={() => (showSensorOpen = false)}
-  />
-{/if}
-{#if showSensorDraft && tabs[activeTabIndex]}
-  <SensorDraftModal
-    markdown={tabs[activeTabIndex].content}
-    filename={tabs[activeTabIndex].path?.split(/[\\/]/).pop() || tabs[activeTabIndex].sensor?.filename || ''}
-    refNo={mlcAnalysis?.document?.refNo ?? ''}
-    version={mlcAnalysis?.document?.version ?? ''}
-    title={mlcAnalysis?.document?.title ?? ''}
+{#if SensorMonitor && isReady}
+  <SensorMonitor
+    bind:this={sensorMonitor}
+    markdown={markdown}
+    doc={mlcAnalysis?.document ?? null}
     hasErrors={(mlcAnalysis?.diagnostics ?? []).some((d) => d.severity === 'error')}
+    filename={tabs[activeTabIndex]?.path?.split(/[\\/]/).pop() ?? ''}
     theme={$effectiveAppTheme}
-    onSaved={draftSaved}
-    onSignIn={() => { showSensorDraft = false; requireSensor(() => (showSensorDraft = true)); }}
-    onClose={() => (showSensorDraft = false)}
+    onOpenTab={openModuleTab}
+    onStatus={(items: typeof moduleStatus) => (moduleStatus = items)}
+    onMenuChanged={() => updateNativeMenu(get(locale))}
   />
 {/if}
 
@@ -1178,7 +1064,7 @@
       onViewResetZoom={() => fontSize = 100}
       onViewBrowse={() => toggleBrowseMode()}
       onHelpAbout={() => openAbout()}
-      onOpenSettings={() => (showSettings = true)}
+      onOpenSettings={() => { if (settingsSections.length) showSettings = true; }}
       onAboutWails={() => alert('MarkSafe')}
       onOpenProductPage={() => window.open('https://mlcgo.eu/products/marksafe/', '_blank')}
       onHelpShowShortcuts={() => void 0}
@@ -1483,7 +1369,7 @@
     </div>
   </div>
 
-  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} sensor={sensorStatus} sensorCompare={sensorCompareInfo} />
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} extraItems={moduleStatus} />
 
   {#if $dropMessage}
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>

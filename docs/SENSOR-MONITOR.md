@@ -2,7 +2,10 @@
 
 > [!NOTE]
 > This only matters if your organisation uses the **MLC Sensor Monitor**.
-> Without its address in the settings, MarkSafe shows nothing of it.
+> The connection is an optional module: the public MarkSafe downloads do
+> not contain it. Your organisation gets a separate build with it (see
+> [Building with the module](#building-with-the-module)). Even in that
+> build, MarkSafe shows nothing of it until its address is set.
 
 The Sensor Monitor keeps the SOPs and forms of an organisation, with
 versions, approval and review dates. MarkSafe can open them, save changes
@@ -101,3 +104,31 @@ editor and only makes the suggestion.
   section "Schnittstelle für MarkSafe"). MarkSafe uses `/mlcmonit/api/v1`
   and the device login `/mlcauth/device/…` on the same host.
 - Personal API tokens (`mlc_pat_…`) are not used yet.
+
+## Building with the module
+
+The module lives in its own folders and is compiled only on request:
+
+| Part | Where |
+| --- | --- |
+| Go service (bindings, settings file `sensormonitor.json`) | `sensormonitor/` |
+| API client and device login | `sensormonitor/api/` |
+| Hook into MarkSafe (build tag `sensormonitor`) | `sensormonitor_on.go`, `extensions.go` |
+| Frontend (dialogs, comparison, texts) | `frontend/src/sensormonitor/` |
+| Empty stand-in for the standard build | `frontend/src/sensormonitor-off/` |
+
+```sh
+task build:windows SENSOR=1        # Windows with the module
+task build SENSOR=1                # Linux
+task build:macos:remote SENSOR=1   # macOS on the Mac Studio
+task release SENSOR=1              # all, named marksafe-<version>-sensormonitor-…
+```
+
+Without `SENSOR=1` neither the Go code nor the frontend code of the module
+is in the build. The frontend variant is written to `frontend/.variant` and
+read by `frontend/vite.config.ts`. `task publish:downloads` refuses
+`SENSOR=1`: public downloads are always the standard build.
+
+MarkSafe 1.8 kept the address in `config.json`. The module takes it over
+once into its own `sensormonitor.json`.
+

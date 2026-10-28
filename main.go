@@ -21,13 +21,20 @@ func main() {
 		app.SetInitialFile(os.Args[1])
 	}
 
+	// Optional parts built in with a build tag (extensions.go), each its
+	// own service.
+	services := []application.Service{application.NewService(app)}
+	for _, newExtension := range extensionFactories {
+		e := newExtension(appVersion)
+		app.extensions = append(app.extensions, e)
+		services = append(services, e.Service())
+	}
+
 	// Create application with options
 	wailsApp := application.New(application.Options{
 		Name:        "MarkSafe",
 		Description: "Markdown viewer and editor",
-		Services: []application.Service{
-			application.NewService(app),
-		},
+		Services:    services,
 		Assets: application.AssetOptions{
 			// Embedded frontend plus whitelisted local images (see localresource.go)
 			Handler: app.assetHandler(),

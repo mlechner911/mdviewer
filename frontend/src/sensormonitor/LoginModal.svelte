@@ -8,7 +8,7 @@
   import { t } from '../i18n';
   import { STYLE } from '../lib/constants';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import * as backend from '../lib/backend';
+  import * as api from './api';
   import { EventsOn, BrowserOpenURL } from '../lib/wails';
 
   let { onDone, onClose, theme = 'dark' } = $props<{
@@ -18,7 +18,7 @@
     theme?: EffectiveTheme_t;
   }>();
 
-  let code = $state<backend.SensorLoginCode | null>(null);
+  let code = $state<api.LoginCode | null>(null);
   let error = $state('');
   let starting = $state(false);
 
@@ -31,7 +31,7 @@
     error = '';
     code = null;
     try {
-      code = await backend.sensorMonitorStartLogin();
+      code = await api.startLogin();
     } catch (err: any) {
       error = $t('smLoginFailed', String(err?.message ?? err));
     } finally {
@@ -40,7 +40,7 @@
   }
 
   function close() {
-    if (code) void backend.sensorMonitorCancelLogin();
+    if (code) void api.cancelLogin();
     onClose();
   }
 
