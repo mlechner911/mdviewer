@@ -48,6 +48,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | Page break | `<div class="page-break"></div>` | starts a new page | ✅ marker on screen, page break in print |
 | Anchor target | `<a id="name"></a>` | link target inside the document | ✅ |
 | Checkbox field | `[@#name]` | fillable checkbox | ✅ checked, highlighted in the editor; preview shows text |
+| Ticked checkbox | `[@x]`, `[@#name x]` (also `X`) | checkbox that opens ticked (mlcmd2pdf 3.27.0) | ✅ checked, highlighted; preview shows a cross |
 | Text field | `[@#name ______]` (width = number of `_`), multi-line over several lines | fillable text field | ✅ checked, highlighted; preview shows text |
 | Default value | `[@#name ____value____]` | text field with a preset value | ✅ checked, highlighted; preview shows text |
 | Pattern field | `[@#name TT.MM.JJJJ]`, `[@HH:MM]`, with default `=16\.10\.2026` | date/time field | ✅ checked, highlighted; preview shows text |
@@ -57,6 +58,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | Legacy header line | `**Dokumenten-ID:** SOP-QM-001 \| **Version:** 1.0` in the text | read as a fallback only | ✅ warning `header-in-body`, error on a contradiction |
 | Variables | `{{doc_id}}`, `{{version}}`, `{{title}}` in the text | replaced with the front matter values when rendering | ✅ checked; ⏳ replaced in the preview |
 | Signature | `<!--mlc-signature … -->` at the end of the file (old form: a `signature:` block before the front matter) | seal of the Sensor Monitor; not part of the content | ✅ recognised, left out of the content; ⏳ "signed by … on …" in the preview |
+| Filled-in form | front matter `meta:` with `schema: mlc-form-record/v1`, values in the fields | not printed (mlcdoc does not read `meta`) | ✅ checked (`mlcext.FillFields`, `FieldValues`, `FormSchema`); ⏳ fill mode |
 | Layout front matter | `header`, `footer`, `signatures`, `toc`, `page-size` … | page header/footer, signature block, layout | ⏳ generic metadata table |
 
 ✅ supported · ⏳ planned (see roadmap below)
@@ -76,7 +78,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   Sensor Monitor sets them on approval.
 - **The front matter is the only place for id, version and title** (`doc_id`,
   `version`, `title`, like Hugo and Jekyll). Allowed keys: `doc_id`, `title`,
-  `version`, `description`, `event_kinds`. The kind (SOP, VA, FB, INFO)
+  `version`, `description`, `event_kinds`, `meta` (see below). The kind (SOP, VA, FB, INFO)
   follows from the `doc_id` prefix. The header line in the text is the legacy
   form: still read, but it gives a warning; when both say different things,
   that is an error.
@@ -108,6 +110,38 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   matter; both forms are read (`mlcext.SplitSignature`). Not to be confused
   with `signatures:` in the layout front matter of mlcdoc: those are the
   printed signature lines.
+- **Filling a form** (`mlcext.FillFields`, plan P-SENS-20261028-01): the
+  values go **into the fields**, so a filled-in form is still the same form
+  and renders as PDF/A with the values in its fields:
+  `[@#datum TT.MM.JJJJ=28\.10\.2026]`, `[@#ort __Kühlraum 2____]`,
+  `[@#geprueft x]`. Every field can be filled, also one without a name (by
+  its generated name `<section>_<n>`). A check box is ticked by `x`
+  (also `true`, `1`, `ja`, `yes`), anything else unticks it. A text field
+  keeps its width; more lines than the field has make it longer. Every
+  ASCII punctuation character of a value is escaped, so no value can close a
+  field or open one. `mlcext.FieldValues` reads the values back (`x` or
+  empty for a check box), `mlcext.FormSchema` describes the fields for an
+  input mask: kind, width, pattern, tooltip, section (heading), and a label
+  taken from the text around the field (before it on the line; after a
+  check box; table header plus row, e.g. "Charge (1)"; for a field alone on
+  its line the line above). The label is a guess from the text, so a mask
+  shows the field name as well.
+- **Record data of a filled-in form** go into the front matter block
+  `meta:`, which mlcdoc reserves for data it does not render (the PDF is the
+  same with and without it):
+
+  ```yaml
+  meta:
+    schema: mlc-form-record/v1
+    form: { doc_id: FB-LAG-001, version: "2.0", doc_no: SOP-2026-0031, sha256: … }
+    context: { event_no: EV-2026-2069 }   # or { zone: …, sop: … } for a standalone record
+    filled_by: Dr. Anna Berger            # display name, never an e-mail address
+    completed_at: 2026-10-28T09:12:00+01:00
+  ```
+
+  `form` pins the exact version filled in. `meta` must be a block; an
+  unknown `meta.schema` gives a warning (`frontmatter-meta-schema`).
+  `mlcext.IsFormRecord` tells a filled-in form from a blank one.
 - **Watermark** is not part of the document (`watermark` in the front matter
   is an error). It belongs to printing: the Sensor Monitor sets it by the
   version's status, MarkSafe by its setting (off by default). Both pass it to

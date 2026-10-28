@@ -166,6 +166,16 @@ func checkFrontMatter(md string, add func(int, int, Severity, string, string)) m
 					add(e.Line+b.yamlLine-1, e.Column, Error, "frontmatter-event-kind", fmt.Sprintf("Unbekannte Ereignisart `%s`; bekannt sind %s.", e.Value, strings.Join(EventKinds, ", ")))
 				}
 			}
+		case k.Value == "meta":
+			if v.Kind != yaml.MappingNode {
+				add(v.Line+b.yamlLine-1, v.Column, Error, "frontmatter-meta", "`meta` muss ein Block aus `schlüssel: wert`-Zeilen sein.")
+				continue
+			}
+			for j := 0; j+1 < len(v.Content); j += 2 {
+				if sk, sv := v.Content[j], v.Content[j+1]; sk.Value == "schema" && sv.Value != FormRecordSchema {
+					add(sv.Line+b.yamlLine-1, sv.Column, Warning, "frontmatter-meta-schema", fmt.Sprintf("Unbekanntes `meta.schema` `%s`; bekannt ist %s.", sv.Value, FormRecordSchema))
+				}
+			}
 		case k.Value == "doc_id" || k.Value == "version" || k.Value == "title":
 			if v.Kind != yaml.ScalarNode {
 				add(v.Line+b.yamlLine-1, v.Column, Error, "frontmatter-yaml", fmt.Sprintf("`%s` muss ein einzelner Wert sein.", k.Value))

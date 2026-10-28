@@ -66,8 +66,15 @@ func IsPrefillField(name string) bool {
 // FrontMatterKeys are the keys a document may carry in its front matter.
 // doc_id, version and title identify it (DocumentMeta). Everything else is
 // rejected: validity, review dates, status and the watermark are set by the
-// Sensor Monitor (approval, printing), never by the author.
-var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds"}
+// Sensor Monitor (approval, printing), never by the author. "meta" is the
+// block mlcdoc reserves for data it does not render; a filled-in form
+// carries its record data there (FormRecordSchema).
+var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds", "meta"}
+
+// FormRecordSchema in "meta.schema" marks a filled-in form: the form's
+// Markdown with the values in its fields, plus where it came from (form,
+// context, filled_by, completed_at; see docs/MLC-EXTENSIONS.md).
+const FormRecordSchema = "mlc-form-record/v1"
 
 // serverOwnedKeys are keys authors tend to write that belong to the
 // approval; they get a dedicated message.

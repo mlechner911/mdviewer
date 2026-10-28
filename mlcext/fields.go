@@ -12,6 +12,7 @@ import (
 // errors, so what passes here renders in mlcdoc.
 //
 //	[@]                          check box
+//	[@x], [@#name x]             check box, ticked (also "X"; mlcmd2pdf 3.27.0)
 //	[@__________]                one-line text field, as wide as the source
 //	[@___Vorgabe___]             text field with a preset value
 //	[@___ … several lines … ___] multi-line text field, one row per line
@@ -57,6 +58,8 @@ type Field struct {
 	Named bool
 	// Value is the preset value (text fields), lines joined with "\n".
 	Value string
+	// Checked: a check box written "[@x]" opens ticked.
+	Checked bool
 	// Chars is the width in characters of a one-line field.
 	Chars int
 	// Rows of a multi-line field (the minimum when it fills the page).
@@ -319,6 +322,12 @@ func classify(body string) (f Field, code, msg string) {
 	f = Field{Kind: TextField, Rows: 1}
 	if strings.TrimSpace(body) == "" && !strings.Contains(body, "\n") {
 		f.Kind = CheckBox
+		return f, "", ""
+	}
+	// "[@x]": ticked, as on paper and as "- [x]" in a task list (mlcmd2pdf
+	// 3.27.0). A one-letter pattern "x" would be a meaningless field.
+	if t := strings.TrimSpace(body); (t == "x" || t == "X") && !strings.Contains(body, "\n") {
+		f.Kind, f.Checked = CheckBox, true
 		return f, "", ""
 	}
 	if t := strings.TrimSpace(body); t == "…" || t == "..." {

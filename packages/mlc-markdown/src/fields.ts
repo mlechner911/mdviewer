@@ -14,6 +14,8 @@ export interface Field {
   named: boolean;
   /** Preset value, lines joined with "\n". */
   value: string;
+  /** A check box written "[@x]" opens ticked (mlcmd2pdf 3.27.0). */
+  checked: boolean;
   /** Width in characters of a one-line field. */
   chars: number;
   rows: number;
@@ -247,7 +249,7 @@ class Scanner {
 
 function newField(): Field {
   return {
-    kind: 'text', name: '', named: false, value: '', chars: 0, rows: 1, fillPage: false,
+    kind: 'text', name: '', named: false, value: '', checked: false, chars: 0, rows: 1, fillPage: false,
     pattern: '', tooltip: '', line: 0, col: 0, start: 0, markerEnd: 0, end: 0,
   };
 }
@@ -258,6 +260,12 @@ function classify(body: string): { field: Field } | { code: string } {
   const f = newField();
   if (body.trim() === '' && !body.includes('\n')) {
     f.kind = 'check';
+    return { field: f };
+  }
+  // "[@x]": ticked, as on paper and as "- [x]" in a task list.
+  if ((body.trim() === 'x' || body.trim() === 'X') && !body.includes('\n')) {
+    f.kind = 'check';
+    f.checked = true;
     return { field: f };
   }
   const t = body.trim();

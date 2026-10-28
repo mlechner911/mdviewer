@@ -2,6 +2,13 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- **Ticked check box** `[@x]` / `[@#name x]` (as mlcmd2pdf 3.27.0): the checker and the preview know it, the preview draws a cross.
+- **Filling forms** in `mlcext` (plan P-SENS-20261028-01): `FillFields` puts values into the fields (also unnamed ones, check boxes ticked by `x`), `FieldValues` reads them back, `FormSchema` describes the fields for an input mask with a label taken from the text around them; moved here from the Sensor Monitor.
+- Front matter block **`meta:`** for the record data of a filled-in form (`schema: mlc-form-record/v1`), not printed; `IsFormRecord`.
+
 ## [1.8.0] – 2026-10-21
 
 ### Added

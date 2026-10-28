@@ -277,7 +277,8 @@ export function createRenderer(opts: RenderOptions = {}) {
     const title = f.tooltip && f.tooltip !== f.pattern ? f.tooltip : f.pattern;
     const attrs = ` data-field="${escapeHtml(f.name)}"${title ? ` title="${escapeHtml(title)}"` : ''}`;
     const hint = f.tooltip && f.tooltip !== f.pattern ? `<span class="mlc-md-field-hint">${escapeHtml(f.tooltip)}</span>` : '';
-    if (f.kind === 'check') return `<span class="mlc-md-field mlc-md-field-check"${attrs}></span>${hint}`;
+    if (f.kind === 'check')
+      return `<span class="mlc-md-field mlc-md-field-check${f.checked ? ' mlc-md-field-checked' : ''}"${attrs}></span>${hint}`;
     if (f.kind === 'multiline') {
       const rows = Math.max(f.rows, 1);
       const value = f.value.split('\n').map(escapeHtml).join('<br>');

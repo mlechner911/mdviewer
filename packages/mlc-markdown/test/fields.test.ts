@@ -14,7 +14,7 @@ describe('field scanner = mlcext', () => {
     it(`vector ${i + 1}: ${JSON.stringify(v.markdown.slice(0, 40))}`, () => {
       const s = scanFields(v.markdown);
       const fields = s.fields.map((f) => ({
-        kind: f.kind, name: f.name, named: f.named, value: f.value, chars: f.chars, rows: f.rows,
+        kind: f.kind, name: f.name, named: f.named, value: f.value, checked: f.checked, chars: f.chars, rows: f.rows,
         fillPage: f.fillPage, pattern: f.pattern, tooltip: f.tooltip, line: f.line, col: f.col,
       }));
       expect(fields).toEqual(v.fields);
