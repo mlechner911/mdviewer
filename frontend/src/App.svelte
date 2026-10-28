@@ -1345,6 +1345,7 @@
         <FormFillPanel
           md={tabs[activeTabIndex].content}
           {filledBy}
+          theme={$effectiveAppTheme}
           onchange={fillChanged}
           onfilledby={setFilledBy}
           onsave={saveFilledForm}

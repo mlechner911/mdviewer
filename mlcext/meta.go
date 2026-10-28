@@ -175,15 +175,20 @@ func ExpandVariables(md string) string {
 
 // SuggestFileName proposes a file name from the document id: "INFO-QM-001"
 // plus ext (".md"), with the version for exports that are passed on
-// ("INFO-QM-001_v1.0.pdf"). Empty without a doc_id: the caller keeps its
-// usual name.
+// ("INFO-QM-001_v1.0.pdf"). A filled-in form is named after the day it was
+// completed instead ("FB-LAG-001_2026-10-28.pdf"): it is a record, not the
+// form's version. Empty without a doc_id: the caller keeps its usual name.
 func SuggestFileName(md, ext string, withVersion bool) string {
 	m := DocumentMeta(md)
 	if m.DocID == "" {
 		return ""
 	}
 	name := m.DocID
-	if withVersion && m.Version != "" {
+	if r, ok := FormRecordOf(md); ok {
+		if len(r.CompletedAt) >= 10 {
+			name += "_" + r.CompletedAt[:10]
+		}
+	} else if withVersion && m.Version != "" {
 		name += "_v" + strings.TrimPrefix(strings.TrimPrefix(m.Version, "v"), "V")
 	}
 	name = strings.TrimSpace(badFileChars.ReplaceAllString(name, "_"))

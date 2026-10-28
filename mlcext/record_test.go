@@ -58,3 +58,14 @@ func TestSetFormRecordWithoutFrontMatterAndSigned(t *testing.T) {
 		t.Fatal("not a record")
 	}
 }
+
+func TestSuggestFileNameOfRecord(t *testing.T) {
+	md := "---\ndoc_id: FB-LAG-001\nversion: \"2.0\"\n---\n[@#a ___]\n"
+	rec, _ := SetFormRecord(md, FormRecord{CompletedAt: "2026-10-28T12:30:47+01:00"})
+	if got := SuggestFileName(rec, ".pdf", true); got != "FB-LAG-001_2026-10-28.pdf" {
+		t.Fatalf("record: %q", got)
+	}
+	if got := SuggestFileName(md, ".pdf", true); got != "FB-LAG-001_v2.0.pdf" {
+		t.Fatalf("form: %q", got)
+	}
+}

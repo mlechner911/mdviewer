@@ -10,8 +10,10 @@
   import { mlcFormSchema, mlcFillForm, type MLCFormField } from '../lib/backend';
   import { t } from '../i18n';
 
-  let { md, filledBy, onchange, onfilledby, onsave, onload, onclose } = $props<{
+  let { md, filledBy, theme, onchange, onfilledby, onsave, onload, onclose } = $props<{
     md: string;
+    /** The app theme (not the preview's): the mask is part of the app. */
+    theme: 'dark' | 'light';
     filledBy: string;
     onchange: (md: string) => void;
     onfilledby: (name: string) => void;
@@ -55,9 +57,33 @@
     delete drafts[name];
   }
   const shown = (f: MLCFormField) => drafts[f.name] ?? f.value;
+
+  // Date and time patterns get the system's pickers; the value stays as
+  // the form writes it ("28.10.2026", "14:30").
+  const DATE = /^(TT|DD)\.MM\.(JJJJ|YYYY)$/i;
+  const TIME = /^(HH|hh):(MM|mm)$/;
+  const kindOf = (f: MLCFormField) => (f.pattern && DATE.test(f.pattern) ? 'date' : f.pattern && TIME.test(f.pattern) ? 'time' : 'text');
+  const pad = (n: number) => String(n).padStart(2, '0');
+  function toISODate(v: string): string {
+    const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v.trim());
+    if (!m) return '';
+    const d = new Date(+m[3], +m[2] - 1, +m[1]);
+    return d.getDate() === +m[1] && d.getMonth() === +m[2] - 1 ? `${m[3]}-${pad(+m[2])}-${pad(+m[1])}` : '';
+  }
+  function fromISODate(v: string): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+    return m ? `${m[3]}.${m[2]}.${m[1]}` : '';
+  }
+  const toTime = (v: string) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(v.trim()) ? v.trim() : '');
+  // A value written before (or by hand) that the picker cannot show.
+  const invalid = (f: MLCFormField) => !!f.value && (kindOf(f) === 'date' ? !toISODate(f.value) : kindOf(f) === 'time' ? !toTime(f.value) : false);
+  function now(f: MLCFormField) {
+    const d = new Date();
+    void set(f.name, kindOf(f) === 'date' ? `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}` : `${pad(d.getHours())}:${pad(d.getMinutes())}`);
+  }
 </script>
 
-<div class="fill">
+<div class="fill" class:dark={theme === 'dark'}>
   <div class="bar">
     <span class="title">{$t('formFillTitle')}</span>
     <span class="count">{fields.length} {$t('formFillFields')}{#if missing} · {missing} {$t('formFillEmpty')}{/if}</span>
@@ -92,7 +118,18 @@
                 {#if f.group}<span class="group">{f.group} ·</span>{/if}
                 {f.label || f.name}
               </label>
-              {#if f.kind === 'multiline'}
+              {#if f.kind === 'text' && kindOf(f) !== 'text'}
+                <div class="picker">
+                  {#if kindOf(f) === 'date'}
+                    <input id="ff-{f.name}" type="date" value={toISODate(f.value)} onchange={(e) => set(f.name, fromISODate(e.currentTarget.value))} />
+                  {:else}
+                    <input id="ff-{f.name}" type="time" value={toTime(f.value)} onchange={(e) => set(f.name, e.currentTarget.value)} />
+                  {/if}
+                  <button onclick={() => now(f)}>{kindOf(f) === 'date' ? $t('formFillToday') : $t('formFillNow')}</button>
+                  {#if f.value}<button onclick={() => set(f.name, '')} title={$t('formFillClear')} aria-label={$t('formFillClear')}>✕</button>{/if}
+                </div>
+                {#if invalid(f)}<span class="warn">{$t('formFillInvalid', f.value, f.pattern ?? '')}</span>{/if}
+              {:else if f.kind === 'multiline'}
                 <textarea id="ff-{f.name}" rows={Math.max(f.rows ?? 2, 2)} value={shown(f)} oninput={(e) => typed(f.name, e.currentTarget.value)} onblur={() => done(f.name)}></textarea>
               {:else}
                 <input id="ff-{f.name}" value={shown(f)} placeholder={f.pattern ?? ''} maxlength={f.pattern ? [...f.pattern].length : undefined} oninput={(e) => typed(f.name, e.currentTarget.value)} onblur={() => done(f.name)} autocomplete="off" />
@@ -108,7 +145,12 @@
 </div>
 
 <style>
-  .fill { display: flex; flex-direction: column; flex: 1; min-height: 0; font-size: 13px; }
+  .fill { display: flex; flex-direction: column; flex: 1; min-height: 0; font-size: 13px; background: #ffffff; color: #0f172a; color-scheme: light; }
+  .fill.dark { background: #0f172a; color: #f1f5f9; color-scheme: dark; }
+  .picker { display: flex; gap: 0.4rem; align-items: center; }
+  .picker input { width: auto !important; min-width: 9rem; }
+  .warn { grid-column: 2; font-size: 11.5px; color: #b45309; }
+  .fill.dark .warn { color: #fbbf24; }
   .bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.75rem; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
   .title { font-weight: 700; }
   .count { opacity: 0.6; font-size: 12px; }
@@ -118,7 +160,7 @@
   button.primary { background: #c94c35; border-color: #c94c35; color: white; }
   .body { overflow-y: auto; padding: 0.75rem 1rem 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
   .by { display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px dashed color-mix(in srgb, currentColor 20%, transparent); }
-  .by span { opacity: 0.75; }
+  .by span { opacity: 0.75; white-space: nowrap; }
   h3 { font-weight: 700; margin: 0.25rem 0 0.4rem; font-size: 13px; }
   .row { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr; column-gap: 0.75rem; row-gap: 0.1rem; align-items: center; padding: 0.2rem 0; }
   .row .name { grid-column: 2; font-family: var(--mlc-md-font-mono, monospace); font-size: 10.5px; opacity: 0.45; }
