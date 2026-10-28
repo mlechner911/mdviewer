@@ -30,6 +30,16 @@ internal/mdbrowse    -> Shared browsing library: rooted access (Root API),
 /marksafe_browse       -> Standalone CLI tool (own module history merged):
                         HTTP server + thin host shell around the shared UI.
 /internal/config      -> JSON configuration & whitelist management.
+/mlcext               -> Own Go module: checker, templates, form filling,
+                        field dialog (fieldspec.go), PDF via mlcdoc
+                        (mlcext/mlcdoc), shared with the Sensor Monitor.
+/packages             -> mlc-markdown (renderer, npm), mlc-markdown-svelte
+                        (component, npm), mlcext-editor (CodeMirror 6).
+/extensions.go        -> Hook for optional modules (built in with a tag).
+/sensormonitor        -> Optional Sensor Monitor module (Go service, api/
+                        client), tag "sensormonitor", Elastic License 2.0.
+/frontend/src/sensormonitor -> Its frontend; sensormonitor-off is the empty
+                        stand-in of the standard build.
 /internal/filesystem  -> Safe file I/O wrappers.
 /frontend/src/components -> Svelte 5 components (Editor, Preview, TabsBar, Toolbar, etc.).
 /frontend/src/lib     -> Shared stores, constants, and backend bindings.

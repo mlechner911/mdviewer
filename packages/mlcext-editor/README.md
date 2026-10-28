@@ -25,6 +25,7 @@ new EditorView({ extensions: [basicSetup, markdown(), mlcExtension(source, { onA
 | Completion after `[@` and `<!--`: fields, date/time, multi-line, prefill fields | `Analyze().lists.prefill` |
 | Completion in the front matter: keys and `event_kinds` | `Analyze().lists` |
 | `mlcSnippets()` and `insertMlcSnippet()` for host menus | the same building blocks |
+| `fieldHint({ label, title, onEdit })`: a box after the field under the cursor, double click on a field; `onEdit(line, col)` opens the host's field dialog. `fieldAt()`, `fieldAtCursor()` | field positions from `Analyze` |
 
 Plain Markdown is left alone: when `Analyze` does not detect an MLC
 document, there is no highlighting and no diagnostic.

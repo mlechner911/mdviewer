@@ -176,6 +176,13 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   CodeMirror 6): highlights fields and hints, shows the checker's messages at
   their lines, and offers the building blocks after `[@` and in the editor's
   "MLC" menu. It appears only for documents that use the extension.
+- **Field dialog:** a form field as a dialog instead of its syntax:
+  - **What it asks for:** kind (text, several lines, check box, date, time, own pattern, signature), name, width, lines, preset, ticked, role and tooltip.
+  - **Help with names:** the names the Sensor Monitor fills in to choose from, and a warning when a name is already used.
+  - **Preview:** below the input, the written syntax and a small preview.
+  - **Insert:** "Form field…" in the "MLC" menu or `Ctrl+Shift+F`.
+  - **Edit:** the box "✎ Field" after the field under the cursor, a double click or a right click on the field. It replaces exactly that field with its tooltip comment.
+  - **Writing and reading** is `mlcext.FormatField` and `mlcext.FieldAt`; the code escapes the preset. The written forms are pinned in `mlcext/testdata/fieldspec.json`, for a TypeScript port.
 
 - **PDF preview, export and printing** (`mlcext/mlcdoc`; File → Export →
   "As PDF…", `Ctrl+Shift+E`; File → "Print…", `Ctrl+P`): for every
