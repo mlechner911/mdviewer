@@ -191,6 +191,8 @@ tasks:
           install -m 755 "$MLCDOC_SRC/mlcdoc" bin/marksafe.app/Contents/MacOS/mlcdoc
           mkdir -p bin/marksafe.app/Contents/Resources/licenses/mlcdoc
           cp "$MLCDOC_SRC"/LICENSE-* "$MLCDOC_SRC"/NOTICE-* bin/marksafe.app/Contents/Resources/licenses/mlcdoc/
+          # Sensor Monitor module (SENSOR=1): its own license (ELv2)
+          if [ -n "$EXTRA_TAGS" ]; then cp sensormonitor/LICENSE bin/marksafe.app/Contents/Resources/licenses/LICENSE-sensormonitor; fi
           bin/marksafe.app/Contents/MacOS/mlcdoc --version
 
           if [ -n "$KEYCHAIN_PASS" ]; then
@@ -258,9 +260,16 @@ tasks:
       - cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/{{.N}}-linux-amd64
       # Unversioned names only for the public (standard) build.
       - '{{if not .SENSOR_TAG}}cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/marksafe-amd64-installer.exe && cp {{.BIN_DIR}}/marksafe {{.DROPZONE}}/marksafe{{else}}true{{end}}'
+      # Licenses for the portable packages: MarkSafe (MIT), mlcdoc with its
+      # third-party notices, and in a SENSOR=1 build the module (ELv2).
+      - |
+        rm -rf "{{.BIN_DIR}}/licenses" && mkdir -p "{{.BIN_DIR}}/licenses/mlcdoc"
+        cp LICENSE "{{.BIN_DIR}}/licenses/LICENSE-marksafe"
+        cp "{{.MLCDOC_DIR}}"/linux/LICENSE-* "{{.MLCDOC_DIR}}"/linux/NOTICE-* "{{.BIN_DIR}}/licenses/mlcdoc/"
+        {{if .SENSOR_TAG}}cp sensormonitor/LICENSE "{{.BIN_DIR}}/licenses/LICENSE-sensormonitor"{{else}}true{{end}}
       # Portable Windows/Linux: zip with mlcdoc next to MarkSafe (PDF preview/export).
-      - cd {{.BIN_DIR}} && rm -f {{.N}}-windows-portable.zip && 7z a -tzip -bso0 {{.N}}-windows-portable.zip marksafe.exe mlcdoc.exe
-      - cd {{.BIN_DIR}} && tar -czf {{.N}}-linux-amd64.tar.gz marksafe mlcdoc
+      - cd {{.BIN_DIR}} && rm -f {{.N}}-windows-portable.zip && 7z a -tzip -bso0 {{.N}}-windows-portable.zip marksafe.exe mlcdoc.exe licenses
+      - cd {{.BIN_DIR}} && tar -czf {{.N}}-linux-amd64.tar.gz marksafe mlcdoc licenses
       - cp {{.BIN_DIR}}/{{.N}}-windows-portable.zip {{.BIN_DIR}}/{{.N}}-linux-amd64.tar.gz {{.DROPZONE}}/
       - echo "Successfully published MarkSafe {{.VERSION}}{{.VARIANT_SUFFIX}} to {{.DROPZONE}}"
 

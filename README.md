@@ -59,6 +59,11 @@ Download the latest version for your platform from the **[Releases](https://gith
 
 MIT License - Copyright (c) 2026 Michael Lechner
 
+Exceptions:
+
+- **Sensor Monitor module** (`sensormonitor/`, `sensormonitor_on.go`, `frontend/src/sensormonitor/`): [Elastic License 2.0](./sensormonitor/LICENSE). It is built in only with `SENSOR=1`. Public builds contain none of it and are MIT only.
+- **MLC PDF toolkit `mlcdoc`**, shipped with the installers: its own license files, installed next to it (`licenses/mlcdoc`).
+
 ---
 *For technical details and build instructions, see **[DEVELOPER.md](./DEVELOPER.md)** and **[THEMING.md](./THEMING.md)**. Changes per release: **[CHANGELOG.md](./CHANGELOG.md)**. The standalone directory browser: **[marksafe_browse](./marksafe_browse/README.md)**.*
 

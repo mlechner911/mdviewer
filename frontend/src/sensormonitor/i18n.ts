@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
+// module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
+
 // Texts of the Sensor Monitor module, merged into MarkSafe's translations
 // when the module is built in (see index.ts).
 export const texts: Record<string, Record<string, string>> = {

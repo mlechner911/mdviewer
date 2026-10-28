@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
+// module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
+
 // Calls into the Go service marksafe/sensormonitor.Service by name, so
 // this module does not depend on generated bindings (it is built only into
 // the Sensor Monitor variant, see ../../vite.config.ts).

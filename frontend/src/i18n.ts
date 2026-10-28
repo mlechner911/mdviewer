@@ -17,6 +17,8 @@ export const locale = writable(getInitialLocale());
 
 export const translations: Record<string, any> = {
   en: {
+    aboutModuleLicense: 'Contains the module “%s” under the %s.',
+    aboutShowLicense: 'License text',
     fieldHintLabel: 'Field',
     fieldHintTitle: 'Edit the form field in a dialog (or double-click it)',
     fieldEdit: 'Edit form field…',
@@ -220,6 +222,8 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nAn easy to use cross platform Markdown viewer and editor.\n\nCopyright (c) 2026 Michael Lechner\nLicensed under MIT.'
   },
   de: {
+    aboutModuleLicense: 'Enthält das Modul „%s“ unter der %s.',
+    aboutShowLicense: 'Lizenztext',
     fieldHintLabel: 'Feld',
     fieldHintTitle: 'Formularfeld im Dialog bearbeiten (oder Doppelklick)',
     fieldEdit: 'Formularfeld bearbeiten…',
@@ -423,6 +427,8 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nEin einfach zu bedienender, plattformübergreifender Markdown-Betrachter und -Editor.\n\nCopyright (c) 2026 Michael Lechner\nLizenziert unter MIT.'
   },
   es: {
+    aboutModuleLicense: 'Contiene el módulo «%s» bajo la %s.',
+    aboutShowLicense: 'Texto de la licencia',
     fieldHintLabel: 'Campo',
     fieldHintTitle: 'Editar el campo del formulario en un diálogo (o doble clic)',
     fieldEdit: 'Editar campo del formulario…',
@@ -626,6 +632,8 @@ export const translations: Record<string, any> = {
     aboutBody: 'MarkSafe v%s\n\nUn visor y editor de Markdown multiplataforma fácil de usar.\n\nCopyright (c) 2026 Michael Lechner\nLicenciado bajo MIT.'
   },
   fr: {
+    aboutModuleLicense: 'Contient le module « %s » sous la %s.',
+    aboutShowLicense: 'Texte de la licence',
     fieldHintLabel: 'Champ',
     fieldHintTitle: 'Modifier le champ du formulaire dans une boîte de dialogue (ou double-clic)',
     fieldEdit: 'Modifier le champ du formulaire…',

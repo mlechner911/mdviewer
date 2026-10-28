@@ -28,7 +28,7 @@
   import FieldDialog from './components/FieldDialog.svelte';
   // Optional Sensor Monitor module: the real one in the Sensor Monitor
   // variant, null in the standard build (vite.config.ts).
-  import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts } from '$sensormonitor';
+  import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts, license as sensorMonitorLicense } from '$sensormonitor';
 
   // State & Config
   import { getTheme } from './themes';
@@ -1005,6 +1005,7 @@
   show={showAbout}
   title={aboutTitle}
   message={aboutMessage}
+  licenses={sensorMonitorLicense ? [sensorMonitorLicense] : []}
   onClose={() => showAbout = false}
   theme={$effectiveAppTheme}
 />

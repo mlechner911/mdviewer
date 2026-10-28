@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
+// module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
+
 // Package sensormonitor is MarkSafe's optional connection to an MLC Sensor
 // Monitor: open SOPs and forms from it, save them there as drafts and
 // compare the working copy with the approved version.

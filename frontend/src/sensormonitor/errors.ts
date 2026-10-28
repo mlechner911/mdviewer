@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
+// module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
+
 // Refusals of the Sensor Monitor, translated by their fixed code; the
 // server's own text is only an English fallback.
 import type { SensorError } from './api';

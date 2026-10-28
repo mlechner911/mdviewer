@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
+// module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
+
 // Package api talks to the document API of the MLC Sensor Monitor
 // (mlcmonit): open an SOP or form, save the working copy as a draft, and
 // compare it with the approved version. Sign-in is the device login of

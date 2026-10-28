@@ -1,3 +1,8 @@
+<!--
+  SPDX-License-Identifier: Elastic-2.0
+  Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
+  module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
+-->
 <script lang="ts">
   /**
    * Open from the Sensor Monitor: look up a document id, show the approved

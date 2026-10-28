@@ -5,3 +5,4 @@ import type { Component } from 'svelte';
 export const Extension: Component<any> | null = null;
 export const SettingsSection: Component<any> | null = null;
 export const texts: Record<string, Record<string, string>> = {};
+export const license: { module: string; name: string; text: string } | null = null;
