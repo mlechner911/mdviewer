@@ -279,6 +279,8 @@ export function createRenderer(opts: RenderOptions = {}) {
     const hint = f.tooltip && f.tooltip !== f.pattern ? `<span class="mlc-md-field-hint">${escapeHtml(f.tooltip)}</span>` : '';
     if (f.kind === 'check')
       return `<span class="mlc-md-field mlc-md-field-check${f.checked ? ' mlc-md-field-checked' : ''}"${attrs}></span>${hint}`;
+    if (f.kind === 'signature')
+      return `<span class="mlc-md-field mlc-md-field-signature"${attrs}><span class="mlc-md-field-sign"></span><span class="mlc-md-field-role">${escapeHtml(f.role)}</span></span>`;
     if (f.kind === 'multiline') {
       const rows = Math.max(f.rows, 1);
       const value = f.value.split('\n').map(escapeHtml).join('<br>');

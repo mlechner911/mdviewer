@@ -124,3 +124,20 @@ func TestFormRecordFrontMatter(t *testing.T) {
 		t.Error("unknown meta.schema not reported")
 	}
 }
+
+// A signature field is signed, never filled: FillFields leaves it, FieldValues
+// leaves it out, FormSchema names the role.
+func TestSignatureFieldsAreNotFilled(t *testing.T) {
+	md := "## Bestätigung\n- Name: [@#name_v ____________]\n- [@#sig_v Unterschrift: Vernichtende Person]\n- [@Signature:] Zeuge\n"
+	got, set := FillFields(md, map[string]string{"name_v": "Anna", "sig_v": "x", "bestaetigung_1": "Bob"})
+	if strings.Join(set, ",") != "name_v" || !strings.Contains(got, "[@#sig_v Unterschrift: Vernichtende Person]") || !strings.Contains(got, "[@Signature:]") {
+		t.Fatalf("got %q (%v)", got, set)
+	}
+	if _, ok := FieldValues(got)["sig_v"]; ok {
+		t.Fatal("signature in FieldValues")
+	}
+	s := FormSchema(md)
+	if s[1].Kind != "signature" || s[1].Label != "Vernichtende Person" || s[1].Role != "Vernichtende Person" || s[2].Label != "Zeuge" {
+		t.Fatalf("%+v", s)
+	}
+}

@@ -58,6 +58,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | Legacy header line | `**Dokumenten-ID:** SOP-QM-001 \| **Version:** 1.0` in the text | read as a fallback only | ✅ warning `header-in-body`, error on a contradiction |
 | Variables | `{{doc_id}}`, `{{version}}`, `{{title}}` in the text | replaced with the front matter values when rendering | ✅ checked; ⏳ replaced in the preview |
 | Signature | `<!--mlc-signature … -->` at the end of the file (old form: a `signature:` block before the front matter) | seal of the Sensor Monitor; not part of the content | ✅ recognised, left out of the content; ⏳ "signed by … on …" in the preview |
+| Signature field | `[@Unterschrift: Rolle]`, `[@#name Unterschrift: Rolle]` (English `Signature:`, either case) | room to sign above a line, the role below it; an empty PDF signature field (mlcmd2pdf 3.28.0) | ✅ checked, highlighted; preview shows the line and the role |
 | Filled-in form | front matter `meta:` with `schema: mlc-form-record/v1`, values in the fields | not printed (mlcdoc does not read `meta`) | ✅ checked (`mlcext.FillFields`, `FieldValues`, `FormSchema`); ⏳ fill mode |
 | Layout front matter | `header`, `footer`, `signatures`, `toc`, `page-size` … | page header/footer, signature block, layout | ⏳ generic metadata table |
 
@@ -126,6 +127,23 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   check box; table header plus row, e.g. "Charge (1)"; for a field alone on
   its line the line above). The label is a guess from the text, so a mask
   shows the field name as well.
+- **Signature fields** name **who** signs, not how: on paper today, later
+  with the signing PIN in the Sensor Monitor or on a signature pad. Write
+  one per person (`[@#sig_vernichtend Unterschrift: Vernichtende Person]`,
+  `[@#sig_zeuge1 Unterschrift: 1. Zeuge]`), each with a name, so a record
+  can say which signature is missing. Filling never touches them
+  (`FillFields` skips them, `FieldValues` leaves them out); `FormSchema`
+  reports them as kind `signature` with their role. Without the colon,
+  `[@Unterschrift]` stays a pattern field.
+  - **Several people, later (concept):** the signatures are collected in the
+    Sensor Monitor per role (person, time, method; for a signature pad the
+    biometric data encrypted and bound to the content's checksum) and
+    listed in `meta.signatures` of the record. The PDF gets **one** seal
+    when the record is completed; each signature field shows who signed
+    and when. One PDF signature per person would append a revision per
+    signer, which some viewers show as invalid and which the archive rule
+    "a sealed PDF never changes" forbids; that stays an option for a
+    customer who requires it.
 - **Record data of a filled-in form** go into the front matter block
   `meta:`, which mlcdoc reserves for data it does not render (the PDF is the
   same with and without it):

@@ -118,6 +118,7 @@ const KIND_LABEL: Record<string, string> = {
   check: 'Ankreuzfeld',
   text: 'Textfeld',
   multiline: 'mehrzeiliges Textfeld',
+  signature: 'Unterschriftsfeld',
 };
 
 function buildDecorations(doc: Text, a: MlcAnalysis): DecorationSet {
@@ -254,6 +255,7 @@ export function mlcSnippets(lists?: MlcLists | null): MlcSnippet[] {
     { label: 'Ankreuzfeld', detail: '[@#name]', template: '[@#${name}]' },
     { label: 'Datum', detail: 'TT.MM.JJJJ', template: '[@#${datum} TT.MM.JJJJ]' },
     { label: 'Uhrzeit', detail: 'HH:MM', template: '[@#${uhrzeit} HH:MM]' },
+    { label: 'Unterschrift', detail: 'wer unterschreibt', template: '[@#${unterschrift} Unterschrift: ${Rolle}]' },
     {
       label: 'Mehrzeiliges Feld',
       detail: 'drei Zeilen',

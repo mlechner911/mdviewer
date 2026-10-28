@@ -14,7 +14,7 @@ import (
 type FormField struct {
 	Name  string `json:"name"`
 	Named bool   `json:"named"`
-	Kind  string `json:"kind"` // "text" | "multiline" | "check"
+	Kind  string `json:"kind"` // "text" | "multiline" | "check" | "signature"
 	// Label: text before the field on its line (up to a previous field), for
 	// a check box the text after it; in a table the column header plus the
 	// row ("Charge (1)"); for a field alone on its line the line above.
@@ -28,6 +28,9 @@ type FormField struct {
 	Tooltip string `json:"tooltip,omitempty"`
 	Chars   int    `json:"chars,omitempty"`
 	Rows    int    `json:"rows,omitempty"`
+	// Role of a signature field: who signs. A mask shows it as "to be
+	// signed by …", never as an input.
+	Role string `json:"role,omitempty"`
 	// Prefill: the Sensor Monitor fills this field from an event.
 	Prefill bool `json:"prefill"`
 	// Value as FieldValues reads it ("x" or "" for a check box).
@@ -44,7 +47,7 @@ func FormSchema(md string) []FormField {
 		ff := FormField{
 			Name: f.Name, Named: f.Named, Kind: f.Kind.String(), Pattern: f.Pattern,
 			Tooltip: f.Tooltip, Chars: f.Chars, Rows: f.Rows, Line: f.Line,
-			Prefill: f.Named && IsPrefillField(f.Name), Value: f.Value,
+			Prefill: f.Named && IsPrefillField(f.Name), Value: f.Value, Role: f.Role,
 		}
 		if f.Kind == CheckBox {
 			ff.Rows, ff.Value = 0, ""
@@ -71,6 +74,8 @@ func FormSchema(md string) []FormField {
 			}
 			before, after := labelText(md[from:f.Offset]), labelText(md[f.End:to])
 			switch {
+			case f.Kind == SignatureField && f.Role != "":
+				ff.Label = f.Role
 			case f.Kind == CheckBox && after != "":
 				ff.Label = shortLabel(after)
 			case before != "":

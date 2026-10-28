@@ -31,7 +31,8 @@ import (
 // md and returns the result and the names of the fields it changed, in
 // document order. Only names present in values are touched: an empty text
 // value clears the field, an empty check box value unticks it. Fields of an
-// unknown name stay as they are.
+// unknown name stay as they are, and so does every signature field: it is
+// signed, not filled.
 func FillFields(md string, values map[string]string) (string, []string) {
 	fields, _ := ExtractFields(md)
 	var out strings.Builder
@@ -39,7 +40,7 @@ func FillFields(md string, values map[string]string) (string, []string) {
 	last := 0
 	for _, f := range fields {
 		v, ok := values[f.Name]
-		if !ok || f.Offset < last || f.End > len(md) {
+		if !ok || f.Kind == SignatureField || f.Offset < last || f.End > len(md) {
 			continue
 		}
 		inner := md[f.Offset+2 : f.End-1]
@@ -74,11 +75,15 @@ func FillFields(md string, values map[string]string) (string, []string) {
 
 // FieldValues reads the values of every field (name → value): the preset of
 // a text field (lines joined with "\n"), "x" for a ticked check box, "" for
-// an empty one. Filling md with FieldValues(md) gives the same values back.
+// an empty one; signature fields carry no value and are left out. Filling md
+// with FieldValues(md) gives the same values back.
 func FieldValues(md string) map[string]string {
 	fields, _ := ExtractFields(md)
 	out := make(map[string]string, len(fields))
 	for _, f := range fields {
+		if f.Kind == SignatureField {
+			continue
+		}
 		if f.Kind == CheckBox {
 			if f.Checked {
 				out[f.Name] = "x"

@@ -5,7 +5,7 @@
 // be displayed; a malformed field stays text — the diagnostics come from
 // mlcext, never from here.
 
-export type FieldKind = 'check' | 'text' | 'multiline';
+export type FieldKind = 'check' | 'text' | 'multiline' | 'signature';
 
 export interface Field {
   kind: FieldKind;
@@ -16,6 +16,8 @@ export interface Field {
   value: string;
   /** A check box written "[@x]" opens ticked (mlcmd2pdf 3.27.0). */
   checked: boolean;
+  /** Who signs a signature field "[@Unterschrift: Zeuge 1]" (mlcmd2pdf 3.28.0). */
+  role: string;
   /** Width in characters of a one-line field. */
   chars: number;
   rows: number;
@@ -249,12 +251,24 @@ class Scanner {
 
 function newField(): Field {
   return {
-    kind: 'text', name: '', named: false, value: '', checked: false, chars: 0, rows: 1, fillPage: false,
+    kind: 'text', name: '', named: false, value: '', checked: false, role: '', chars: 0, rows: 1, fillPage: false,
     pattern: '', tooltip: '', line: 0, col: 0, start: 0, markerEnd: 0, end: 0,
   };
 }
 
 const cpLen = (s: string) => Array.from(s).length;
+
+// A signature field opens with one of these, German or English, either case.
+const SIGNATURE_KEYWORDS = ['unterschrift:', 'signature:'];
+
+function signatureRole(body: string): string | null {
+  if (body.includes('\n')) return null;
+  const t = body.trim();
+  for (const k of SIGNATURE_KEYWORDS) {
+    if (t.slice(0, k.length).toLowerCase() === k) return unescape(t.slice(k.length).trim());
+  }
+  return null;
+}
 
 function classify(body: string): { field: Field } | { code: string } {
   const f = newField();
@@ -266,6 +280,13 @@ function classify(body: string): { field: Field } | { code: string } {
   if ((body.trim() === 'x' || body.trim() === 'X') && !body.includes('\n')) {
     f.kind = 'check';
     f.checked = true;
+    return { field: f };
+  }
+  const role = signatureRole(body);
+  if (role !== null) {
+    f.kind = 'signature';
+    f.role = role;
+    f.tooltip = role;
     return { field: f };
   }
   const t = body.trim();

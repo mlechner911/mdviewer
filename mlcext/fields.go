@@ -36,6 +36,10 @@ const (
 	TextField
 	// MultilineField is several lines of text.
 	MultilineField
+	// SignatureField is a place to sign: "[@Unterschrift: Zeuge 1]"
+	// (English "Signature:"), an empty PDF signature field (mlcmd2pdf
+	// 3.28.0). The form names who signs, not how.
+	SignatureField
 )
 
 func (k FieldKind) String() string {
@@ -44,6 +48,8 @@ func (k FieldKind) String() string {
 		return "check"
 	case MultilineField:
 		return "multiline"
+	case SignatureField:
+		return "signature"
 	}
 	return "text"
 }
@@ -60,6 +66,8 @@ type Field struct {
 	Value string
 	// Checked: a check box written "[@x]" opens ticked.
 	Checked bool
+	// Role of a signature field: who signs ("Vernichtende Person").
+	Role string
 	// Chars is the width in characters of a one-line field.
 	Chars int
 	// Rows of a multi-line field (the minimum when it fills the page).
@@ -330,6 +338,10 @@ func classify(body string) (f Field, code, msg string) {
 		f.Kind, f.Checked = CheckBox, true
 		return f, "", ""
 	}
+	if role, ok := signatureRole(body); ok {
+		f.Kind, f.Role, f.Tooltip = SignatureField, role, role
+		return f, "", ""
+	}
 	if t := strings.TrimSpace(body); t == "…" || t == "..." {
 		f.Kind, f.FillPage = MultilineField, true
 		return f, "", ""
@@ -376,6 +388,24 @@ func classify(body string) (f Field, code, msg string) {
 	}
 	f.Pattern, f.Tooltip = pattern, pattern
 	return f, "", ""
+}
+
+// signatureKeywords open a signature field, German and English, either case.
+var signatureKeywords = []string{"unterschrift:", "signature:"}
+
+// signatureRole is the role of a signature field body ("Unterschrift:
+// Zeuge 1" → "Zeuge 1"); false for any other field.
+func signatureRole(body string) (string, bool) {
+	if strings.Contains(body, "\n") {
+		return "", false
+	}
+	t := strings.TrimSpace(body)
+	for _, k := range signatureKeywords {
+		if len(t) >= len(k) && strings.EqualFold(t[:len(k)], k) {
+			return unescape(strings.TrimSpace(t[len(k):])), true
+		}
+	}
+	return "", false
 }
 
 // unescaped is the byte index of the first wanted rune not escaped with

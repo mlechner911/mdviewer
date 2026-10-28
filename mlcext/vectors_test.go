@@ -20,6 +20,7 @@ type vectorField struct {
 	Named    bool   `json:"named"`
 	Value    string `json:"value"`
 	Checked  bool   `json:"checked"`
+	Role     string `json:"role"`
 	Chars    int    `json:"chars"`
 	Rows     int    `json:"rows"`
 	FillPage bool   `json:"fillPage"`
@@ -58,6 +59,7 @@ var vectorInputs = []string{
 	"[@#x] [@#x]",
 	"## Titel [@]",
 	"[@HH:MM=08:00 Uhr]",
+	"- [@#sig_v Unterschrift: Vernichtende Person]\n- [@signature: Witness\\] 1] [@UNTERSCHRIFT:] [@Unterschrift]\n",
 	"# Ä Öl\n\n* **Ort:** [@#ort ___] <!--* z. B. Kühlraum A -->\n* [@] Kritisch\n",
 	"* [@#fest x] Feststoffe\n* [@#fl] Flüssig\n* [@X] Pflaster\n[@xx] [@#n x y]\n",
 }
@@ -69,7 +71,7 @@ func vectorsFor(inputs []string) []vector {
 		v := vector{Markdown: md, Fields: []vectorField{}, Errors: []vectorError{}}
 		for _, f := range fs {
 			v.Fields = append(v.Fields, vectorField{
-				Kind: f.Kind.String(), Name: f.Name, Named: f.Named, Value: f.Value, Checked: f.Checked, Chars: f.Chars,
+				Kind: f.Kind.String(), Name: f.Name, Named: f.Named, Value: f.Value, Checked: f.Checked, Role: f.Role, Chars: f.Chars,
 				Rows: f.Rows, FillPage: f.FillPage, Pattern: f.Pattern, Tooltip: f.Tooltip, Line: f.Line, Col: f.Col,
 			})
 		}
