@@ -20,8 +20,7 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
 - **MLC Markdown Extension** *(non-standard)*: form fields in Markdown become a fillable PDF form; a field dialog inserts and edits them, "Fill in" fills a form and saves it as a record, and templates and live checks help along. See **[docs/MLC-EXTENSIONS.md](./docs/MLC-EXTENSIONS.md)** for what is standard, what is a common extension and what is MLC-specific.
 - **PDF Preview, Export and Print**: See the document exactly as the PDF prints, export it, and print through the system's PDF viewer. This uses the MLC PDF toolkit `mlcdoc`, shipped with the installers; without it MarkSafe works as before, just without PDF.
 - **Synchronized Dark / Light Mode**: Unified theme system across editor, preview, syntax highlighting, and UI frames (with automatic OS preference detection).
-- **High-Contrast Print**: Dedicated print stylesheet (`@media print`) that removes UI chrome, sets clean page margins, prevents bad page breaks, and optimizes colors for paper.
-- **Export to HTML**: Export standalone HTML documents with embedded CSS and styles.
+- **Export to HTML**: standalone HTML with embedded styles. Printed from a browser it uses paper colors and the extension's page breaks, hides screen-only help and avoids breaks inside tables, code and images.
 - **Multilingual**: Support for English, German, Spanish, and French.
 - **Real-time Rendering**: Instant preview as you type.
 - **Browser Mode**: Open the current document's directory in a standalone window — recursive tree, fuzzy full-text search (`Ctrl+K`), validated intra-doc links, directory indexes, and the same theme as the main window.
