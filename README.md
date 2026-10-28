@@ -9,22 +9,26 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
 
 ##  Key Features
 
-- **  Modern CodeMirror 6 Editor**: In-editor Markdown syntax highlighting, line numbers, bracket matching, and smooth synchronized scrolling.
-- **  Multi-Tab Interface**: Work with multiple documents simultaneously.
-- ** Rich Markdown Support**:
+- **Modern CodeMirror 6 Editor**: In-editor Markdown syntax highlighting, line numbers, bracket matching, and smooth synchronized scrolling.
+- **Multi-Tab Interface**: Work with multiple documents simultaneously.
+- **Rich Markdown Support**:
   - **GFM**: Tables, tasklists, and footnotes.
   - **YAML Front Matter**: Automatic parsing and structured metadata accordion (`--- ... ---`).
   - **GitHub Alerts**: High-visibility notes, tips, and warnings using `> [!NOTE]` syntax.
   - **Math**: Integrated KaTeX for complex mathematical expressions.
   - **Diagrams**: Native Mermaid.js support for flowcharts, sequences, Gantt charts, and architecture diagrams.
-  - **MLC Markdown Extension** *(non-standard)*: page breaks and anchor targets for MLC Sensor Monitor documents (SOPs, forms). Not part of any Markdown standard — see **[docs/MLC-EXTENSIONS.md](./docs/MLC-EXTENSIONS.md)** for what is standard, what is a common extension and what is MLC-specific.
-- ** Synchronized Dark / Light Mode**: Unified theme system across editor, preview, syntax highlighting, and UI frames (with automatic OS preference detection).
-- ** High-Contrast Print & PDF**: Dedicated print stylesheet (`@media print`) that removes UI chrome, sets clean page margins, prevents bad page breaks, and optimizes colors for paper.
-- ** Export to HTML**: Export standalone HTML documents with embedded CSS and styles.
-** Multilingual**: Support for English, German, Spanish, and French.
-- ** Real-time Rendering**: Instant preview as you type.
-- ** MLC Sensor Monitor** *(optional module, not in the public builds)*: open SOPs and forms from the Sensor Monitor, save changes as drafts and see whether a file matches the approved version — see **[docs/SENSOR-MONITOR.md](./docs/SENSOR-MONITOR.md)**.
-- ** Browser Mode**: Open the current document's directory in a standalone window — recursive tree, fuzzy full-text search (`Ctrl+K`), validated intra-doc links, directory indexes, and the same theme as the main window.
+- **MLC Markdown Extension** *(non-standard)*: form fields in Markdown become a fillable PDF form; a field dialog inserts and edits them, "Fill in" fills a form and saves it as a record, and templates and live checks help along. See **[docs/MLC-EXTENSIONS.md](./docs/MLC-EXTENSIONS.md)** for what is standard, what is a common extension and what is MLC-specific.
+- **PDF Preview, Export and Print**: See the document exactly as the PDF prints, export it, and print through the system's PDF viewer. This uses the MLC PDF toolkit `mlcdoc`, shipped with the installers; without it MarkSafe works as before, just without PDF.
+- **Synchronized Dark / Light Mode**: Unified theme system across editor, preview, syntax highlighting, and UI frames (with automatic OS preference detection).
+- **High-Contrast Print**: Dedicated print stylesheet (`@media print`) that removes UI chrome, sets clean page margins, prevents bad page breaks, and optimizes colors for paper.
+- **Export to HTML**: Export standalone HTML documents with embedded CSS and styles.
+- **Multilingual**: Support for English, German, Spanish, and French.
+- **Real-time Rendering**: Instant preview as you type.
+- **Browser Mode**: Open the current document's directory in a standalone window — recursive tree, fuzzy full-text search (`Ctrl+K`), validated intra-doc links, directory indexes, and the same theme as the main window.
+
+**Optional module** (not in the public builds):
+
+- **MLC Sensor Monitor**: open SOPs and forms from the Sensor Monitor, save changes as drafts and see whether a file matches the approved version. See **[docs/SENSOR-MONITOR.md](./docs/SENSOR-MONITOR.md)**.
 
 ## 🛡️ Security First
 
