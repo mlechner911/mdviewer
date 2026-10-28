@@ -127,10 +127,15 @@ task release SENSOR=1              # all, named marksafe-<version>-sensormonitor
 Without `SENSOR=1` neither the Go code nor the frontend code of the module
 is in the build.
 
+On Windows the module build installs as **MarkSafePlus**: its own folder
+(`Program Files\Michael Lechner\MarkSafePlus`), start menu and desktop
+shortcuts and uninstall entry, so it can sit next to MarkSafe. Both share
+the settings. The installer that was set up last opens `.md` files.
+
 **License:** the module is under the [Elastic License 2.0](../sensormonitor/LICENSE),
 the rest of MarkSafe under MIT. Every file of the module carries
 `SPDX-License-Identifier: Elastic-2.0`. A `SENSOR=1` build names the module's
-license in the About window. The portable packages and the macOS app also contain it as
+license in the About window. The installer, the portable packages and the macOS app also contain it as
 `LICENSE-sensormonitor`. The frontend variant is written to `frontend/.variant` and
 read by `frontend/vite.config.ts`. `task publish:downloads` refuses
 `SENSOR=1`: public downloads are always the standard build.

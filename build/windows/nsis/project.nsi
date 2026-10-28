@@ -35,6 +35,7 @@ Unicode true
 ####
 !include "wails_tools.nsh"
 !include "mlcdoc.nsh"
+!include "module.nsh"
 
 # The version information for this two must consist of 4 parts
 VIProductVersion "${INFO_PRODUCTVERSION}.0"
@@ -94,6 +95,7 @@ Section
     
     !insertmacro wails.files
     !insertmacro marksafe.mlcdoc
+    !insertmacro marksafe.moduleLicense
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"

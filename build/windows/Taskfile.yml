@@ -101,6 +101,8 @@ tasks:
         vars:
           INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
           MLCDOC_DIR: '{{.MLCDOC_DIR | default ""}}'
+          PRODUCT_NAME: '{{.PRODUCT_NAME | default ""}}'
+          MODULE_LICENSE: '{{.MODULE_LICENSE | default ""}}'
     vars:
       FORMAT: '{{.FORMAT | default "nsis"}}'
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
@@ -126,9 +128,9 @@ tasks:
       - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/nsis"
       - |
         {{if eq OS "windows"}}
-        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" {{if .MLCDOC_DIR}}-DARG_MLCDOC_DIR="{{.MLCDOC_DIR}}" {{end}}project.nsi
+        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" {{if .MLCDOC_DIR}}-DARG_MLCDOC_DIR="{{.MLCDOC_DIR}}" {{end}}{{if .PRODUCT_NAME}}-DINFO_PRODUCTNAME="{{.PRODUCT_NAME}}" {{end}}{{if .MODULE_LICENSE}}-DARG_MODULE_LICENSE="{{.MODULE_LICENSE}}" {{end}}project.nsi
         {{else}}
-        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" {{if .MLCDOC_DIR}}-DARG_MLCDOC_DIR="{{.MLCDOC_DIR}}" {{end}}project.nsi
+        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" {{if .MLCDOC_DIR}}-DARG_MLCDOC_DIR="{{.MLCDOC_DIR}}" {{end}}{{if .PRODUCT_NAME}}-DINFO_PRODUCTNAME="{{.PRODUCT_NAME}}" {{end}}{{if .MODULE_LICENSE}}-DARG_MODULE_LICENSE="{{.MODULE_LICENSE}}" {{end}}project.nsi
         {{end}}
     vars:
       ARCH: '{{.ARCH | default ARCH}}'
@@ -136,6 +138,11 @@ tasks:
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
       # MarkSafe: folder with mlcdoc.exe + licenses (root task mlcdoc:fetch)
       MLCDOC_DIR: '{{.MLCDOC_DIR | default ""}}'
+      # MarkSafe with a module (SENSOR=1): "MarkSafePlus", installed next to
+      # MarkSafe (own folder, shortcuts and uninstall entry), and the
+      # module's license file
+      PRODUCT_NAME: '{{.PRODUCT_NAME | default ""}}'
+      MODULE_LICENSE: '{{.MODULE_LICENSE | default ""}}'
 
   create:msix:package:
     summary: Creates an MSIX package
