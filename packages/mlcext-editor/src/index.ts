@@ -383,3 +383,6 @@ export function mlcExtension(source: MlcSource, opt: MlcOptions = {}): Extension
     mlcTheme,
   ];
 }
+
+// Field dialog support: box at the field under the cursor, double click.
+export { fieldHint, fieldAt, fieldAtCursor, type FieldHintOptions } from './fieldHint';

@@ -1,0 +1,128 @@
+[
+  {
+    "spec": {
+      "kind": "text",
+      "name": "ort",
+      "chars": 12
+    },
+    "text": "[@#ort ____________]"
+  },
+  {
+    "spec": {
+      "kind": "text",
+      "name": ""
+    },
+    "text": "[@____________________]"
+  },
+  {
+    "spec": {
+      "kind": "text",
+      "name": "name",
+      "chars": 20,
+      "value": "Dr. Anna Berger"
+    },
+    "text": "[@#name __Dr\\. Anna Berger___]"
+  },
+  {
+    "spec": {
+      "kind": "text",
+      "name": "ort",
+      "chars": 10,
+      "tooltip": "Raum oder  Station"
+    },
+    "text": "[@#ort __________] \u003c!--* Raum oder Station --\u003e"
+  },
+  {
+    "spec": {
+      "kind": "check",
+      "name": "ok"
+    },
+    "text": "[@#ok]"
+  },
+  {
+    "spec": {
+      "kind": "check",
+      "name": "ok",
+      "checked": true
+    },
+    "text": "[@#ok x]"
+  },
+  {
+    "spec": {
+      "kind": "check",
+      "name": "",
+      "checked": true
+    },
+    "text": "[@x]"
+  },
+  {
+    "spec": {
+      "kind": "pattern",
+      "name": "datum",
+      "pattern": "TT.MM.JJJJ"
+    },
+    "text": "[@#datum TT.MM.JJJJ]"
+  },
+  {
+    "spec": {
+      "kind": "pattern",
+      "name": "datum",
+      "pattern": "TT.MM.JJJJ",
+      "value": "16.10.2026"
+    },
+    "text": "[@#datum TT.MM.JJJJ=16\\.10\\.2026]"
+  },
+  {
+    "spec": {
+      "kind": "pattern",
+      "name": "zeit",
+      "pattern": "HH:MM"
+    },
+    "text": "[@#zeit HH:MM]"
+  },
+  {
+    "spec": {
+      "kind": "signature",
+      "name": "zeuge",
+      "role": "Zeuge 1"
+    },
+    "text": "[@#zeuge Unterschrift: Zeuge 1]"
+  },
+  {
+    "spec": {
+      "kind": "signature",
+      "name": "",
+      "role": "Vernichtende Person"
+    },
+    "text": "[@Unterschrift: Vernichtende Person]"
+  },
+  {
+    "spec": {
+      "kind": "multiline",
+      "name": "befund",
+      "chars": 8,
+      "rows": 2
+    },
+    "text": "[@#befund ________\n________]"
+  },
+  {
+    "spec": {
+      "kind": "multiline",
+      "name": "befund",
+      "chars": 10,
+      "rows": 2,
+      "value": "kein Befund"
+    },
+    "text": "[@#befund __kein Befund__\n__________]"
+  },
+  {
+    "spec": {
+      "kind": "multiline",
+      "name": "notiz",
+      "chars": 6,
+      "rows": 1,
+      "fillPage": true
+    },
+    "text": "[@#notiz ______\n…]"
+  }
+]

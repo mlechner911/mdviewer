@@ -10,7 +10,7 @@
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
   import { tags as t } from '@lezer/highlight';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import { mlcExtension, insertMlcSnippet, type MlcSource, type MlcAnalysis, type MlcSnippet } from '../../../packages/mlcext-editor/src/index';
+  import { mlcExtension, insertMlcSnippet, fieldHint, fieldAt, toPos, type MlcSource, type MlcAnalysis, type MlcSnippet } from '../../../packages/mlcext-editor/src/index';
   import { editorPhrases } from '../lib/editor/phrases';
   import { dataUriFolding } from '../lib/editor/dataUri';
   import { tableHint, tableAtCursor } from '../lib/editor/tableHint';
@@ -26,7 +26,8 @@
     mlcSource,
     onmlcanalysis,
     tableFit,
-    oncursortable
+    oncursortable,
+    oneditfield
   } = $props<{
     value: string;
     theme: EffectiveTheme_t;
@@ -41,7 +42,12 @@
     tableFit?: (md: string, line: number, mode: 'auto' | 'content') => Promise<string | null>;
     /** Separator row of the table at the cursor (0: none), for the toolbar. */
     oncursortable?: (line: number) => void;
+    /** Open the field dialog for the form field at line, col (MLC extension). */
+    oneditfield?: (line: number, col: number) => void;
   }>();
+
+  // Right-click on a form field: edit it in the field dialog.
+  let fieldMenu = $state<{ x: number; y: number; line: number; col: number } | null>(null);
 
   // Right-click in a table: column widths for the PDF.
   let tableMenu = $state<{ x: number; y: number; line: number } | null>(null);
@@ -252,6 +258,16 @@
     void fitTable(mode);
   }
 
+  /** Replaces the range (1-based lines, columns in characters, end exclusive), e.g. a field from the field dialog. */
+  export function replaceRange(line: number, col: number, endLine: number, endCol: number, text: string) {
+    if (!editorView) return;
+    const doc = editorView.state.doc;
+    const from = toPos(doc, line, col);
+    const to = toPos(doc, endLine, endCol);
+    editorView.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
+    editorView.focus();
+  }
+
   /** insertText puts text at the cursor (replacing a selection). */
   export function insertText(text: string) {
     if (!editorView) return;
@@ -313,9 +329,15 @@
         EditorView.lineWrapping,
         EditorView.domEventHandlers({
           contextmenu(e, view) {
-            if (!tableFit) return false;
             const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
             if (pos == null) return false;
+            const field = oneditfield ? fieldAt(view.state, pos) : null;
+            if (field) {
+              e.preventDefault();
+              fieldMenu = { x: e.clientX, y: e.clientY, line: field.line, col: field.col };
+              return true;
+            }
+            if (!tableFit) return false;
             const line = view.state.doc.lineAt(pos);
             if (!line.text.includes('|')) return false;
             e.preventDefault();
@@ -324,6 +346,9 @@
           },
         }),
         ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a) })] : []),
+        ...(mlcSource && oneditfield
+          ? [fieldHint({ label: '✎ ' + $tr('fieldHintLabel'), title: $tr('fieldHintTitle'), onEdit: (l, c) => oneditfield?.(l, c) })]
+          : []),
         themeCompartment.of(isDark ? marksafeDarkTheme : marksafeLightTheme),
         highlightCompartment.of(syntaxHighlighting(isDark ? marksafeDarkHighlighting : marksafeLightHighlighting)),
         EditorView.updateListener.of((update) => {
@@ -405,6 +430,14 @@
 
 <div bind:this={containerEl} class="cm-editor-wrapper h-full w-full overflow-hidden select-text"></div>
 
+
+{#if fieldMenu}
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div class="fixed inset-0 z-[90]" onclick={() => (fieldMenu = null)} oncontextmenu={(e) => { e.preventDefault(); fieldMenu = null; }}></div>
+  <div class="table-menu fixed z-[91] py-1 rounded border shadow-lg text-xs {theme === 'light' ? 'tm-light' : ''}" style="left: {fieldMenu.x}px; top: {fieldMenu.y}px">
+    <button class="w-full text-left px-3 py-1" onclick={() => { const m = fieldMenu; fieldMenu = null; if (m) oneditfield?.(m.line, m.col); }}>{$tr('fieldEdit')}</button>
+  </div>
+{/if}
 
 {#if tableMenu}
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->

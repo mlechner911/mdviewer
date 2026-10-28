@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **Field dialog** for form fields of the MLC Markdown Extension: kind (text, several lines, check box, date, time, own pattern, signature), name (with the names the Sensor Monitor fills in, duplicate warning), width, lines, preset, ticked, role and tooltip, with the written syntax and a preview. Insert: "Form field…" in the MLC menu or `Ctrl+Shift+F`. Edit: the box "✎ Field" after the field under the cursor, a double click or right click on the field. `mlcext.FormatField`, `FieldAt` (vectors in `mlcext/testdata/fieldspec.json`).
+
 ### Changed
 - **The connection to the MLC Sensor Monitor is an optional module.** Public builds no longer contain it; `task … SENSOR=1` builds it in (Go tag `sensormonitor`, frontend variant). Its code lives in `sensormonitor/` and `frontend/src/sensormonitor/`, its address in its own `sensormonitor.json` (taken over once from `config.json`). File › Settings… only appears when a module has settings. See `docs/SENSOR-MONITOR.md`.
 

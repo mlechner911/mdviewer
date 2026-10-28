@@ -31,6 +31,8 @@ import {
   MLCSignatureState,
   MLCRemoveSignature,
   MLCFitTable,
+  MLCFormatField,
+  MLCFieldAt,
   OpenTemplatesFolder,
   TemplatesFolder,
   PrintPDF,
@@ -53,6 +55,8 @@ import type {
   TemplateInfo as MLCTemplate,
   TemplateInput as MLCTemplateField,
   RenderResult as MLCRenderResult,
+  FieldSpec as MLCFieldSpec,
+  FieldEdit as MLCFieldEdit,
   FormField as MLCFormField,
   FormRef as MLCFormRef,
 } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
@@ -418,4 +422,20 @@ export async function loadFormValues(): Promise<Record<string, string> | null> {
   if (!isWailsReady()) return null;
   const v = await LoadFormValues();
   return v ? (Object.fromEntries(Object.entries(v).filter(([, x]) => x !== undefined)) as Record<string, string>) : null;
+}
+
+// --- Field dialog (MLC Markdown Extension, mlcext.FormatField / FieldAt) ---
+
+export type { MLCFieldSpec, MLCFieldEdit };
+
+/** The written field for the dialog's input, or why it makes none. */
+export async function mlcFormatField(spec: MLCFieldSpec): Promise<{ text: string; error: string }> {
+  if (!isWailsReady()) return { text: '', error: '' };
+  try { return (await MLCFormatField(spec)) as { text: string; error: string }; } catch (err: any) { return { text: '', error: String(err?.message ?? err) }; }
+}
+
+/** The field at line, col (1-based): its spec and the range to replace; ok false when none. */
+export async function mlcFieldAt(md: string, line: number, col: number): Promise<MLCFieldEdit | null> {
+  if (!isWailsReady()) return null;
+  try { const e = (await MLCFieldAt(md, line, col)) as MLCFieldEdit; return e?.ok ? e : null; } catch { return null; }
 }

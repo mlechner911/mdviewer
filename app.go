@@ -361,6 +361,29 @@ func (a *App) MLCFitTable(md string, line int, mode string) string {
 	return out
 }
 
+// FormatFieldResult answers MLCFormatField: the written field, or why the
+// dialog's input does not make one.
+type FormatFieldResult struct {
+	Text  string `json:"text"`
+	Error string `json:"error"`
+}
+
+// MLCFormatField writes a form field from the field dialog
+// (mlcext.FormatField), with its tooltip comment.
+func (a *App) MLCFormatField(spec mlcext.FieldSpec) FormatFieldResult {
+	text, err := mlcext.FormatField(spec)
+	if err != nil {
+		return FormatFieldResult{Error: err.Error()}
+	}
+	return FormatFieldResult{Text: text}
+}
+
+// MLCFieldAt reads the form field at line and col (1-based, characters)
+// for the field dialog: its spec and the range to replace.
+func (a *App) MLCFieldAt(md string, line, col int) mlcext.FieldEdit {
+	return mlcext.FieldAt(md, line, col)
+}
+
 // MLCSignatureState tells whether md is signed and still matches its
 // checksum (an edit voids the signature).
 func (a *App) MLCSignatureState(md string) mlcext.SignatureState {

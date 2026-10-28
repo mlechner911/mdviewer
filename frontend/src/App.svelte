@@ -25,6 +25,7 @@
   import FormFillPanel from './components/FormFillPanel.svelte';
   import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
+  import FieldDialog from './components/FieldDialog.svelte';
   // Optional Sensor Monitor module: the real one in the Sensor Monitor
   // variant, null in the standard build (vite.config.ts).
   import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts } from '$sensormonitor';
@@ -138,6 +139,25 @@
     tabs = [...tabs, createNewTab(title, text)];
     activeTabIndex = tabs.length - 1;
   }
+  // Field dialog (MLC Markdown Extension): a new field at the cursor, or
+  // the field at line, col replaced (range from mlcext.FieldAt).
+  let fieldDialog = $state<{ initial: backend.MLCFieldSpec | null; range: { line: number; col: number; endLine: number; endCol: number } | null } | null>(null);
+  function insertField() {
+    fieldDialog = { initial: null, range: null };
+  }
+  async function editField(line: number, col: number) {
+    const e = await backend.mlcFieldAt(markdown, line, col);
+    if (!e) return;
+    fieldDialog = { initial: e.spec, range: { line: e.line, col: e.col, endLine: e.endLine, endCol: e.endCol } };
+  }
+  function applyField(text: string) {
+    const d = fieldDialog;
+    fieldDialog = null;
+    if (!d) return;
+    if (d.range) editorComponent?.replaceRange(d.range.line, d.range.col, d.range.endLine, d.range.endCol, text);
+    else editorComponent?.insertText(text);
+  }
+
   async function suggestedWatermark(): Promise<string> {
     return (await sensorMonitor?.suggestWatermark?.(pdfWatermark)) ?? '';
   }
@@ -921,6 +941,12 @@
       if (mlcdocVersion && !/mac/i.test(navigator.platform)) handlePrint();
       return;
     }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f') {
+      // Field dialog: a new form field at the cursor (MLC extension).
+      e.preventDefault();
+      insertField();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
       e.preventDefault();
       if (!$isFocusMode) toggleEditor();
@@ -983,6 +1009,16 @@
   theme={$effectiveAppTheme}
 />
 
+{#if fieldDialog}
+  <FieldDialog
+    initial={fieldDialog.initial}
+    usedNames={(mlcAnalysis?.fields ?? []).filter((f) => f.named).map((f) => f.name)}
+    prefill={(mlcAnalysis?.lists?.prefill ?? []).map((p) => ({ name: p.name, label: p.label }))}
+    theme={$effectiveAppTheme}
+    onApply={applyField}
+    onClose={() => (fieldDialog = null)}
+  />
+{/if}
 {#if showSettings}
   <SettingsModal sections={settingsSections} theme={$effectiveAppTheme} onClose={() => (showSettings = false)} />
 {/if}
@@ -1210,6 +1246,11 @@
               title={$t('mlcInsertTitle')}
             >MLC ▾</summary>
             <div class="fixed z-50 mt-1 py-1 min-w-56 rounded border shadow-lg text-xs {toolbarClass}">
+              <button
+                class="w-full text-left px-3 py-1 flex justify-between gap-4 font-semibold hover:bg-black/10 dark:hover:bg-white/10"
+                onclick={(e) => { insertField(); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+              ><span>{$t('fieldInsert')}</span><span class="opacity-60 font-mono">Ctrl+Shift+F</span></button>
+              <div class="my-1 border-t opacity-30"></div>
               {#each mlcMenu as item}
                 <button
                   class="w-full text-left px-3 py-1 flex justify-between gap-4 hover:bg-black/10 dark:hover:bg-white/10"
@@ -1232,6 +1273,7 @@
           {mlcSource}
           tableFit={backend.mlcFitTable}
           oncursortable={(l: number) => (cursorTable = l)}
+          oneditfield={editField}
         />
       </div>
       {/if}
