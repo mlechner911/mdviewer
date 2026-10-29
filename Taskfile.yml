@@ -37,7 +37,7 @@ vars:
   DROPZONE: /mnt/data2tb/dropzone
   # MarkSafe ships the MLC PDF toolkit mlcdoc (PDF preview and export).
   # Pinned release, checksum-verified; mlcext/mlcdoc.MinVersion must not be newer.
-  MLCDOC_VERSION: 0.16.0
+  MLCDOC_VERSION: 0.17.0
   MLCDOC_DIST: '{{.MLCDOC_DIST | default (printf "/mnt/data2tb/dropzone/mlcdoc/%s" .MLCDOC_VERSION)}}'
   MLCDOC_DIR: '{{.ROOT_DIR}}/build/mlcdoc/{{.MLCDOC_VERSION}}'
 
