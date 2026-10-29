@@ -2,7 +2,7 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.9.1] – 2026-10-29
 
 ### Fixed
 - Ticked check boxes (`[@x]`) and signature fields printed wrong in the PDF: the bundled PDF toolkit was mlcdoc 0.16.0 (mlcmd2pdf 3.26), which predates both. Now mlcdoc 0.17.0 (mlcmd2pdf 3.28.1). Filled-in forms saved with 1.9.0 print correctly once opened in this version.
