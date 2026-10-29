@@ -312,21 +312,41 @@
     debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
   }
 
+  // Files into tabs (open dialog, recent files, drop, links): a file that
+  // is already open comes to the front, a lone untouched welcome tab is
+  // replaced, the folders are whitelisted. Returns how many were added.
+  async function showFiles(files: { path: string; content: string }[]): Promise<number> {
+    const added: Tab[] = [];
+    for (const f of files) {
+      const open = tabs.findIndex(t => t.path === f.path);
+      if (open >= 0) {
+        activeTabIndex = open;
+        continue;
+      }
+      added.push(createNewTab(await backend.getFileTitle(f.path), f.content, f.path));
+      await backend.addPathToWhitelist(await backend.getParentDir(f.path));
+    }
+    if (!added.length) return 0;
+    if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
+      tabs = added;
+      activeTabIndex = 0;
+    } else {
+      tabs = [...tabs, ...added];
+      activeTabIndex = tabs.length - 1;
+    }
+    updateNativeMenu(get(locale));
+    return added.length;
+  }
+
+  // A file path (recent files, link in the preview) into a tab.
+  async function showPath(path: string) {
+    const content = tabs.some(t => t.path === path) ? '' : await backend.readFile(path);
+    if (content !== undefined && content !== null) await showFiles([{ path, content }]);
+  }
+
   async function handleOpenExternalMD(detail: { path: string }) {
-    const path = detail.path;
     try {
-      const existingIndex = tabs.findIndex(t => t.path === path);
-      if (existingIndex >= 0) {
-        activeTabIndex = existingIndex;
-        return;
-      }
-      const content = await backend.readFile(path);
-      if (content !== undefined) {
-        const title = await backend.getFileTitle(path);
-        const newTab = createNewTab(title, content, path);
-        tabs = [...tabs, newTab];
-        activeTabIndex = tabs.length - 1;
-      }
+      await showPath(detail.path);
     } catch (err) {
       console.error("Failed to open linked markdown:", err);
     }
@@ -358,37 +378,6 @@
     if (!tMap) return;
     const menuTranslations = {
       currentLocale,
-      menuFile: tMap.menuFile,
-      menuEdit: tMap.menuEdit,
-      menuView: tMap.menuView,
-      menuFormat: tMap.menuFormat,
-      menuLanguage: tMap.menuLanguage,
-      menuAppearance: tMap.menuAppearance,
-      menuThemeDark: tMap.menuThemeDark,
-      menuThemeLight: tMap.menuThemeLight,
-      menuThemeAuto: tMap.menuThemeAuto,
-      menuNewTab: tMap.menuNewTab,
-      menuNewFromTemplate: tMap.menuNewFromTemplate,
-      menuPrint: tMap.menuPrint,
-      menuExport: tMap.menuExport,
-      menuExportPdf: tMap.menuExportPdf,
-      menuExportHtml: tMap.menuExportHtml,
-      menuOpenDocumentRoot: tMap.menuOpenDocumentRoot,
-      menuChooseDocumentRoot: tMap.menuChooseDocumentRoot,
-      menuOpen: tMap.menuOpen,
-      menuRecentFiles: tMap.menuRecentFiles,
-      menuNoRecentFiles: tMap.menuNoRecentFiles,
-      menuSave: tMap.menuSave,
-      menuSaveAs: tMap.menuSaveAs,
-      menuUndo: tMap.menuUndo,
-      menuRedo: tMap.menuRedo,
-      menuCut: tMap.menuCut,
-      menuCopy: tMap.menuCopy,
-      menuPaste: tMap.menuPaste,
-      menuBold: tMap.menuBold,
-      menuItalic: tMap.menuItalic,
-      menuCodeBlock: tMap.menuCodeBlock,
-      menuAbout: tMap.menuAbout,
       // every menu text, also those of built-in modules (menuSensor…)
       ...Object.fromEntries(Object.entries(tMap).filter(([k]) => k.startsWith('menu'))),
       aboutTitle: tMap.aboutTitle,
@@ -445,12 +434,16 @@
   // Formulas are not typeset by mlcdoc yet; they appear as plain text.
   let hasMath = $state(false);
 
+  function showPdfError(res: { error: string; errorLine?: number }) {
+    showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
+  }
+
   async function handleExportPdf() {
     const tab = tabs[activeTabIndex];
     if (!tab || !mlcdocVersion) return;
     const res = await backend.exportPDF(tab.content, tab.path ?? '', await suggestedWatermark());
     if (res.error) {
-      showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
+      showPdfError(res);
       return;
     }
     if (!res.path) return; // cancelled
@@ -480,25 +473,7 @@
     if (!isReady || !checkWailsReady()) return;
     try {
       const result = await backend.openFile();
-      if (result && result.path) {
-        const existingIndex = tabs.findIndex(t => t.path === result.path);
-        if (existingIndex >= 0) {
-          activeTabIndex = existingIndex;
-          return;
-        }
-        const title = await backend.getFileTitle(result.path);
-        const newTab = createNewTab(title, result.content, result.path);
-        if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
-          tabs = [newTab];
-          activeTabIndex = 0;
-        } else {
-          tabs = [...tabs, newTab];
-          activeTabIndex = tabs.length - 1;
-        }
-        const parentDir = await backend.getParentDir(result.path);
-        await backend.addPathToWhitelist(parentDir);
-        updateNativeMenu(get(locale));
-      }
+      if (result?.path) await showFiles([result]);
     } catch (err) { console.error("Failed to open file:", err); showToast($t('openFailed'), 3000, 'error'); }
   }
 
@@ -679,7 +654,7 @@
     showToast($t('printPreparing'), 2000, 'info');
     const res = await backend.printPDF(tab.content, tab.path ?? '', wm);
     if (res.error) {
-      showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
+      showPdfError(res);
       return;
     }
     showToast($t('printOpened'), 3000, 'info');
@@ -702,34 +677,53 @@
     fontSize = Math.min(Math.max(fontSize + delta, 50), 200);
   }
 
+  // Markdown files dropped on the window.
+  async function handleFileDrop(paths: string[]) {
+    const files: { path: string; content: string }[] = [];
+    for (const path of paths ?? []) {
+      if (!/\.(md|markdown|mdown|mkd|mdx)$/i.test(path)) continue;
+      try {
+        const content = tabs.some(t => t.path === path) ? '' : await backend.readFile(path);
+        if (content !== undefined && content !== null) files.push({ path, content });
+      } catch (err) { console.error("Failed to read dropped file:", err); }
+    }
+    const n = await showFiles(files);
+    if (n > 0) showToast($t('filesLoaded', n));
+  }
+
   async function handleOpenRecent(path: string) {
     if (!isReady || !checkWailsReady()) return;
     try {
-      const existingIndex = tabs.findIndex(t => t.path === path);
-      if (existingIndex >= 0) {
-        activeTabIndex = existingIndex;
-        return;
-      }
-      const content = await backend.readFile(path);
-      if (content !== undefined) {
-        const title = await backend.getFileTitle(path);
-        const newTab = createNewTab(title, content, path);
-        if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
-          tabs = [newTab];
-          activeTabIndex = 0;
-        } else {
-          tabs = [...tabs, newTab];
-          activeTabIndex = tabs.length - 1;
-        }
-        const parentDir = await backend.getParentDir(path);
-        await backend.addPathToWhitelist(parentDir);
-        updateNativeMenu(get(locale));
-      }
+      await showPath(path);
     } catch (err) {
       console.error("Failed to open recent file:", err);
       showToast($t('loadFailed'), 3000, 'error');
     }
   }
+
+  // Native menu and backend events.
+  const appEvents: Record<string, (data: any) => void> = {
+    'menu-open-file': handleOpen,
+    'menu-open-recent': handleOpenRecent,
+    'menu-save-file': () => saveOnce('save'),
+    'menu-save-file-as': () => saveOnce('saveAs'),
+    'menu-new-tab': addNewTab,
+    'menu-new-from-template': () => (showTemplateModal = true),
+    'menu-export-pdf': handleExportPdf,
+    'menu-export-html': handleExport,
+    'menu-print': handlePrint,
+    'format-bold': () => wrapSelection('**', '**'),
+    'format-italic': () => wrapSelection('*', '*'),
+    'format-h1': () => prefixSelection('# '),
+    'format-h2': () => prefixSelection('## '),
+    'format-h3': () => prefixSelection('### '),
+    'format-code': () => wrapSelection('\n```\n', '\n```\n'),
+    'set-locale': (l: string) => locale.set(l),
+    'menu-about': () => openAbout(),
+    'menu-settings': () => { if (settingsSections.length) showSettings = true; },
+    'app-close-requested': () => void closeRequested(),
+    'set-theme': (theme: string) => appTheme.set(theme as any),
+  };
 
   onMount(() => {
     const init = async () => {
@@ -742,66 +736,8 @@
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
           isReady = true;
-          EventsOn("menu-open-file", handleOpen);
-          EventsOn("menu-open-recent", handleOpenRecent);
-          EventsOn("menu-save-file", () => saveOnce('save'));
-          EventsOn("menu-save-file-as", () => saveOnce('saveAs'));
-          EventsOn("menu-new-tab", addNewTab);
-          EventsOn("menu-new-from-template", () => (showTemplateModal = true));
-          EventsOn("menu-export-pdf", handleExportPdf);
-          EventsOn("menu-export-html", handleExport);
-          EventsOn("menu-print", handlePrint);
-          EventsOn("format-bold", () => wrapSelection('**', '**'));
-          EventsOn("format-italic", () => wrapSelection('*', '*'));
-          EventsOn("format-h1", () => prefixSelection('# '));
-          EventsOn("format-h2", () => prefixSelection('## '));
-          EventsOn("format-h3", () => prefixSelection('### '));
-          EventsOn("format-code", () => wrapSelection('\n```\n', '\n```\n'));
-          EventsOn("set-locale", (l: string) => locale.set(l));
-          EventsOn("menu-about", () => openAbout());
-          EventsOn("menu-settings", () => { if (settingsSections.length) showSettings = true; });
-          EventsOn("app-close-requested", () => void closeRequested());
-          EventsOn("set-theme", (t: string) => appTheme.set(t as any));
-
-      const allowedExt = /\.(md|markdown|mdown|mkd|mdx)$/i;
-        OnFileDrop(async (x: number, y: number, paths: string[]) => {
-        if (!paths || paths.length === 0) return;
-        const newTabs: Tab[] = [];
-        let loadedCount = 0;
-        for (const path of paths) {
-        if (allowedExt.test(path)) {
-        const existingIndex = tabs.findIndex(t => t.path === path);
-        if (existingIndex >= 0) {
-          activeTabIndex = existingIndex;
-          continue;
-        }
-        try {
-        const content = await backend.readFile(path);
-        if (content !== undefined && content !== null) {
-          const title = await backend.getFileTitle(path);
-          const newTab = createNewTab(title, content, path);
-          newTabs.push(newTab);
-          loadedCount++;
-          const parentDir = await backend.getParentDir(path);
-          await backend.addPathToWhitelist(parentDir);
-        }
-        } catch (err) { console.error("Failed to read dropped file:", err); }
-        }
-        }
-        if (loadedCount > 0) {
-        if (tabs.length === 1 && !tabs[0].path && !tabs[0].isDirty && tabs[0].content === defaultMarkdown()) {
-          tabs = newTabs;
-          activeTabIndex = 0;
-        } else {
-          tabs = [...tabs, ...newTabs];
-          activeTabIndex = tabs.length - 1;
-        }
-        const parentDir = await backend.getParentDir(paths[0]);
-        await backend.addPathToWhitelist(parentDir);
-        showToast($t('filesLoaded', loadedCount));
-        updateNativeMenu(get(locale));
-        }
-        }, false);
+          for (const [name, fn] of Object.entries(appEvents)) EventsOn(name, fn);
+          OnFileDrop((_x: number, _y: number, paths: string[]) => void handleFileDrop(paths), false);
         }
 
         const result = wailsReady ? await backend.getInitialContent() : null;
@@ -846,9 +782,7 @@
     return () => { 
       mediaQuery.removeEventListener('change', handler); 
       OnFileDropOff(); 
-      EventsOff("menu-open-file"); EventsOff("menu-open-recent"); EventsOff("menu-save-file"); EventsOff("menu-save-file-as"); EventsOff("menu-new-tab"); EventsOff("menu-new-from-template"); EventsOff("menu-export-pdf"); EventsOff("menu-export-html"); EventsOff("menu-print");
-      EventsOff("set-locale"); EventsOff("menu-about"); EventsOff("menu-settings"); EventsOff("app-close-requested"); EventsOff("set-theme");
-      EventsOff("format-bold"); EventsOff("format-italic"); EventsOff("format-h1"); EventsOff("format-h2"); EventsOff("format-h3"); EventsOff("format-code");
+      EventsOff(...Object.keys(appEvents));
     };
   });
 
