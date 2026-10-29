@@ -30,7 +30,7 @@
     onopen_file,
     onscrollline,
     onrendered,
-  } = $props<{
+  }: {
     source: string;
     theme: Theme;
     fontSize?: number;
@@ -41,7 +41,7 @@
     onopen_file?: (detail: { path: string }) => void;
     onscrollline?: (line: number) => void;
     onrendered?: (el: HTMLElement) => void;
-  }>();
+  } = $props();
 
   let container = $state<HTMLElement>();
   let view = $state<{ scrollToLine(line: number): void }>();

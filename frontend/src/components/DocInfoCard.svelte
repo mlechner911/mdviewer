@@ -7,13 +7,13 @@
    * is a collapsed part below it. Editing aid only: not printed, not
    * exported.
    */
-  let { info } = $props<{
+  let { info }: {
     info: {
       refNo: string; kindLabel: string; version: string; title: string; description: string;
       eventKinds: string[] | null; eventKindsSet: boolean; fields: number; prefillFields: number; fieldErrors: number;
       headerInBody?: boolean;
     };
-  }>();
+  } = $props();
 
   const problems = $derived(
     (!info.refNo ? 1 : 0) + (!info.version ? 1 : 0) + (info.refNo && !info.kindLabel ? 1 : 0) + (info.fieldErrors ? 1 : 0) + (info.headerInBody ? 1 : 0),

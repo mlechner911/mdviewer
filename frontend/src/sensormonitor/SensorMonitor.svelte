@@ -36,7 +36,7 @@
     onOpenTab,
     onStatus,
     onMenuChanged,
-  } = $props<{
+  }: {
     /** Text of the active tab. */
     markdown: string;
     /** How mlcext reads the active document. */
@@ -51,7 +51,7 @@
     onStatus: (items: StatusItem[]) => void;
     /** Address or sign-in changed: rebuild the native menu. */
     onMenuChanged: () => void;
-  }>();
+  } = $props();
 
   let status = $state<api.Status>({ address: '', signedIn: false, email: '', expires: '' });
   async function refresh() {

@@ -17,7 +17,7 @@
     onAlt,
     confirmClass = 'bg-red-600 hover:bg-red-500',
     theme = 'dark',
-  } = $props<{
+  }: {
     title?: string;
     message?: string;
     confirmLabel?: string;
@@ -28,7 +28,7 @@
     onAlt?: () => void;
     confirmClass?: string;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   const currentTheme = $derived<EffectiveTheme_t>(theme === 'light' ? 'light' : 'dark');
   const toolbarClass = $derived(STYLE.toolbar[currentTheme]);

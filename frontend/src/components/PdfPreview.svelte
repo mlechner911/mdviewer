@@ -10,7 +10,7 @@
   import { t } from '../i18n';
   import * as backend from '../lib/backend';
 
-  let { markdown, path = null, version = '', hasMath = false, watermark = '', onwatermark, noImages = false, onnoimages } = $props<{
+  let { markdown, path = null, version = '', hasMath = false, watermark = '', onwatermark, noImages = false, onnoimages }: {
     markdown: string;
     path?: string | null;
     version?: string;
@@ -21,7 +21,7 @@
     /** Placeholders instead of images in this preview (setting). */
     noImages?: boolean;
     onnoimages?: (v: boolean) => void;
-  }>();
+  } = $props();
   let wmDraft = $state('');
   $effect(() => {
     wmDraft = watermark;

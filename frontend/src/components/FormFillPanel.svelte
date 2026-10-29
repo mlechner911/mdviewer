@@ -10,7 +10,7 @@
   import { mlcFormSchema, mlcFillForm, type MLCFormField } from '../lib/backend';
   import { t } from '../i18n';
 
-  let { md, filledBy, theme, onchange, onfilledby, onsave, onload, onclose } = $props<{
+  let { md, filledBy, theme, onchange, onfilledby, onsave, onload, onclose }: {
     md: string;
     /** The app theme (not the preview's): the mask is part of the app. */
     theme: 'dark' | 'light';
@@ -20,7 +20,7 @@
     onsave: () => void;
     onload: () => void;
     onclose: () => void;
-  }>();
+  } = $props();
 
   let fields = $state<MLCFormField[]>([]);
   // What the user is typing in a field: a value is stored trimmed, so the

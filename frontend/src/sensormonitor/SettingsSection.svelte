@@ -14,7 +14,7 @@
   import type { EffectiveTheme_t } from '../lib/constants';
   import * as api from './api';
 
-  let { theme = 'dark' } = $props<{ theme?: EffectiveTheme_t }>();
+  let { theme = 'dark' }: { theme?: EffectiveTheme_t } = $props();
 
   let value = $state('');
   let error = $state('');

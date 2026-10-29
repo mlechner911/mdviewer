@@ -9,12 +9,12 @@
   import { STYLE } from '../lib/constants';
   import type { EffectiveTheme_t } from '../lib/constants';
 
-  let { sections, onClose, theme = 'dark' } = $props<{
+  let { sections, onClose, theme = 'dark' }: {
     /** Section components; each exports save(): Promise<boolean>. */
     sections: Component<any>[];
     onClose: () => void;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   let instances = $state<any[]>([]);
   let saving = $state(false);

@@ -13,12 +13,12 @@
     onSave, 
     onNewTab,
     onCreateNewTab
-  } = $props<{
+  }: {
     onOpen: () => void;
     onSave: () => void;
     onNewTab: () => void;
     onCreateNewTab?: () => void;
-  }>();
+  } = $props();
 
   // --- Svelte 5 Runes: Derived ---
   const toolbarClass = $derived(STYLE.toolbar[$effectiveAppTheme]);

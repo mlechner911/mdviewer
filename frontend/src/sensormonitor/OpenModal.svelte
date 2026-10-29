@@ -15,7 +15,7 @@
   import * as api from './api';
   import { sensorErrorText } from './errors';
 
-  let { initialRef = '', onOpen, onSignIn, onClose, theme = 'dark' } = $props<{
+  let { initialRef = '', onOpen, onSignIn, onClose, theme = 'dark' }: {
     initialRef?: string;
     /** Open text as a new tab; doc is the version it came from. */
     onOpen: (text: string, doc: api.SensorDocument) => void;
@@ -23,7 +23,7 @@
     onSignIn: () => void;
     onClose: () => void;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   // svelte-ignore state_referenced_locally
   let ref = $state(initialRef);

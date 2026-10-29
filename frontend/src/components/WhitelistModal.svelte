@@ -15,14 +15,14 @@
     onConfirm, 
     onCancel, 
     theme = 'dark' 
-  } = $props<{
+  }: {
     show?: boolean;
     type?: 'path' | 'url';
     resource?: string;
     onConfirm: () => void;
     onCancel: () => void;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   // --- Svelte 5 Runes: Derived ---
   const currentTheme = $derived<EffectiveTheme_t>(theme === 'light' ? 'light' : 'dark');

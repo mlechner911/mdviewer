@@ -16,7 +16,7 @@
     activeTab,
     diagnostics = [],
     extraItems = []
-  } = $props<{
+  }: {
     wordCount: number;
     charCount: number;
     readingTime: number;
@@ -24,7 +24,7 @@
     diagnostics?: MLCDiagnostic[];
     /** Entries of built-in modules (e.g. the Sensor Monitor's comparison). */
     extraItems?: { text: string; tone?: 'ok' | 'warn'; title?: string }[];
-  }>();
+  } = $props();
 
   // --- Svelte 5 Runes: Derived ---
   const statusClass = $derived(STYLE.status[$effectiveAppTheme]);

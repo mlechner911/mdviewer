@@ -14,7 +14,7 @@
 
   type UiKind = 'text' | 'multiline' | 'check' | 'date' | 'time' | 'pattern' | 'signature';
 
-  let { initial = null, usedNames = [], prefill = [], theme = 'dark', onApply, onClose } = $props<{
+  let { initial = null, usedNames = [], prefill = [], theme = 'dark', onApply, onClose }: {
     /** The field being edited; null inserts a new one. */
     initial?: backend.MLCFieldSpec | null;
     /** Names of the other fields in the document (duplicate warning). */
@@ -24,7 +24,7 @@
     theme?: EffectiveTheme_t;
     onApply: (text: string) => void;
     onClose: () => void;
-  }>();
+  } = $props();
 
   const DATE = 'TT.MM.JJJJ';
   const TIME = 'HH:MM';

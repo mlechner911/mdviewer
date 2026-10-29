@@ -28,7 +28,7 @@
     tableFit,
     oncursortable,
     oneditfield
-  } = $props<{
+  }: {
     value: string;
     theme: EffectiveTheme_t;
     placeholder?: string;
@@ -44,7 +44,7 @@
     oncursortable?: (line: number) => void;
     /** Open the field dialog for the form field at line, col (MLC extension). */
     oneditfield?: (line: number, col: number) => void;
-  }>();
+  } = $props();
 
   // Right-click on a form field: edit it in the field dialog.
   let fieldMenu = $state<{ x: number; y: number; line: number; col: number } | null>(null);

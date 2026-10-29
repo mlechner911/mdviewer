@@ -14,7 +14,7 @@
   import * as api from './api';
   import { sensorErrorText, needsPin } from './errors';
 
-  let { markdown, filename = '', refNo = '', version = '', title = '', hasErrors = false, onSaved, onSignIn, onClose, theme = 'dark' } = $props<{
+  let { markdown, filename = '', refNo = '', version = '', title = '', hasErrors = false, onSaved, onSignIn, onClose, theme = 'dark' }: {
     markdown: string;
     filename?: string;
     refNo?: string;
@@ -26,7 +26,7 @@
     onSignIn: () => void;
     onClose: () => void;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   let reason = $state('');
   let pin = $state('');

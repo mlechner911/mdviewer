@@ -15,7 +15,7 @@
     licenses = [],
     onClose,
     theme = 'dark'
-  } = $props<{
+  }: {
     show?: boolean;
     title?: string;
     message?: string;
@@ -23,7 +23,7 @@
     licenses?: { module: string; name: string; text: string }[];
     onClose: () => void;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   // --- Svelte 5 Runes: Derived ---
   const currentTheme = $derived<EffectiveTheme_t>(theme === 'light' ? 'light' : 'dark');

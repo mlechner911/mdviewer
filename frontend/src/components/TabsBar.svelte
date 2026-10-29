@@ -12,11 +12,11 @@
     tabs, 
     activeTabIndex = $bindable(), 
     onCloseTab 
-  } = $props<{
+  }: {
     tabs: any[];
     activeTabIndex: number;
     onCloseTab: (index: number, event?: MouseEvent) => void;
-  }>();
+  } = $props();
 
   // --- Svelte 5 Runes: Derived ---
   const toolbarClass = $derived(STYLE.toolbar[$effectiveAppTheme]);

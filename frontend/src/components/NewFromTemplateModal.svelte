@@ -13,13 +13,13 @@
   import * as backend from '../lib/backend';
   import type { MLCTemplate, MLCTemplateField, MLCDiagnostic } from '../lib/backend';
 
-  let { show = false, theme = 'dark', docPath = null, onCreate, onCancel } = $props<{
+  let { show = false, theme = 'dark', docPath = null, onCreate, onCancel }: {
     show?: boolean;
     theme?: EffectiveTheme_t;
     docPath?: string | null;
     onCreate: (content: string, fileName: string) => void;
     onCancel: () => void;
-  }>();
+  } = $props();
 
   const currentTheme = $derived<EffectiveTheme_t>(theme === 'light' ? 'light' : 'dark');
   const toolbarClass = $derived(STYLE.toolbar[currentTheme]);

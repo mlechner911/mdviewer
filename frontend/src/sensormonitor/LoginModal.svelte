@@ -16,12 +16,12 @@
   import * as api from './api';
   import { EventsOn, BrowserOpenURL } from '../lib/wails';
 
-  let { onDone, onClose, theme = 'dark' } = $props<{
+  let { onDone, onClose, theme = 'dark' }: {
     /** The sign-in succeeded. */
     onDone: () => void;
     onClose: () => void;
     theme?: EffectiveTheme_t;
-  }>();
+  } = $props();
 
   let code = $state<api.LoginCode | null>(null);
   let error = $state('');
