@@ -334,6 +334,9 @@ tasks:
       - task: version:check
       - task: bindings
       - cd frontend && npm run check
+      # $props<T>() is not valid in Svelte 5 ($props() takes no type
+      # argument); svelte-check lets it pass, the VS Code extension does not.
+      - "! git grep -n '\\$props<' -- '*.svelte'"
       - go test -tags {{.LINUX_TAGS}} ./...
       # the optional Sensor Monitor module (built in only with SENSOR=1)
       - go vet -tags {{.LINUX_TAGS}},sensormonitor . ./sensormonitor/...
