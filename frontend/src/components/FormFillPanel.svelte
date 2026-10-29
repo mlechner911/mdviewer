@@ -46,8 +46,25 @@
   const missing = $derived(fields.filter((f) => f.kind !== 'signature' && f.kind !== 'check' && !f.value).length);
   const signatures = $derived(fields.filter((f) => f.kind === 'signature').length);
 
+  // All values go into the text the filling started from, together: a
+  // field gets the form's width back when its value gets shorter, and a
+  // late answer for an older keystroke cannot overwrite a newer one. An
+  // edit outside the mask (editor) becomes the new starting point.
+  let base = '';
+  let values: Record<string, string> = {};
+  let produced: string | null = null;
+  let seq = 0;
   async function set(name: string, value: string) {
-    onchange(await mlcFillForm(md, { [name]: value }));
+    if (md !== produced) {
+      base = md;
+      values = {};
+    }
+    values = { ...values, [name]: value };
+    const mine = ++seq;
+    const out = await mlcFillForm(base, values);
+    if (mine !== seq) return;
+    produced = out;
+    onchange(out);
   }
   function typed(name: string, value: string) {
     drafts[name] = value;
@@ -103,7 +120,7 @@
     {#each sections as s (s.title + s.fields[0]?.name)}
       <section>
         {#if s.title}<h3>{s.title}</h3>{/if}
-        {#each s.fields as f (f.name)}
+        {#each s.fields as f, i (f.name + ':' + i)}
           <div class="row" class:signature={f.kind === 'signature'}>
             {#if f.kind === 'check'}
               <label class="check">

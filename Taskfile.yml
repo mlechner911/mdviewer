@@ -49,8 +49,11 @@ tasks:
     silent: true
 
   dev:
-    desc: Run the app in development mode (wails3 dev)
+    desc: Run the app in development mode (wails3 dev), standard variant
     cmds:
+      # wails3 dev builds without the module's Go tag: standard frontend too.
+      - task: variant
+        vars: { SENSOR_TAG: '' }
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
   build:
@@ -58,6 +61,9 @@ tasks:
     cmds:
       # The version from VERSION in every file (installers, packages, page).
       - task: version:sync
+      # A module build leaves the standard variant behind, so tasks that do
+      # not write it (dev, <os>:build …) never bundle the module by accident.
+      - defer: '{{if .SENSOR_TAG}}echo standard > frontend/.variant{{else}}true{{end}}'
       - task: variant
       - task: "{{.GOOS}}:build"
         vars:
@@ -70,6 +76,9 @@ tasks:
   package:
     desc: Package a production build for the host OS (or GOOS=...)
     cmds:
+      # A module build leaves the standard variant behind, so tasks that do
+      # not write it (dev, <os>:build …) never bundle the module by accident.
+      - defer: '{{if .SENSOR_TAG}}echo standard > frontend/.variant{{else}}true{{end}}'
       - task: variant
       - task: "{{.GOOS}}:package"
         vars:
@@ -132,6 +141,9 @@ tasks:
     cmds:
       # The version from VERSION in every file (installers, packages, page).
       - task: version:sync
+      # A module build leaves the standard variant behind, so tasks that do
+      # not write it (dev, <os>:build …) never bundle the module by accident.
+      - defer: '{{if .SENSOR_TAG}}echo standard > frontend/.variant{{else}}true{{end}}'
       - task: variant
       - task: mlcdoc:fetch
       - task: windows:package
@@ -157,6 +169,9 @@ tasks:
     cmds:
       # The version from VERSION in every file (installers, packages, page).
       - task: version:sync
+      # A module build leaves the standard variant behind, so tasks that do
+      # not write it (dev, <os>:build …) never bundle the module by accident.
+      - defer: '{{if .SENSOR_TAG}}echo standard > frontend/.variant{{else}}true{{end}}'
       - task: variant
       # 0 — mlcdoc ships inside marksafe.app (build/mlcdoc is synced along)
       - task: mlcdoc:fetch

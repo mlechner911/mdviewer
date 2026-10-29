@@ -28,6 +28,24 @@ func TestFillPatternAndExistingPreset(t *testing.T) {
 	}
 }
 
+// Own patterns with "=", "|" … are written escaped (FormatField) and stay
+// patterns when filled.
+func TestFillPatternWithEscapes(t *testing.T) {
+	md := "[@#p AA\\=9] [@#q A\\|9=X\\|1]"
+	got, _ := FillFields(md, map[string]string{"p": "AB1", "q": "Y2"})
+	want := "[@#p AA\\=9=AB1] [@#q A\\|9=Y2]"
+	if got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if v := FieldValues(got); v["p"] != "AB1" || v["q"] != "Y2" {
+		t.Fatalf("values %v", v)
+	}
+	got, _ = FillFields(got, map[string]string{"p": ""})
+	if !strings.HasPrefix(got, "[@#p AA\\=9]") {
+		t.Fatalf("clear pattern: %q", got)
+	}
+}
+
 func TestFillMultiline(t *testing.T) {
 	md := "[@#vorfall __________\n__________\n__________]"
 	got, _ := FillFields(md, map[string]string{"vorfall": "Zeile 1\nZeile 2"})

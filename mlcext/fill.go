@@ -61,6 +61,8 @@ func FillFields(md string, values map[string]string) (string, []string) {
 			if repl == "" {
 				prefix = strings.TrimRight(prefix, " \t")
 			}
+		} else if f.Pattern != "" {
+			repl = fillPattern(f.Pattern, strings.TrimSpace(v))
 		} else {
 			repl = fillText(rest, strings.TrimSpace(v))
 		}
@@ -99,16 +101,8 @@ func FieldValues(md string) map[string]string {
 
 // IsFormRecord reports a filled-in form: "meta.schema" is FormRecordSchema.
 func IsFormRecord(md string) bool {
-	_, _, node, err := parseFrontMatter(md)
-	if err != nil || node == nil || len(node.Content) == 0 {
-		return false
-	}
-	var fm struct {
-		Meta struct {
-			Schema string `yaml:"schema"`
-		} `yaml:"meta"`
-	}
-	return node.Content[0].Decode(&fm) == nil && fm.Meta.Schema == FormRecordSchema
+	_, ok := FormRecordOf(md)
+	return ok
 }
 
 func truthy(v string) bool {
@@ -143,20 +137,19 @@ func splitName(inner string) (string, string, bool) {
 	return name, strings.TrimLeft(rest, " \t"), true
 }
 
+// fillPattern is the new inside (without name) of a pattern field
+// (TT.MM.JJJJ, HH:MM, own patterns with escaped "=", "|" …) for value v.
+func fillPattern(pattern, v string) string {
+	pat := maskPattern(pattern)
+	if v == "" {
+		return pat
+	}
+	return pat + "=" + MaskFieldValue(oneLine(v))
+}
+
 // fillText is the new inside (without name) of a text field for value v.
 func fillText(rest, v string) string {
 	rows := strings.Split(rest, "\n")
-	// Pattern (TT.MM.JJJJ, HH:MM), also with a preset already set.
-	if len(rows) == 1 && !strings.Contains(rest, "_") && !strings.Contains(rest, "\\") || patternWithValue(rest) {
-		pat := strings.TrimSpace(rest)
-		if k := strings.IndexByte(pat, '='); k > 0 {
-			pat = pat[:k]
-		}
-		if v == "" {
-			return pat
-		}
-		return pat + "=" + MaskFieldValue(strings.Join(strings.Fields(v), " "))
-	}
 	width := 0
 	for _, r := range rows {
 		if n := utf8.RuneCountInString(r); n > width {
@@ -179,14 +172,6 @@ func fillText(rest, v string) string {
 		out[k] = val + strings.Repeat("_", pad)
 	}
 	return strings.Join(out, "\n")
-}
-
-func patternWithValue(rest string) bool {
-	if strings.Contains(rest, "\n") {
-		return false
-	}
-	k := strings.IndexByte(rest, '=')
-	return k > 0 && !strings.ContainsAny(rest[:k], "_\\ \t")
 }
 
 // glyphReplace: characters without a glyph in the field font (Liberation

@@ -25,6 +25,11 @@ type AppConfig struct {
 	// PDFPreviewNoImages shows placeholders instead of images in the PDF
 	// preview (faster with many images); export and print keep them.
 	PDFPreviewNoImages bool `json:"pdf_preview_no_images,omitempty"`
+	// LegacySensorMonitorURL is the Sensor Monitor address of MarkSafe 1.8.
+	// MarkSafe no longer uses it, but keeps it when saving: the optional
+	// module (MarkSafePlus, same config folder) takes it over once into its
+	// own settings, also after a standard build ran first.
+	LegacySensorMonitorURL string `json:"sensor_monitor_url,omitempty"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.

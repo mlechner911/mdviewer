@@ -50,8 +50,10 @@
     path: string | null;
     content: string;
     isDirty: boolean;
-    /** Being filled in: the form it comes from (mlcext.FormRef). */
-    form?: { ref: backend.MLCFormRef };
+    /** Being filled in: the form it comes from (mlcext.FormRef). Stays
+     *  when the mask is closed (hidden), so saving still writes a record
+     *  and never replaces the form. */
+    form?: { ref: backend.MLCFormRef; hidden?: boolean };
   }
 
   // --- Svelte 5 Runes: State ---
@@ -182,21 +184,27 @@
     filledBy = name;
     try { localStorage.setItem('marksafe_filled_by', name); } catch { /* private mode */ }
   }
-  const canFill = $derived(!!mlcAnalysis?.fields?.length && !tabs[activeTabIndex]?.form);
+  const canFill = $derived(!!mlcAnalysis?.fields?.length && (!tabs[activeTabIndex]?.form || !!tabs[activeTabIndex]?.form?.hidden));
+  const filling = $derived(!!tabs[activeTabIndex]?.form && !tabs[activeTabIndex]?.form?.hidden);
 
   async function startFill() {
     const tab = tabs[activeTabIndex];
     if (!tab) return;
+    previewMode = 'html';
+    if (tab.form) {
+      tab.form.hidden = false; // the mask was closed: open it again
+      return;
+    }
     const ref = await backend.mlcFormRef(tab.content);
+    // The tab, not the index: the user may have switched tabs meanwhile.
     if (tab.path && (await backend.mlcIsFormRecord(tab.content))) {
-      tabs[activeTabIndex].form = { ref };
+      tab.form = { ref };
     } else {
       const newTab = createNewTab(`${(tab.title || $t('untitled')).replace(/\.md$/, '')} – ${$t('formFillTab')}`, tab.content);
       newTab.form = { ref };
       tabs = [...tabs, newTab];
       activeTabIndex = tabs.length - 1;
     }
-    previewMode = 'html';
   }
 
   function fillChanged(md: string) {
@@ -219,7 +227,8 @@
     }
   }
 
-  async function saveFilledForm() {
+  // asNew (Save As): a new record file, the tab keeps its path until then.
+  async function saveFilledForm(asNew = false) {
     const index = activeTabIndex;
     const tab = tabs[index];
     if (!tab?.form || isSaving) return;
@@ -229,7 +238,7 @@
     }
     try {
       isSaving = true;
-      const res = await backend.saveFilledForm(tab.content, tab.form.ref, filledBy.trim(), tab.path ?? '');
+      const res = await backend.saveFilledForm(tab.content, tab.form.ref, filledBy.trim(), asNew ? '' : tab.path ?? '');
       if (!res) return; // cancelled
       tabs[index].path = res.path;
       tabs[index].content = res.content;
@@ -588,10 +597,7 @@
     const tab = activeTab;
     if (!tab) return;
     // A filled-in form is saved as a record, under a new name.
-    if (tab.form) {
-      tab.path = null;
-      return saveFilledForm();
-    }
+    if (tab.form) return saveFilledForm(true);
 
     try {
       isSaving = true;
@@ -1322,19 +1328,19 @@
       {#if showPdfPreview}
         <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
       {/if}
-      {#if tabs[activeTabIndex]?.form && !showPdfPreview}
+      {#if filling && !showPdfPreview}
         <FormFillPanel
           md={tabs[activeTabIndex].content}
           {filledBy}
           theme={$effectiveAppTheme}
           onchange={fillChanged}
           onfilledby={setFilledBy}
-          onsave={saveFilledForm}
+          onsave={() => saveFilledForm()}
           onload={loadFillValues}
-          onclose={() => (tabs[activeTabIndex].form = undefined)}
+          onclose={() => { const f = tabs[activeTabIndex].form; if (f) f.hidden = true; }}
         />
       {/if}
-      <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview || !!tabs[activeTabIndex]?.form}>
+      <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview || filling}>
       <Preview 
         bind:this={previewComponent}
         source={markdown}

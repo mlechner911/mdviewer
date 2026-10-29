@@ -1,7 +1,9 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -58,5 +60,25 @@ func TestIsURLAllowed(t *testing.T) {
 		if got := m.IsURLAllowed(tt.target); got != tt.want {
 			t.Errorf("IsURLAllowed(%q) = %v, want %v", tt.target, got, tt.want)
 		}
+	}
+}
+
+// The Sensor Monitor address of MarkSafe 1.8 survives a save of the
+// standard build, so the optional module can still take it over.
+func TestSaveKeepsLegacySensorMonitorURL(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"sensor_monitor_url":"https://sm.example"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := &ConfigManager{path: path}
+	if err := m.Load(); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Save(); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(path)
+	if !strings.Contains(string(b), `"sensor_monitor_url": "https://sm.example"`) {
+		t.Fatalf("saved config: %s", b)
 	}
 }
