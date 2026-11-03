@@ -79,8 +79,8 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   Sensor Monitor sets them on approval.
 - **The front matter is the only place for id, version and title** (`doc_id`,
   `version`, `title`, like Hugo and Jekyll). Allowed keys: `doc_id`, `title`,
-  `version`, `description`, `event_kinds`, `attachment_kind`, `attachment_once`, `meta` (see
-  below). The kind (SOP, VA, FB, INFO) follows from the `doc_id` prefix.
+  `version`, `description`, `event_kinds`, `attachment_kind`, `attachment_once`, `profile`,
+  `meta` (see below). The kind (SOP, VA, FB, INFO) follows from the `doc_id` prefix.
 - **Attachment kind** (Sensor Monitor): `attachment_kind: SB` makes the template a kind of
   attachment — files attached to an event or device are chosen by kind instead of a typed title,
   and get identifiers like `EV-2026-0820/SB-1`. The code is 1 to 8 capitals or digits, needs a
@@ -89,11 +89,36 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   new version. The header line in the text is the legacy
   form: still read, but it gives a warning; when both say different things,
   that is an error.
+- **Profile ("Steckbrief", Sensor Monitor, `mlcext` 0.15.0):** a shipped template explains
+  itself in one block, so the front matter stays readable:
+
+  ```yaml
+  profile:
+    purpose: Was tun, wenn der Kühlschrank zu warm ist.     # required, one sentence
+    appears: Bei Grenzwert-Ereignissen an Kühlgeräten.        # when and where it shows
+    adapt:                                                    # placeholders the house fills in
+      - name: verantwortlich
+        note: Wer über die Ware entscheidet (Name oder Funktion).
+    keep:                                                     # filled in by the system, with why
+      - name: Ereignis-Nr.
+        note: Kommt aus dem Ereignis; nicht von Hand ändern.
+    orientation:                                              # works it is oriented on
+      - ApBetrO § 2a (QM-System)
+  ```
+
+  Allowed keys: `purpose`, `appears`, `adapt`, `keep`, `orientation`. A name in `adapt`
+  (lowercase letters, digits, `_`; not `doc_id`, `version`, `title`) may stand in the text as
+  `{{verantwortlich}}`: an **open placeholder**, reported as a warning (`placeholder-open`) so the
+  draft can be stored. The Sensor Monitor refuses to approve while one is open
+  (`OpenPlaceholders`). A declared name that never appears in the text is a warning
+  (`profile-placeholder-unused`). A broken `profile` is an error but does not hide `doc_id` or
+  `version` (`ParseProfile` reads it separately).
 - **Variables:** only `{{doc_id}}`, `{{version}}` and `{{title}}`, no logic.
   They stay in the file and are replaced when the document is rendered, so
   they stay right after a new version. Any other `{{…}}` is an error
   (`unknown-variable`, or `template-placeholder-left` for a template
-  placeholder that was not filled in). Not replaced inside code.
+  placeholder that was not filled in), except a placeholder declared in
+  `profile.adapt` (see above). Not replaced inside code.
 - **Signature:** the Sensor Monitor seals a released document with a comment
   at the very end:
 

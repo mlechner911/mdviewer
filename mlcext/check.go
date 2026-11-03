@@ -49,7 +49,7 @@ func Check(md string, opt Options) []Diagnostic {
 		ds = append(ds, Diagnostic{Line: line, Col: col, Severity: sev, Code: code, Message: msg})
 	}
 
-	keyLines := checkFrontMatter(md, add)
+	keyLines, declared := checkFrontMatter(md, add)
 
 	h := ParseHeader(md)
 	fm, _ := ParseFrontMatter(md)
@@ -84,7 +84,7 @@ func Check(md string, opt Options) []Diagnostic {
 		add(h.versionLine, 1, Error, "header-conflict", fmt.Sprintf("Version widerspricht sich: Front Matter `%s`, Kopfzeile `%s`.", v, h.Version))
 	}
 
-	checkVariables(md, meta, add)
+	checkVariables(md, meta, declared, add)
 
 	if sig, _ := SplitSignature(md); sig != nil {
 		msg := "Dokument ist signiert"
@@ -121,29 +121,31 @@ func Check(md string, opt Options) []Diagnostic {
 	return ds
 }
 
-// checkFrontMatter checks the front matter and returns the line of each key.
-func checkFrontMatter(md string, add func(int, int, Severity, string, string)) map[string]int {
+// checkFrontMatter checks the front matter and returns the line of each key
+// and the placeholder names declared in its profile ("profile.adapt").
+func checkFrontMatter(md string, add func(int, int, Severity, string, string)) (map[string]int, map[string]bool) {
 	keyLines := map[string]int{}
+	declared := map[string]bool{}
 	b := frontMatterBlock(md)
 	if b.open {
 		add(b.bodyLine+1, 1, Warning, "frontmatter-unclosed", "Front Matter ohne abschließendes `---`: Der Block wird als Text gelesen.")
-		return keyLines
+		return keyLines, declared
 	}
 	if !b.present {
-		return keyLines
+		return keyLines, declared
 	}
 	_, _, node, err := parseFrontMatter(md)
 	if err != nil {
 		add(b.yamlLine-1, 1, Error, "frontmatter-yaml", "Front Matter ist kein gültiges YAML: "+err.Error())
-		return keyLines
+		return keyLines, declared
 	}
 	if node == nil || len(node.Content) == 0 {
-		return keyLines
+		return keyLines, declared
 	}
 	m := node.Content[0]
 	if m.Kind != yaml.MappingNode {
 		add(b.yamlLine, 1, Error, "frontmatter-yaml", "Front Matter muss aus `schlüssel: wert`-Zeilen bestehen.")
-		return keyLines
+		return keyLines, declared
 	}
 	for i := 0; i+1 < len(m.Content); i += 2 {
 		k, v := m.Content[i], m.Content[i+1]
@@ -191,21 +193,27 @@ func checkFrontMatter(md string, add func(int, int, Severity, string, string)) m
 			} else if !slices.ContainsFunc(m.Content, func(n *yaml.Node) bool { return n.Value == "attachment_kind" }) {
 				add(line, k.Column, Warning, "frontmatter-attachment-once-alone", "`attachment_once` wirkt nur zusammen mit `attachment_kind`.")
 			}
+		case k.Value == "profile":
+			declared = checkProfile(md, v, b.yamlLine, add)
 		case k.Value == "doc_id" || k.Value == "version" || k.Value == "title":
 			if v.Kind != yaml.ScalarNode {
 				add(v.Line+b.yamlLine-1, v.Column, Error, "frontmatter-yaml", fmt.Sprintf("`%s` muss ein einzelner Wert sein.", k.Value))
 			}
 		}
 	}
-	return keyLines
+	return keyLines, declared
 }
 
 // checkVariables reports "{{…}}" in the text: unknown names, leftover
-// template placeholders and variables without a value.
-func checkVariables(md string, meta Meta, add func(int, int, Severity, string, string)) {
+// template placeholders and variables without a value. A name declared in
+// the profile ("profile.adapt") is an open placeholder: a warning, so the
+// draft can be stored; the Sensor Monitor does not approve it while open.
+func checkVariables(md string, meta Meta, declared map[string]bool, add func(int, int, Severity, string, string)) {
 	for _, r := range varRefs(md) {
 		line, col := position(md, r.Start)
 		switch {
+		case declared[r.Name]:
+			add(line, col, Warning, "placeholder-open", fmt.Sprintf("Platzhalter `{{%s}}` ist noch offen: vor der Freigabe durch den Wert Ihres Hauses ersetzen (Steckbrief › anpassen).", r.Name))
 		case isVariable(r.Name):
 			if meta.Value(r.Name) == "" {
 				add(line, col, Warning, "variable-empty", fmt.Sprintf("`{{%s}}` hat keinen Wert: `%s` fehlt im Front Matter.", r.Name, r.Name))

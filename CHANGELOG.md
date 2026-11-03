@@ -5,6 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- Front matter block **`profile`** ("Steckbrief", `mlcext` 0.15.0): purpose, appears, adapt (placeholders the organisation fills in), keep, orientation. A placeholder declared in `profile.adapt` may stand in the text as `{{name}}` and is a warning (`placeholder-open`), not an error; the Sensor Monitor does not approve while one is open. `ParseProfile`, `OpenPlaceholders`, `IsPlaceholderName`.
 - Front matter keys **`attachment_kind`** and **`attachment_once`** (`mlcext` 0.14.0): a template as a kind of attachment in the Sensor Monitor (short code `CAPA`, `SB`; one per event or device). The checker reports an invalid or reserved code (`ANH`), a code without `doc_id` and a non-boolean `attachment_once`. `IsAttachmentKind`.
 
 ## [1.9.1] – 2026-10-29
