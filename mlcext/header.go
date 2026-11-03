@@ -112,6 +112,14 @@ type FrontMatter struct {
 	// EventKindsSet: "event_kinds" is present, also when empty
 	// ("event_kinds: []" means "applies always").
 	EventKindsSet bool
+	// AttachmentKind: the template is a kind of attachment in the Sensor
+	// Monitor ("attachment_kind: SB"); its short code becomes part of the
+	// attachment identifiers ("EV-2026-0820/SB-1") and is fixed once the
+	// template is approved. AttachmentOnce: one per event or device (a form);
+	// AttachmentOnceSet: the key is present.
+	AttachmentKind    string
+	AttachmentOnce    bool
+	AttachmentOnceSet bool
 	// Present: the document starts with a front matter block.
 	Present bool
 }
@@ -189,10 +197,16 @@ func parseFrontMatter(md string) (FrontMatter, string, *yaml.Node, error) {
 		Version     string   `yaml:"version"`
 		Description string   `yaml:"description"`
 		EventKinds  []string `yaml:"event_kinds"`
+		AttachKind  string   `yaml:"attachment_kind"`
+		AttachOnce  *bool    `yaml:"attachment_once"`
 	}
 	fm := FrontMatter{Present: true}
 	if err := node.Decode(&v); err == nil {
 		fm.DocID, fm.Title, fm.Version, fm.Description, fm.EventKinds = strings.TrimSpace(v.DocID), v.Title, v.Version, v.Description, v.EventKinds
+		fm.AttachmentKind = strings.TrimSpace(v.AttachKind)
+		if v.AttachOnce != nil {
+			fm.AttachmentOnce, fm.AttachmentOnceSet = *v.AttachOnce, true
+		}
 	}
 	fm.EventKindsSet = reEventKindsKey.MatchString(raw)
 	return fm, body, &node, nil

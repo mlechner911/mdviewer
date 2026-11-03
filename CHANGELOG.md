@@ -2,6 +2,11 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Front matter keys **`attachment_kind`** and **`attachment_once`** (`mlcext` 0.14.0): a template as a kind of attachment in the Sensor Monitor (short code `CAPA`, `SB`; one per event or device). The checker reports an invalid or reserved code (`ANH`), a code without `doc_id` and a non-boolean `attachment_once`. `IsAttachmentKind`.
+
 ## [1.9.1] – 2026-10-29
 
 ### Fixed

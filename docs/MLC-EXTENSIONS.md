@@ -79,8 +79,14 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   Sensor Monitor sets them on approval.
 - **The front matter is the only place for id, version and title** (`doc_id`,
   `version`, `title`, like Hugo and Jekyll). Allowed keys: `doc_id`, `title`,
-  `version`, `description`, `event_kinds`, `meta` (see below). The kind (SOP, VA, FB, INFO)
-  follows from the `doc_id` prefix. The header line in the text is the legacy
+  `version`, `description`, `event_kinds`, `attachment_kind`, `attachment_once`, `meta` (see
+  below). The kind (SOP, VA, FB, INFO) follows from the `doc_id` prefix.
+- **Attachment kind** (Sensor Monitor): `attachment_kind: SB` makes the template a kind of
+  attachment — files attached to an event or device are chosen by kind instead of a typed title,
+  and get identifiers like `EV-2026-0820/SB-1`. The code is 1 to 8 capitals or digits, needs a
+  `doc_id`, `ANH` is reserved for "other", and the Sensor Monitor fixes it once the template is
+  approved. `attachment_once: true` allows one per event or device (a form); a further file is a
+  new version. The header line in the text is the legacy
   form: still read, but it gives a warning; when both say different things,
   that is an error.
 - **Variables:** only `{{doc_id}}`, `{{version}}` and `{{title}}`, no logic.

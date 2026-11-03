@@ -1,5 +1,7 @@
 package mlcext
 
+import "regexp"
+
 // EventKinds are the event kinds a document may name in its front matter
 // (`event_kinds: [OUT_OF_RANGE, NO_DATA]`): the document is shown first for
 // these events. Single source for MarkSafe and the Sensor Monitor; add a new
@@ -69,7 +71,20 @@ func IsPrefillField(name string) bool {
 // Sensor Monitor (approval, printing), never by the author. "meta" is the
 // block mlcdoc reserves for data it does not render; a filled-in form
 // carries its record data there (FormRecordSchema).
-var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds", "meta"}
+var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds", "attachment_kind", "attachment_once", "meta"}
+
+// AttachmentOther is the built-in kind "other" (Sonstiges) of the Sensor
+// Monitor: it has no template, so no document may claim its code.
+const AttachmentOther = "ANH"
+
+// reAttachmentKind: the short code of an attachment kind — 1 to 8 capitals
+// or digits. It becomes part of identifiers like "EV-2026-0820/CAPA".
+var reAttachmentKind = regexp.MustCompile(`^[A-Z0-9]{1,8}$`)
+
+// IsAttachmentKind reports whether code is a valid attachment kind code.
+func IsAttachmentKind(code string) bool {
+	return reAttachmentKind.MatchString(code) && code != AttachmentOther
+}
 
 // FormRecordSchema in "meta.schema" marks a filled-in form: the form's
 // Markdown with the values in its fields, plus where it came from (form,

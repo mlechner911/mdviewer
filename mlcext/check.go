@@ -176,6 +176,21 @@ func checkFrontMatter(md string, add func(int, int, Severity, string, string)) m
 					add(sv.Line+b.yamlLine-1, sv.Column, Warning, "frontmatter-meta-schema", fmt.Sprintf("Unbekanntes `meta.schema` `%s`; bekannt ist %s.", sv.Value, FormRecordSchema))
 				}
 			}
+		case k.Value == "attachment_kind":
+			switch {
+			case v.Kind != yaml.ScalarNode || !IsAttachmentKind(v.Value):
+				add(v.Line+b.yamlLine-1, v.Column, Error, "frontmatter-attachment-kind",
+					fmt.Sprintf("`attachment_kind` ist ein Kürzel aus 1 bis 8 Großbuchstaben oder Ziffern (z. B. `CAPA`, `SB`), nicht %s; `%s` ist für „Sonstiges\" reserviert.", "`"+v.Value+"`", AttachmentOther))
+			case DocumentMeta(md).DocID == "":
+				add(line, k.Column, Error, "frontmatter-attachment-kind-id",
+					"Eine Art von Anhängen braucht eine Kennung (`doc_id`): Das Kürzel gehört zu genau einer Vorlage.")
+			}
+		case k.Value == "attachment_once":
+			if v.Kind != yaml.ScalarNode || (v.Value != "true" && v.Value != "false") {
+				add(v.Line+b.yamlLine-1, v.Column, Error, "frontmatter-attachment-once", "`attachment_once` ist `true` (einmal je Ereignis bzw. Gerät, z. B. ein Formblatt) oder `false`.")
+			} else if !slices.ContainsFunc(m.Content, func(n *yaml.Node) bool { return n.Value == "attachment_kind" }) {
+				add(line, k.Column, Warning, "frontmatter-attachment-once-alone", "`attachment_once` wirkt nur zusammen mit `attachment_kind`.")
+			}
 		case k.Value == "doc_id" || k.Value == "version" || k.Value == "title":
 			if v.Kind != yaml.ScalarNode {
 				add(v.Line+b.yamlLine-1, v.Column, Error, "frontmatter-yaml", fmt.Sprintf("`%s` muss ein einzelner Wert sein.", k.Value))

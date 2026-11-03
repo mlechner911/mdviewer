@@ -235,3 +235,33 @@ func TestHeaderTitle(t *testing.T) {
 		t.Errorf("header: %+v", h)
 	}
 }
+
+// Art von Anhängen (Sensor Monitor, P-SENS-20261103-01): Kürzel an einer Vorlage mit Kennung.
+func TestAttachmentKindFrontMatter(t *testing.T) {
+	ok := "---\ndoc_id: FB-QM-002\nversion: \"1.0\"\ntitle: CAPA\nattachment_kind: CAPA\nattachment_once: true\n---\n# X\n"
+	if errs := codes(Check(ok, Options{}), Error); len(errs) > 0 {
+		t.Fatalf("valid attachment kind: unexpected errors %v", errs)
+	}
+	fm, _ := ParseFrontMatter(ok)
+	if fm.AttachmentKind != "CAPA" || !fm.AttachmentOnce || !fm.AttachmentOnceSet {
+		t.Errorf("parsed %+v", fm)
+	}
+	for _, bad := range []string{"capa", "ANH", "ZU-LANG-123", "[A, B]"} {
+		md := "---\ndoc_id: FB-QM-002\nattachment_kind: " + bad + "\n---\n# X\n"
+		if d := has(Check(md, Options{}), "frontmatter-attachment-kind"); d == nil || d.Severity != Error {
+			t.Errorf("attachment_kind %q must be an error", bad)
+		}
+	}
+	if d := has(Check("---\ntitle: X\nattachment_kind: SB\n---\n# X\n", Options{}), "frontmatter-attachment-kind-id"); d == nil {
+		t.Errorf("attachment_kind without doc_id must be an error")
+	}
+	if d := has(Check("---\ndoc_id: FB-QM-002\nattachment_kind: SB\nattachment_once: ja\n---\n# X\n", Options{}), "frontmatter-attachment-once"); d == nil {
+		t.Errorf("attachment_once not a bool must be an error")
+	}
+	if d := has(Check("---\ndoc_id: FB-QM-002\nattachment_once: true\n---\n# X\n", Options{}), "frontmatter-attachment-once-alone"); d == nil || d.Severity != Warning {
+		t.Errorf("attachment_once alone must be a warning")
+	}
+	if fm, _ := ParseFrontMatter("---\ntitle: X\n---\n"); fm.AttachmentOnceSet || fm.AttachmentKind != "" {
+		t.Errorf("no attachment keys: %+v", fm)
+	}
+}
