@@ -847,6 +847,13 @@ export const t = derived(locale, ($locale) => (key: string, ...args: any[]) => {
 });
 
 /** Adds the texts of a built-in module (e.g. sensormonitor/i18n.ts). */
+/** A module build calls itself differently: in every text. */
+export function setProductName(name: string) {
+  for (const texts of Object.values(translations)) {
+    for (const key of Object.keys(texts)) texts[key] = texts[key].replaceAll('MarkSafe', name);
+  }
+}
+
 export function addTranslations(extra: Record<string, Record<string, string>>) {
   for (const [lang, texts] of Object.entries(extra)) {
     if (translations[lang]) Object.assign(translations[lang], texts);

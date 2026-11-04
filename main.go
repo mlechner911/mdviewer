@@ -32,7 +32,7 @@ func main() {
 
 	// Create application with options
 	wailsApp := application.New(application.Options{
-		Name:        "MarkSafe",
+		Name:        productName,
 		Description: "Markdown viewer and editor",
 		Services:    services,
 		Assets: application.AssetOptions{
@@ -40,6 +40,9 @@ func main() {
 			Handler: app.assetHandler(),
 		},
 		FileAssociations: []string{".md", ".markdown", ".mdown"},
+		Windows: application.WindowsOptions{
+			WebviewUserDataPath: webviewDataPath(),
+		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
@@ -56,7 +59,7 @@ func main() {
 
 	app.window = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "main",
-		Title:            "MarkSafe",
+		Title:            productName,
 		Width:            1200,
 		Height:           800,
 		BackgroundColour: application.NewRGB(27, 38, 54),

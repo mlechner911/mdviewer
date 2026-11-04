@@ -28,11 +28,11 @@
   import FieldDialog from './components/FieldDialog.svelte';
   // Optional Sensor Monitor module: the real one in the Sensor Monitor
   // variant, null in the standard build (vite.config.ts).
-  import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts, license as sensorMonitorLicense } from '$sensormonitor';
+  import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts, license as sensorMonitorLicense, productName } from '$sensormonitor';
 
   // State & Config
   import { getTheme } from './themes';
-  import { t, locale, translations, addTranslations } from './i18n';
+  import { t, locale, translations, addTranslations, setProductName } from './i18n';
   import { APP_THEME, STYLE, DEFAULTS } from './lib/constants';
   import { c_welcomeMarkdown } from './lib/devdefmd.js';
   import { 
@@ -102,7 +102,7 @@
   const dividerClass = $derived(STYLE.divider[$effectiveAppTheme]);
   const focusButtonClass = $derived(STYLE.focusButton[$effectiveAppTheme]);
 
-  const defaultMarkdown = () => get(t)('welcomeTitle') + (c_welcomeMarkdown[$locale as 'en'|'de'|'es'|'fr'] ?? c_welcomeMarkdown.en);
+  const defaultMarkdown = () => get(t)('welcomeTitle') + (c_welcomeMarkdown[$locale as 'en'|'de'|'es'|'fr'] ?? c_welcomeMarkdown.en).replaceAll('MarkSafe', productName);
 
   // Re-render welcome tabs when the app language changes (only tabs that
   // still show the welcome text, not e.g. a document from a template).
@@ -137,6 +137,7 @@
   // texts, settings sections, status bar entries and the watermark
   // suggestion before a PDF.
   addTranslations(sensorMonitorTexts);
+  setProductName(productName);
   const settingsSections = [SensorMonitorSettings].filter((c): c is NonNullable<typeof c> => !!c);
   let sensorMonitor = $state<any>(null);
   let moduleStatus = $state<{ text: string; tone?: 'ok' | 'warn'; title?: string }[]>([]);
@@ -911,12 +912,12 @@
   $effect(() => {
     if (browseParams) return; // BrowseView owns the title there
     if (activeTab) {
-      const winTitle = `${activeTab.title}${activeTab.isDirty ? ' *' : ''} - MarkSafe`;
+      const winTitle = `${activeTab.title}${activeTab.isDirty ? ' *' : ''} - ${productName}`;
       document.title = winTitle;
       backend.setWindowTitle(winTitle);
     } else {
-      document.title = 'MarkSafe';
-      backend.setWindowTitle('MarkSafe');
+      document.title = productName;
+      backend.setWindowTitle(productName);
     }
   });
 
@@ -1046,7 +1047,7 @@
       onViewBrowse={() => toggleBrowseMode()}
       onHelpAbout={() => openAbout()}
       onOpenSettings={() => { if (settingsSections.length) showSettings = true; }}
-      onAboutWails={() => alert('MarkSafe')}
+      onAboutWails={() => alert(productName)}
       onOpenProductPage={() => window.open('https://mlcgo.eu/products/marksafe/', '_blank')}
       onHelpShowShortcuts={() => void 0}
     />

@@ -5,6 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Changed
+- The module build calls itself **MarkSafePlus** in the window title, the menus and the About window, keeps its own WebView2 profile on Windows and is a separate app on macOS (`MarkSafePlus.app`, `eu.mlcgo.marksafeplus`, signed and notarized). Its packages are named `marksafeplus-<version>-…`.
 - The Sensor Monitor module moved out of this repository into a private submodule (`frontend/src/sensormonitor`). Public clones and builds are unaffected; `SENSOR=1` needs the submodule. `sensormonitor_on.go`, the only part left here, only registers it.
 
 ### Fixed

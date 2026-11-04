@@ -15,6 +15,13 @@ type extension interface {
 	HasSettings() bool
 }
 
+// productName is what this build calls itself; a module build sets its own.
+var productName = "MarkSafe"
+
+// webviewDataPath is the module build's own WebView2 profile (Windows), so
+// it can run next to MarkSafe. "" keeps the default of the standard build.
+var webviewDataPath = func() string { return "" }
+
 // extensionFactories register themselves in init (see sensormonitor_on.go);
 // main creates them with the version and registers each as a Wails service.
 var extensionFactories []func(version string) extension

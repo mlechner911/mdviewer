@@ -31,8 +31,8 @@ vars:
   # Build tags of the platform builds (the Windows and macOS tasks read it
   # globally); Linux adds LINUX_TAGS in the build task.
   EXTRA_TAGS: '{{.SENSOR_TAG}}'
-  # Output names of a module build: marksafe-1.9.0-sensormonitor-…
-  VARIANT_SUFFIX: '{{if .SENSOR_TAG}}-sensormonitor{{end}}'
+  # Output names: marksafe-1.9.0-…, of a module build marksafeplus-1.9.0-…
+  PACKAGE: '{{if .SENSOR_TAG}}marksafeplus{{else}}marksafe{{end}}'
   VERSION:
     sh: cat VERSION 2>/dev/null || echo "1.5.1"
   DROPZONE: /mnt/data2tb/dropzone
@@ -194,7 +194,7 @@ tasks:
           echo "HINWEIS: MAC_KEYCHAIN_PASS (oder MARKSAFE_/MLCTERM_KEYCHAIN_PASS) ist nicht gesetzt."
           echo "Ohne Passwort bleibt der Mac-Schlüsselbund gesperrt; codesign & Notarisierung werden übersprungen."
         fi
-        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS MLCDOC_VERSION={{.MLCDOC_VERSION}} EXTRA_TAGS={{.SENSOR_TAG}} bash -s" << 'ENDSSH'
+        ssh {{.MAC_HOST}} "KEYCHAIN_PASS=$KEYCHAIN_PASS MLCDOC_VERSION={{.MLCDOC_VERSION}} EXTRA_TAGS={{.SENSOR_TAG}} PACKAGE={{.PACKAGE}} bash -s" << 'ENDSSH'
           set -e
           export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin:/opt/homebrew/bin
           export NVM_DIR="$HOME/.nvm"
@@ -207,61 +207,73 @@ tasks:
           # EXTRA_TAGS: sensormonitor for SENSOR=1 (frontend/.variant came along)
           wails3 task darwin:package:universal ${EXTRA_TAGS:+EXTRA_TAGS=$EXTRA_TAGS}
 
+          # A module build is its own app next to MarkSafe: name and bundle id.
+          APP=bin/marksafe.app
+          if [ -n "$EXTRA_TAGS" ]; then
+            APP=bin/MarkSafePlus.app
+            rm -rf "$APP"
+            mv bin/marksafe.app "$APP"
+            plutil -replace CFBundleName -string MarkSafePlus "$APP/Contents/Info.plist"
+            plutil -replace CFBundleDisplayName -string MarkSafePlus "$APP/Contents/Info.plist"
+            plutil -replace CFBundleIdentifier -string eu.mlcgo.marksafeplus "$APP/Contents/Info.plist"
+          fi
+          APP_NAME=$(basename "$APP" .app)
+
           # mlcdoc next to the executable (PDF preview/export finds it there)
           MLCDOC_SRC="build/mlcdoc/${MLCDOC_VERSION}/darwin"
-          install -m 755 "$MLCDOC_SRC/mlcdoc" bin/marksafe.app/Contents/MacOS/mlcdoc
-          mkdir -p bin/marksafe.app/Contents/Resources/licenses/mlcdoc
-          cp "$MLCDOC_SRC"/LICENSE-* "$MLCDOC_SRC"/NOTICE-* bin/marksafe.app/Contents/Resources/licenses/mlcdoc/
+          install -m 755 "$MLCDOC_SRC/mlcdoc" $APP/Contents/MacOS/mlcdoc
+          mkdir -p $APP/Contents/Resources/licenses/mlcdoc
+          cp "$MLCDOC_SRC"/LICENSE-* "$MLCDOC_SRC"/NOTICE-* $APP/Contents/Resources/licenses/mlcdoc/
           # Sensor Monitor module (SENSOR=1): its own license (ELv2)
-          if [ -n "$EXTRA_TAGS" ]; then cp frontend/src/sensormonitor/LICENSE bin/marksafe.app/Contents/Resources/licenses/LICENSE-sensormonitor; fi
-          bin/marksafe.app/Contents/MacOS/mlcdoc --version
+          if [ -n "$EXTRA_TAGS" ]; then cp frontend/src/sensormonitor/LICENSE $APP/Contents/Resources/licenses/LICENSE-sensormonitor; fi
+          $APP/Contents/MacOS/mlcdoc --version
 
           if [ -n "$KEYCHAIN_PASS" ]; then
-            echo "→ Unlocking keychain and signing bin/marksafe.app..."
+            echo "→ Unlocking keychain and signing $APP..."
             security unlock-keychain -p "$KEYCHAIN_PASS" ~/Library/Keychains/login.keychain-db
             # Nested executable first, with hardened runtime (notarization needs it)
             codesign --force --options runtime --timestamp \
               --sign "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
-              bin/marksafe.app/Contents/MacOS/mlcdoc
-            wails3 tool sign --input bin/marksafe.app \
+              $APP/Contents/MacOS/mlcdoc
+            wails3 tool sign --input $APP \
               --identity "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
               --entitlements build/signing/marksafe.entitlements \
               --notarize --keychain-profile mlcterm-notary
-            codesign --verify --strict --verbose=2 bin/marksafe.app
-            xcrun stapler validate bin/marksafe.app
+            codesign --verify --strict --verbose=2 $APP
+            xcrun stapler validate $APP
           else
             echo "→ Skipping codesign & notarization for .app (no KEYCHAIN_PASS provided)."
           fi
 
           echo "→ Building .dmg with create-dmg..."
           mkdir -p build/release
-          rm -f "build/release/marksafe-${VERSION}.dmg"
+          rm -f "build/release/${PACKAGE}-${VERSION}.dmg"
           create-dmg \
-            --volname "MarkSafe ${VERSION}" \
+            --volname "${APP_NAME} ${VERSION}" \
             --window-pos 200 150 --window-size 660 440 --icon-size 120 \
-            --icon "marksafe.app" 180 180 --hide-extension "marksafe.app" \
+            --icon "${APP_NAME}.app" 180 180 --hide-extension "${APP_NAME}.app" \
             --app-drop-link 480 180 \
             --no-internet-enable --skip-jenkins \
-            "build/release/marksafe-${VERSION}.dmg" "bin/marksafe.app"
+            "build/release/${PACKAGE}-${VERSION}.dmg" "$APP"
 
           if [ -n "$KEYCHAIN_PASS" ]; then
             echo "→ Signing and notarizing .dmg..."
             codesign --force --sign "Developer ID Application: Michael Lechner (BQQQX4TB3B)" \
-                     --timestamp "build/release/marksafe-${VERSION}.dmg"
-            xcrun notarytool submit "build/release/marksafe-${VERSION}.dmg" \
+                     --timestamp "build/release/${PACKAGE}-${VERSION}.dmg"
+            xcrun notarytool submit "build/release/${PACKAGE}-${VERSION}.dmg" \
                   --keychain-profile mlcterm-notary --wait
-            xcrun stapler staple "build/release/marksafe-${VERSION}.dmg"
-            xcrun stapler validate "build/release/marksafe-${VERSION}.dmg"
+            xcrun stapler staple "build/release/${PACKAGE}-${VERSION}.dmg"
+            xcrun stapler validate "build/release/${PACKAGE}-${VERSION}.dmg"
           fi
 
-          echo "→ Done: build/release/marksafe-${VERSION}.dmg"
+          echo "→ Done: build/release/${PACKAGE}-${VERSION}.dmg"
         ENDSSH
       # 3 — copy .dmg back to dropzone
       - mkdir -p {{.DROPZONE}} {{.BIN_DIR}}
-      - scp "{{.MAC_HOST}}:{{.REMOTE_DIR}}/build/release/marksafe-{{.VERSION}}.dmg" {{.DROPZONE}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg
+      - scp "{{.MAC_HOST}}:{{.REMOTE_DIR}}/build/release/{{.PACKAGE}}-{{.VERSION}}.dmg" {{.DROPZONE}}/{{.PACKAGE}}-{{.VERSION}}.dmg
       - '{{if not .SENSOR_TAG}}cp {{.DROPZONE}}/marksafe-{{.VERSION}}.dmg {{.DROPZONE}}/marksafe.dmg{{else}}true{{end}}'
-      - cp {{.DROPZONE}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg {{.BIN_DIR}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg
-      - echo "Successfully published macOS DMG to {{.DROPZONE}}/marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}.dmg"
+      - cp {{.DROPZONE}}/{{.PACKAGE}}-{{.VERSION}}.dmg {{.BIN_DIR}}/{{.PACKAGE}}-{{.VERSION}}.dmg
+      - echo "Successfully published macOS DMG to {{.DROPZONE}}/{{.PACKAGE}}-{{.VERSION}}.dmg"
 
   build:all:
     desc: Build Linux binary and Windows installer
@@ -270,9 +282,9 @@ tasks:
       - task: build:windows
 
   release:
-    desc: Build all platforms and copy installers to dropzone (SENSOR=1 → files named …-sensormonitor-…, not for publish:downloads)
+    desc: Build all platforms and copy installers to dropzone (SENSOR=1 → files named marksafeplus-…, not for publish:downloads)
     vars:
-      N: 'marksafe-{{.VERSION}}{{.VARIANT_SUFFIX}}'
+      N: '{{.PACKAGE}}-{{.VERSION}}'
     cmds:
       - task: build:all
       - mkdir -p {{.DROPZONE}}
@@ -292,7 +304,7 @@ tasks:
       - cd {{.BIN_DIR}} && rm -f {{.N}}-windows-portable.zip && 7z a -tzip -bso0 {{.N}}-windows-portable.zip marksafe.exe mlcdoc.exe licenses
       - cd {{.BIN_DIR}} && tar -czf {{.N}}-linux-amd64.tar.gz marksafe mlcdoc licenses
       - cp {{.BIN_DIR}}/{{.N}}-windows-portable.zip {{.BIN_DIR}}/{{.N}}-linux-amd64.tar.gz {{.DROPZONE}}/
-      - echo "Successfully published MarkSafe {{.VERSION}}{{.VARIANT_SUFFIX}} to {{.DROPZONE}}"
+      - echo "Successfully published {{.PACKAGE}} {{.VERSION}} to {{.DROPZONE}}"
 
   publish:downloads:
     desc: "Upload release binaries from dropzone to mlcgo.eu:/var/www/html/downloads/marksafe"

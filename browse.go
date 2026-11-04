@@ -135,7 +135,7 @@ func (a *App) OpenBrowseWindow(rootDir, relPath string) {
 		return
 	}
 	target := "/?browse=" + url.QueryEscape(rootDir) + "&path=" + url.QueryEscape(relPath)
-	title := "MarkSafe Browse \u2014 " + rootDir
+	title := productName + " Browse \u2014 " + rootDir
 	if w, ok := app.Window.GetByName("browse"); ok {
 		w.SetURL(target)
 		w.SetTitle(title)
@@ -144,7 +144,7 @@ func (a *App) OpenBrowseWindow(rootDir, relPath string) {
 	}
 	w := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "browse",
-		Title:            "MarkSafe Browse \u2014 " + rootDir,
+		Title:            title,
 		Width:            1280,
 		Height:           860,
 		MinWidth:         900,
