@@ -2,7 +2,7 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.10.0] – 2026-11-04
 
 ### Security
 - The bundled PDF toolkit is mlcdoc 0.19.1: mlcmd2pdf 3.28.3 with upstream md2pdf 3.4.2 (updated `zip`, `rustls-webpki`, `webpki-roots`, `pulldown-cmark`) and PdfCraft 0.18.1 with its fixes.
