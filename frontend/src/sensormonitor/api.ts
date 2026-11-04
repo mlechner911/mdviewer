@@ -26,10 +26,11 @@ export type Comparison = Stand & { matches_approved: boolean; matches_draft: boo
 export type Finding = { line: number; col: number; severity: string; code: string; message: string };
 export type SavedDraft = SensorDocument & { revised_by: string[] | null; warnings: Finding[] | null };
 
-/** A date from the server for display. */
+/** A date from the server for display. It also sends Postgres timestamps
+ *  ("2026-11-04 08:55:54.73+00"), which Safari's Date does not read. */
 export function day(s: string): string {
   if (!s) return '';
-  const d = new Date(s);
+  const d = new Date(s.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00'));
   return isNaN(d.getTime()) ? s : d.toLocaleDateString();
 }
 

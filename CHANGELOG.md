@@ -2,6 +2,11 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Sensor Monitor module: saving unchanged text no longer says it matches the approved version (it may match the waiting draft). Dates in Postgres format from the server also show correctly where the web view is stricter (macOS).
+
 ## [1.9.2] – 2026-11-04
 
 ### Changed
