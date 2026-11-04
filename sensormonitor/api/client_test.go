@@ -118,6 +118,17 @@ func TestSaveDraft(t *testing.T) {
 	}
 }
 
+// A waiting draft is revised: 200 and revised_by instead of 201.
+func TestSaveDraftRevised(t *testing.T) {
+	c := server(t, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, 200, map[string]any{"id": "d2", "doc_no": "D-2", "status": "draft", "version": "1.1", "revised_by": []string{"u1"}})
+	})
+	d, err := c.SaveDraft(context.Background(), "---\ndoc_id: SOP-QM-001\n---\n", DraftOptions{})
+	if err != nil || d.ID != "d2" || len(d.RevisedBy) != 1 {
+		t.Fatalf("SaveDraft = %+v, %v", d, err)
+	}
+}
+
 func TestErrors(t *testing.T) {
 	c := server(t, func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {

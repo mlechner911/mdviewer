@@ -60,12 +60,6 @@
     onOpen(res.text, doc);
   }
 
-  function day(s: string): string {
-    if (!s) return '';
-    const d = new Date(s);
-    return isNaN(d.getTime()) ? s : d.toLocaleDateString();
-  }
-
   onMount(() => { if (ref.trim()) void search(); });
 
   function onKey(e: KeyboardEvent) {
@@ -98,8 +92,8 @@
                 <div class="font-medium truncate">{item.doc.title || item.doc.ref_no}</div>
                 <div class="text-xs opacity-70">
                   {#if item.doc.version}{$t('smVersion', item.doc.version)}{/if}
-                  {#if item.doc.approved_at} · {$t('smApprovedAt', day(item.doc.approved_at))}{/if}
-                  {#if item.doc.valid_until} · {$t('smReviewDue', day(item.doc.valid_until))}{/if}
+                  {#if item.doc.approved_at} · {$t('smApprovedAt', api.day(item.doc.approved_at))}{/if}
+                  {#if item.doc.valid_until} · {$t('smReviewDue', api.day(item.doc.valid_until))}{/if}
                   {#if !item.doc.approved_at && item.doc.uploaded_by_label} · {$t('smUploadedBy', item.doc.uploaded_by_label)}{/if}
                 </div>
               </div>

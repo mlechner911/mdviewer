@@ -79,6 +79,10 @@ func TestFormatFieldErrors(t *testing.T) {
 		{Kind: "pattern", Name: "d"},
 		{Kind: "pattern", Name: "d", Pattern: "__.__"},
 		{Kind: "pattern", Name: "d", Pattern: "HH:MM", Value: "12:30:00"},
+		{Kind: "pattern", Name: "d", Pattern: "x"},
+		{Kind: "pattern", Name: "d", Pattern: "X"},
+		{Kind: "pattern", Name: "d", Pattern: "Unterschrift: Zeuge"},
+		{Kind: "pattern", Name: "d", Pattern: "signature: Witness"},
 		{Kind: "text", Name: "t", Tooltip: "a --> b"},
 		{Kind: "auswahl", Name: "x"},
 	} {

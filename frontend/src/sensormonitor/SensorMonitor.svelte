@@ -87,7 +87,8 @@
   function draftSaved(d: api.SavedDraft) {
     showDraft = false;
     const n = d.warnings?.length ?? 0;
-    showToast($t('smDraftSaved', d.doc_no, d.version || '–') + (n ? ' · ' + $t('smDraftWarnings', n) : ''), n ? 6000 : 3500, 'info');
+    const saved = d.revised_by?.length ? 'smDraftRevised' : 'smDraftSaved';
+    showToast($t(saved, d.doc_no, d.version || '–') + (n ? ' · ' + $t('smDraftWarnings', n) : ''), n || d.revised_by?.length ? 6000 : 3500, 'info');
     comparison = null; // compare again
     scheduleCompare(0);
   }
@@ -114,16 +115,32 @@
     untrack(() => scheduleCompare());
   });
 
+  // The full stand for the status bar's tooltip.
+  function standDetails(r: api.Comparison): string {
+    const lines: string[] = [];
+    if (r.approved) {
+      lines.push([
+        $t('smStandApproved', r.approved.version),
+        r.approved.approved_at && $t('smApprovedAt', api.day(r.approved.approved_at)),
+        r.approved.valid_until && $t('smReviewDue', api.day(r.approved.valid_until)),
+      ].filter(Boolean).join(', '));
+    }
+    if (r.draft) lines.push($t('smStandDraft', r.draft.version));
+    return lines.join('\n');
+  }
+
   // Status bar: the comparison and until when signed in.
   $effect(() => {
     const items: StatusItem[] = [];
     const c = comparison;
     if (c && c.ref === ref) {
       const r = c.result;
-      if (r.matches_approved && r.approved) items.push({ text: $t('smCmpApproved', c.ref, r.approved.version), tone: 'ok' });
-      else if (r.matches_draft && r.draft) items.push({ text: $t('smCmpDraft', c.ref, r.draft.version), tone: 'warn' });
-      else if (r.approved) items.push({ text: $t('smCmpDiffers', c.ref, r.approved.version), tone: 'warn' });
-      else if (r.draft) items.push({ text: `${c.ref}: ${$t('smDraft')} ${r.draft.version}`, tone: 'warn' });
+      const title = standDetails(r);
+      const waits = r.draft && r.approved && !r.matches_draft ? ' · ' + $t('smDraftWaits', r.draft.version) : '';
+      if (r.matches_approved && r.approved) items.push({ text: $t('smCmpApproved', c.ref, r.approved.version) + waits, tone: 'ok', title });
+      else if (r.matches_draft && r.draft) items.push({ text: $t('smCmpDraft', c.ref, r.draft.version), tone: 'warn', title });
+      else if (r.approved) items.push({ text: $t('smCmpDiffers', c.ref, r.approved.version) + waits, tone: 'warn', title });
+      else if (r.draft) items.push({ text: `${c.ref}: ${$t('smDraft')} ${r.draft.version}`, tone: 'warn', title });
       else items.push({ text: $t('smCmpNew', c.ref), tone: 'warn' });
     }
     if (status.signedIn) {
@@ -198,6 +215,7 @@
     title={doc?.title ?? ''}
     {hasErrors}
     {theme}
+    waitingDraft={comparison?.ref === ref ? comparison?.result.draft?.version || (comparison?.result.draft ? '–' : '') : ''}
     onSaved={draftSaved}
     onSignIn={() => { showDraft = false; requireSignIn(() => (showDraft = true)); }}
     onClose={() => (showDraft = false)}

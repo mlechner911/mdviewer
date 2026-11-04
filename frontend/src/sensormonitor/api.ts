@@ -24,7 +24,14 @@ export type SensorDocument = {
 export type Stand = { ref_no: string; approved: SensorDocument | null; draft: SensorDocument | null };
 export type Comparison = Stand & { matches_approved: boolean; matches_draft: boolean };
 export type Finding = { line: number; col: number; severity: string; code: string; message: string };
-export type SavedDraft = SensorDocument & { warnings: Finding[] | null };
+export type SavedDraft = SensorDocument & { revised_by: string[] | null; warnings: Finding[] | null };
+
+/** A date from the server for display. */
+export function day(s: string): string {
+  if (!s) return '';
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? s : d.toLocaleDateString();
+}
 
 const OFF: Status = { address: '', signedIn: false, email: '', expires: '' };
 

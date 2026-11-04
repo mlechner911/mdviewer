@@ -281,10 +281,13 @@ type Finding struct {
 	Message  string `json:"message"`
 }
 
-// SavedDraft is the new draft and the warnings of the check.
+// SavedDraft is the new or revised draft and the warnings of the check.
+// RevisedBy is set when a waiting draft was revised (the server answers 200,
+// not 201): those people count as authors and cannot approve it.
 type SavedDraft struct {
 	Document
-	Warnings []Finding `json:"warnings"`
+	RevisedBy []string  `json:"revised_by"`
+	Warnings  []Finding `json:"warnings"`
 }
 
 // ByRef returns the stand of document id ref.

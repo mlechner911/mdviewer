@@ -70,6 +70,10 @@ func FormatField(s FieldSpec) (string, error) {
 			return "", errors.New("Ein Muster enthält kein `_` (das wäre eine Linie).")
 		case utf8.RuneCountInString(p) > 40:
 			return "", errors.New("Das Muster ist länger als 40 Zeichen.")
+		case strings.EqualFold(p, "x"):
+			return "", errors.New("Das Muster `x` wäre ein angekreuztes Feld.")
+		case hasSignatureKeyword(p):
+			return "", errors.New("Ein Muster mit `Unterschrift:` oder `Signature:` wäre ein Unterschriftsfeld.")
 		}
 		body = maskPattern(p)
 		if v := oneLine(s.Value); v != "" {
@@ -141,6 +145,12 @@ func maskPattern(p string) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+// hasSignatureKeyword: the scanner reads such a field as a signature field.
+func hasSignatureKeyword(p string) bool {
+	l := strings.ToLower(p)
+	return strings.HasPrefix(l, "unterschrift:") || strings.HasPrefix(l, "signature:")
 }
 
 func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }

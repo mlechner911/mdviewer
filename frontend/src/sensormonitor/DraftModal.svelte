@@ -14,7 +14,7 @@
   import * as api from './api';
   import { sensorErrorText, needsPin } from './errors';
 
-  let { markdown, filename = '', refNo = '', version = '', title = '', hasErrors = false, onSaved, onSignIn, onClose, theme = 'dark' }: {
+  let { markdown, filename = '', refNo = '', version = '', title = '', hasErrors = false, waitingDraft = '', onSaved, onSignIn, onClose, theme = 'dark' }: {
     markdown: string;
     filename?: string;
     refNo?: string;
@@ -25,6 +25,8 @@
     onSaved: (draft: api.SavedDraft) => void;
     onSignIn: () => void;
     onClose: () => void;
+    /** Version of the draft waiting for approval: saving revises it. */
+    waitingDraft?: string;
     theme?: EffectiveTheme_t;
   } = $props();
 
@@ -74,6 +76,7 @@
         <p class="text-sm text-amber-500 mb-4">{$t('smDraftNoId')}</p>
       {/if}
       {#if hasErrors}<p class="text-sm text-amber-500 mb-4">{$t('smDraftHasErrors')}</p>{/if}
+      {#if waitingDraft}<p class="text-sm text-amber-500 mb-4">{$t('smReviseInfo', waitingDraft)}</p>{/if}
 
       <label class="block text-sm font-medium mb-1" for="sm-reason">{$t('smReason')}</label>
       <textarea id="sm-reason" bind:value={reason} rows="3" class="w-full px-3 py-2 rounded border text-sm select-text {inputClass}"></textarea>
@@ -88,7 +91,7 @@
       {#if error}<p class="text-sm text-red-500 mt-3">{error}</p>{/if}
       <div class="flex justify-end gap-3 mt-6">
         <button type="button" onclick={onClose} class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('cancel')}</button>
-        <button type="submit" disabled={busy || !refNo || (showPin && !pin.trim())} class="px-4 py-2 rounded text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50">{$t('smSaveDraftBtn')}</button>
+        <button type="submit" disabled={busy || !refNo || (showPin && !pin.trim())} class="px-4 py-2 rounded text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50">{$t(waitingDraft ? 'smReviseDraftBtn' : 'smSaveDraftBtn')}</button>
       </div>
     </form>
   </div>

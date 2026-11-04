@@ -4,6 +4,13 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+- The bundled PDF toolkit is mlcdoc 0.18.0 (PdfCraft form fixes; mlcmd2pdf stays 3.28.1).
+- Sensor Monitor module: saving a document whose draft is waiting for approval revises that draft (Sensor Monitor since 2026-11-03). The dialog says so before saving, the message afterwards says "revised" and that someone else must approve or reject it. The status bar adds "draft 1.2 waiting", and its tooltip shows the approved version with approval and review dates (T-MARKS-20261103-01, T-MARKS-20261021-03).
+
+### Fixed
+- Field dialog: the pattern `x` and patterns starting with `Unterschrift:` or `Signature:` are refused; they would have become a ticked check box or a signature field.
+
 ### Added
 - Front matter block **`profile`** ("Steckbrief", `mlcext` 0.15.0): purpose, appears, adapt (placeholders the organisation fills in), keep, orientation. A placeholder declared in `profile.adapt` may stand in the text as `{{name}}` and is a warning (`placeholder-open`), not an error; the Sensor Monitor does not approve while one is open. `ParseProfile`, `OpenPlaceholders`, `IsPlaceholderName`.
 - Front matter keys **`attachment_kind`** and **`attachment_once`** (`mlcext` 0.14.0): a template as a kind of attachment in the Sensor Monitor (short code `CAPA`, `SB`; one per event or device). The checker reports an invalid or reserved code (`ANH`), a code without `doc_id` and a non-boolean `attachment_once`. `IsAttachmentKind`.
