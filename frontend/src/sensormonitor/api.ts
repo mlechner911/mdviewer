@@ -30,7 +30,7 @@ export type SavedDraft = SensorDocument & { revised_by: string[] | null; warning
  *  ("2026-11-04 08:55:54.73+00"), which Safari's Date does not read. */
 export function day(s: string): string {
   if (!s) return '';
-  const d = new Date(s.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00'));
+  const d = new Date(s.replace(' ', 'T').replace(/(:\d{2}(?:\.\d+)?[+-]\d{2})$/, '$1:00'));
   return isNaN(d.getTime()) ? s : d.toLocaleDateString();
 }
 
