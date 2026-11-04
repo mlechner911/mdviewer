@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- MarkSafePlus: **File › Sensor Monitor › Values from Event…** fills the form being filled in with the values of a chosen event, if the form belongs to it. MarkSafe itself gains a general hook for this, the same path as "Load values…" (T-MARKS-20261028-04).
+
 ### Changed
 - The module build calls itself **MarkSafePlus** in the window title, the menus and the About window, keeps its own WebView2 profile on Windows and is a separate app on macOS (`MarkSafePlus.app`, `eu.mlcgo.marksafeplus`, signed and notarized). Its packages are named `marksafeplus-<version>-…`.
 - The Sensor Monitor module moved out of this repository into a private submodule (`frontend/src/sensormonitor`). Public clones and builds are unaffected; `SENSOR=1` needs the submodule. `sensormonitor_on.go`, the only part left here, only registers it.

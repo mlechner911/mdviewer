@@ -215,14 +215,23 @@
     tab.isDirty = true;
   }
 
-  async function loadFillValues() {
+  // Values into the form being filled in: from a JSON file, or from a module
+  // (onSetFormValues).
+  async function setFormValues(values: Record<string, string>) {
     const tab = tabs[activeTabIndex];
     if (!tab) return;
     try {
-      const values = await backend.loadFormValues();
-      if (!values) return;
       fillChanged(await backend.mlcFillForm(tab.content, values));
       showToast($t('formFillLoaded', String(Object.keys(values).length)), 2500, 'info');
+    } catch (err) {
+      showToast(String(err), 6000, 'error');
+    }
+  }
+
+  async function loadFillValues() {
+    try {
+      const values = await backend.loadFormValues();
+      if (values) await setFormValues(values);
     } catch (err) {
       showToast(String(err), 6000, 'error');
     }
@@ -979,6 +988,8 @@
     onOpenTab={openModuleTab}
     onStatus={(items: typeof moduleStatus) => (moduleStatus = items)}
     onMenuChanged={() => updateNativeMenu(get(locale))}
+    {filling}
+    onSetFormValues={setFormValues}
   />
 {/if}
 
