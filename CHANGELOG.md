@@ -5,7 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Security
-- The bundled PDF toolkit is mlcdoc 0.18.1 (mlcmd2pdf 3.28.2 with upstream md2pdf 3.4.2): updated `zip`, `rustls-webpki`, `webpki-roots` and `pulldown-cmark`.
+- The bundled PDF toolkit is mlcdoc 0.19.0: mlcmd2pdf 3.28.2 with upstream md2pdf 3.4.2 (updated `zip`, `rustls-webpki`, `webpki-roots`, `pulldown-cmark`) and PdfCraft 0.18.1 with its fixes.
 
 ### Added
 - MarkSafePlus: **File › Sensor Monitor › Values from Event…** fills the form being filled in with the values of a chosen event, if the form belongs to it. MarkSafe itself gains a general hook for this, the same path as "Load values…" (T-MARKS-20261028-04).
