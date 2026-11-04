@@ -2,7 +2,7 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.9.2] – 2026-11-04
 
 ### Changed
 - The bundled PDF toolkit is mlcdoc 0.18.0 (PdfCraft form fixes; mlcmd2pdf stays 3.28.1).
