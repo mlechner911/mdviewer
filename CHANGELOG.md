@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+- The Sensor Monitor module moved out of this repository into a private submodule (`frontend/src/sensormonitor`). Public clones and builds are unaffected; `SENSOR=1` needs the submodule. `sensormonitor_on.go`, the only part left here, only registers it.
+
 ### Fixed
 - Sensor Monitor module: saving unchanged text no longer says it matches the approved version (it may match the waiting draft). Dates in Postgres format from the server also show correctly where the web view is stricter (macOS).
 

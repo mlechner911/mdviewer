@@ -36,9 +36,8 @@ internal/mdbrowse    -> Shared browsing library: rooted access (Root API),
 /packages             -> mlc-markdown (renderer, npm), mlc-markdown-svelte
                         (component, npm), mlcext-editor (CodeMirror 6).
 /extensions.go        -> Hook for optional modules (built in with a tag).
-/sensormonitor        -> Optional Sensor Monitor module (Go service, api/
-                        client), tag "sensormonitor", Elastic License 2.0.
-/frontend/src/sensormonitor -> Its frontend; sensormonitor-off is the empty
+/frontend/src/sensormonitor -> Optional internal module (MarkSafePlus): private
+                        submodule, empty in a public clone; sensormonitor-off is the empty
                         stand-in of the standard build.
 /internal/filesystem  -> Safe file I/O wrappers.
 /frontend/src/components -> Svelte 5 components (Editor, Preview, TabsBar, Toolbar, etc.).
@@ -92,15 +91,9 @@ Build output goes to `bin/`.
 
 ## Optional modules
 
-The connection to the MLC Sensor Monitor is built in only with `SENSOR=1`
-(for example `task build:windows SENSOR=1`); public builds do not contain
-it. Go: build tag `sensormonitor` (`sensormonitor_on.go` registers it via
-`extensions.go`). Frontend: `$sensormonitor` resolves to
-`frontend/src/sensormonitor/` or to the empty `frontend/src/sensormonitor-off/`
-by `frontend/.variant` (`frontend/vite.config.ts`). MarkSafe itself only
-offers generic hooks: File menu entries, settings sections, status bar
-entries, a watermark suggestion before a PDF and opening a tab. Details:
-`docs/SENSOR-MONITOR.md`.
+MarkSafePlus, our internal build, adds a connection to the MLC Sensor Monitor. It is built in only with `SENSOR=1` (for example `task build:windows SENSOR=1`) and needs the private submodule `frontend/src/sensormonitor` (`git submodule update --init frontend/src/sensormonitor`, access to our NAS required). A public clone leaves that folder empty and builds the standard variant as usual; do not clone with `--recurse-submodules`.
+
+Go: build tag `sensormonitor` (`sensormonitor_on.go` registers it via `extensions.go`). Frontend: `$sensormonitor` resolves to the module or to the empty `frontend/src/sensormonitor-off/` by `frontend/.variant` (`frontend/vite.config.ts`). MarkSafe itself only offers generic hooks: File menu entries, settings sections, status bar entries, a watermark suggestion before a PDF and opening a tab.
 
 ## Version
 

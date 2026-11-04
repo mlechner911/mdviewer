@@ -1,0 +1,3 @@
+[submodule "frontend/src/sensormonitor"]
+	path = frontend/src/sensormonitor
+	url = mlc@nas.fritz.box:/volume1/homes/mlc/repositories/marksafe-sensormonitor.git

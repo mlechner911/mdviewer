@@ -1,5 +1,5 @@
-// "$sensormonitor" in the standard build: the module is not built in (see
-// ../sensormonitor/index.ts and ../../vite.config.ts).
+// "$sensormonitor" in the standard build: the module, a private submodule
+// at ../sensormonitor, is not built in (see ../../vite.config.ts).
 import type { Component } from 'svelte';
 
 export const Extension: Component<any> | null = null;

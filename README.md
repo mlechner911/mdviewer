@@ -25,10 +25,6 @@ MarkSafe is more than just a viewer; it's a secure, native environment for readi
 - **Real-time Rendering**: Instant preview as you type.
 - **Browser Mode**: Open the current document's directory in a standalone window — recursive tree, fuzzy full-text search (`Ctrl+K`), validated intra-doc links, directory indexes, and the same theme as the main window.
 
-**Optional module** (not in the public builds):
-
-- **MLC Sensor Monitor**: open SOPs and forms from the Sensor Monitor, save changes as drafts and see whether a file matches the approved version. See **[docs/SENSOR-MONITOR.md](./docs/SENSOR-MONITOR.md)**.
-
 ## 🛡️ Security First
 
 MarkSafe introduces a **Sandboxed Resource Model** to protect you from malicious markdown files:
@@ -62,9 +58,8 @@ Download the latest version for your platform from the **[Releases](https://gith
 
 MIT License - Copyright (c) 2026 Michael Lechner
 
-Exceptions:
+Exception:
 
-- **Sensor Monitor module** (`sensormonitor/`, `sensormonitor_on.go`, `frontend/src/sensormonitor/`): [Elastic License 2.0](./sensormonitor/LICENSE). It is built in only with `SENSOR=1`. Public builds contain none of it and are MIT only.
 - **MLC PDF toolkit `mlcdoc`**, shipped with the installers: its own license files, installed next to it (`licenses/mlcdoc`).
 
 ---

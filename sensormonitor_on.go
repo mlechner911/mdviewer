@@ -1,15 +1,11 @@
 //go:build sensormonitor
 
-// SPDX-License-Identifier: Elastic-2.0
-// Copyright (c) 2026 Michael Lechner. Part of the optional Sensor Monitor
-// module, licensed under the Elastic License 2.0: see sensormonitor/LICENSE.
-
 package main
 
 // Built in with the tag "sensormonitor" (task … SENSOR=1): the connection
-// to the MLC Sensor Monitor (package sensormonitor).
+// to the MLC Sensor Monitor, the private submodule frontend/src/sensormonitor.
 
-import "marksafe/sensormonitor"
+import sensormonitor "marksafe/frontend/src/sensormonitor/backend"
 
 func init() {
 	extensionFactories = append(extensionFactories, func(version string) extension {
