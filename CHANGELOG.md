@@ -5,7 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Security
-- The bundled PDF toolkit is mlcdoc 0.19.0: mlcmd2pdf 3.28.2 with upstream md2pdf 3.4.2 (updated `zip`, `rustls-webpki`, `webpki-roots`, `pulldown-cmark`) and PdfCraft 0.18.1 with its fixes.
+- The bundled PDF toolkit is mlcdoc 0.19.1: mlcmd2pdf 3.28.3 with upstream md2pdf 3.4.2 (updated `zip`, `rustls-webpki`, `webpki-roots`, `pulldown-cmark`) and PdfCraft 0.18.1 with its fixes.
 
 ### Added
 - MarkSafePlus: **File › Sensor Monitor › Values from Event…** fills the form being filled in with the values of a chosen event, if the form belongs to it. MarkSafe itself gains a general hook for this, the same path as "Load values…" (T-MARKS-20261028-04).
@@ -15,6 +15,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 - The Sensor Monitor module moved out of this repository into a private submodule (`frontend/src/sensormonitor`). Public clones and builds are unaffected; `SENSOR=1` needs the submodule. `sensormonitor_on.go`, the only part left here, only registers it.
 
 ### Fixed
+- PDF: a numbered list counted `1. 1. 1.` as soon as an item had a second paragraph, a code block, a table or a quote; the block now stays under its item. An item's text stays before a block that follows it directly, and a list keeps its start number (`5.`).
 - Sensor Monitor module: saving unchanged text no longer says it matches the approved version (it may match the waiting draft). Dates in Postgres format from the server also show correctly where the web view is stricter (macOS).
 
 ## [1.9.2] – 2026-11-04
