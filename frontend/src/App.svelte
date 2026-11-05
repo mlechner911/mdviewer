@@ -1164,21 +1164,20 @@
           title="{$t('menuItalic')} (Ctrl+I)"
         >I</button>
         <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
-        <button 
-          onclick={() => prefixSelection('# ')} 
-          class="px-1.5 h-6 flex items-center justify-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
-          title={$t('formatH1')}
-        >H1</button>
-        <button 
-          onclick={() => prefixSelection('## ')} 
-          class="px-1.5 h-6 flex items-center justify-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
-          title={$t('formatH2')}
-        >H2</button>
-        <button 
-          onclick={() => prefixSelection('### ')} 
-          class="px-1.5 h-6 flex items-center justify-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}" 
-          title={$t('formatH3')}
-        >H3</button>
+        <details class="mlc-menu relative shrink-0">
+          <summary
+            class="list-none cursor-pointer px-1.5 h-6 flex items-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 {buttonClass}"
+            title={$t('formatHeadings')}
+          >H ▾</summary>
+          <div class="fixed z-50 mt-1 py-1 min-w-40 rounded border shadow-lg text-xs {toolbarClass}">
+            {#each [1, 2, 3] as level}
+              <button
+                class="w-full text-left px-3 py-1 flex items-center gap-3 hover:bg-black/10 dark:hover:bg-white/10"
+                onclick={(e) => { prefixSelection('#'.repeat(level) + ' '); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
+              ><span class="font-bold w-5">H{level}</span><span>{$t('formatH' + level)}</span></button>
+            {/each}
+          </div>
+        </details>
         <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
         <button 
           onclick={() => wrapSelection('\n```\n', '\n```\n')} 
