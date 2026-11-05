@@ -197,6 +197,56 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   mlcdoc in the layout file (`mlcext.LayoutYAML`), next to the page header
   with id and version.
 
+### Field names with a dot and schemas
+
+> **Not released yet.** `mlcmd2pdf` still rejects a name with a dot, so such a
+> document produces no PDF until that is done (T-MD2PD-20261105-01).
+
+A dot decides what a field name means:
+
+- `[@#datum ____]` has no dot: the author's own field, free as before.
+- `[@#probe.name ____]` has a dot: a property that a schema describes. Only
+  lowercase words are allowed, made of letters, digits and `_`, each starting
+  with a letter.
+
+In the PDF the dots become real field levels, so a PDF viewer shows the full
+name `probe.name`. A field cannot also be a level: `#a` next to `#a.b` in one
+document is an error.
+
+A document names one schema in its front matter, by ID or written out:
+
+```yaml
+schema: https://schemas.example/forms/mlcmonit/v1
+```
+
+```yaml
+schema:
+  fields:
+    patient.name: { type: text, description: { de: Name, en: Name } }
+    patient.birth_date: { type: date }
+```
+
+- **The ID is not a download address.** It is an https address ending in a
+  version, and opening a document never fetches it. MarkSafe looks in the folder
+  `schemas` in its configuration folder (`*.yaml`, `*.yml`), then asks a module
+  build. A schema file needs an `id`.
+- **A published schema only grows.** A signature covers the ID, not the content
+  of the schema. What breaks gets a new version, and the old one stays.
+- **A schema describes and grants nothing.** Whoever fills in values decides
+  from their own list.
+
+The format is defined in
+[`mlcext/mlc-field-schema.schema.json`](../mlcext/mlc-field-schema.schema.json).
+
+| Situation | Severity | Code |
+| --- | --- | --- |
+| Property not in the schema, with a suggestion | error | `field-unknown-property` |
+| Invalid `schema:` key or invalid schema in the document | error | `frontmatter-schema` |
+| `#a` next to `#a.b` | error | `field-name-prefix` |
+| Document names no schema, property unchecked | info | `field-no-schema` |
+| Schema not known here, properties unchecked | info | `schema-unknown` |
+| Old name the schema lists under `legacy` | info | `field-legacy` |
+
 ## Tooling
 
 - **Checker** ([`mlcext`](../mlcext), Go module

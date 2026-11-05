@@ -1,8 +1,10 @@
 package mlcext
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -141,5 +143,46 @@ func TestAnalyzeUsesSchemas(t *testing.T) {
 	}
 	if a := Analyze(md); !found(a, "schema-unknown") {
 		t.Errorf("without schemas: %+v", a.Diagnostics)
+	}
+}
+
+// The JSON schema is for editors; the Go code decides. They must not drift.
+func TestJSONSchemaMatchesCode(t *testing.T) {
+	data, err := os.ReadFile("mlc-field-schema.schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Properties struct {
+			ID struct {
+				Pattern string `json:"pattern"`
+			} `json:"id"`
+			Fields struct {
+				PatternProperties map[string]any `json:"patternProperties"`
+			} `json:"fields"`
+		} `json:"properties"`
+		Defs struct {
+			Field struct {
+				Properties map[string]json.RawMessage `json:"properties"`
+			} `json:"field"`
+		} `json:"$defs"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Properties.ID.Pattern != schemaID.String() {
+		t.Errorf("id pattern: %q, code %q", doc.Properties.ID.Pattern, schemaID)
+	}
+	if _, ok := doc.Properties.Fields.PatternProperties[propertyName.String()]; !ok {
+		t.Errorf("property pattern differs from %q: %v", propertyName, doc.Properties.Fields.PatternProperties)
+	}
+	var kind struct {
+		Enum []string `json:"enum"`
+	}
+	if err := json.Unmarshal(doc.Defs.Field.Properties["type"], &kind); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(kind.Enum, SchemaFieldTypes) {
+		t.Errorf("types: %v, code %v", kind.Enum, SchemaFieldTypes)
 	}
 }

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mlechner911/mdviewer/main/mlcext/mlc-field-schema.schema.json",
+  "title": "MarkSafe field schema",
+  "description": "The properties a form may use: field names with a dot. The same format is used in a schema file and in the document's front matter under `schema:`. A schema file needs an `id`; a schema written in a document does not. Beyond this file, no property may be a level of another (`a.b` next to `a.b.c`), and every `legacy` target must be a property.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fields"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^https://[^/\\s]+(/\\S*)?/v[0-9]+$",
+      "description": "Identifier ending in a version. It is never fetched. A published schema only grows; what breaks gets a new version."
+    },
+    "title": { "$ref": "#/$defs/text" },
+    "fields": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$": { "$ref": "#/$defs/field" }
+      }
+    },
+    "legacy": {
+      "type": "object",
+      "description": "Old names without a dot and the property replacing them. They stay valid, since released documents are signed.",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+      }
+    }
+  },
+  "$defs": {
+    "text": {
+      "type": "object",
+      "description": "Text per language code, e.g. `de`, `en`.",
+      "additionalProperties": { "type": "string" }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["text", "date", "time", "datetime", "number"]
+        },
+        "requires": {
+          "type": "string",
+          "description": "When a value exists. The words belong to the schema's owner."
+        },
+        "description": { "$ref": "#/$defs/text" },
+        "fixed": {
+          "type": "boolean",
+          "description": "The person filling in the form cannot change the value."
+        },
+        "right": {
+          "type": "string",
+          "description": "What the filling tool requires for a value."
+        }
+      }
+    }
+  }
+}
