@@ -2,6 +2,25 @@
 
 All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- **Field names with a dot** (`[@#probe.calibration.last]`) for properties a **field schema** describes. The schema comes from the front matter (`schema:` with an `https://schemas.mlcgo.eu/…/v1` address or inline) and is looked up in the folder **File › Open Field Schemas Folder**. The editor completes property names, shows their description on hover, warns about unknown properties and about a date pattern on a text field; the preview can show the schema's example values. In the PDF a dotted name becomes real form levels (`probe` › `calibration` › `last`).
+- **Filling in a form** shows the document's text, images and links between the fields, so the instructions stay in view. Field names under the inputs can be hidden.
+- **Images:** 🖼 in the toolbar inserts a file, a picture from the clipboard or a dropped file, as a reference or embedded in the document. Saving a filled-in form and Save As offer to embed the document's images, also **File › Embed Images…**; a signed document is never changed. The editor shows an embedded image as `🖼 logo.png ‹44,9 KB›`.
+
+### Changed
+- The toolbar menu **MLC ▾** is replaced by a button for the form field dialog, shown for every document. With a schema, the old prefill names are no longer suggested; existing ones stay valid.
+- The bundled PDF toolkit is mlcdoc 0.20.0 (mlcmd2pdf 3.29.0).
+
+### Fixed
+- Cancelling a file dialog on Windows no longer reports an error.
+- Filling in: an edit in the Markdown now replaces what a field of the mask still showed, and images resolve from the form's folder in the mask, the preview and the PDF.
+- `Kontrolle: [@#k] Ort: [@#o]`: "Ort" labels only the following field, not the check box.
+
+### Known limitations
+- WebP images stay references: the PDF skips them when embedded. A reference works only inside the document's folder.
+
 ## [1.10.0] – 2026-11-04
 
 ### Security
