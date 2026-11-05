@@ -94,10 +94,38 @@ func TestKeysMatchBinary(t *testing.T) { // needs mlcdoc
 	}
 	var got []string
 	for _, k := range strings.Split(list, ",") {
-		got = append(got, strings.Trim(strings.TrimSpace(k), "`"))
+		k = strings.Trim(strings.TrimSpace(k), "`")
+		// mlcdoc 0.20.0 knows "schema", older ones reject it. It changes nothing
+		// in the PDF, so Prepare removes it and every version since MinVersion
+		// keeps working.
+		if k != "schema" {
+			got = append(got, k)
+		}
 	}
 	if !slices.Equal(got, Keys) {
 		t.Errorf("Keys out of date for %s:\nbinary: %v\nKeys:   %v", c.Version(), got, Keys)
+	}
+}
+
+// A dotted field name becomes real PDF levels. Needs mlcdoc 0.20.0.
+func TestRenderPDFDottedFieldNames(t *testing.T) {
+	c := client(t)
+	if compare(semver(c.Version()), semver("mlcdoc 0.20.0")) < 0 {
+		t.Skipf("%s rejects dots in field names", c.Version())
+	}
+	md := "---\ndoc_id: FB-1\nversion: \"1.0\"\ntitle: T\nschema: https://schemas.mlcgo.eu/forms/test/v1\n---\n" +
+		"Name: [@#patient.name ____________]\n\nVorname: [@#patient.vorname ____________]\n"
+	doc, err := c.RenderPDF(context.Background(), Request{Markdown: md})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"/T(patient)", "/T(name)", "/T(vorname)"} {
+		if !bytes.Contains(doc.PDF, []byte(want)) {
+			t.Errorf("PDF has no %s", want)
+		}
+	}
+	if bytes.Contains(doc.PDF, []byte("/T(patient.name)")) {
+		t.Error("PDF has the dotted name as one level")
 	}
 }
 
@@ -108,6 +136,7 @@ func TestPrepare(t *testing.T) {
 		{"---\ntitle: X\ntags: [a, b]\naliases: [c]\n---\n# A\n", "---\ntitle: X\n---\n# A\n", "tags,aliases"},
 		{"---\nevent_kinds: [DEVIATION]\n---\n\n# A\n", "# A\n", ""}, // own keys: removed, not reported
 		{"---\ndoc_id: X\ntags: [a]\n---\n# A\n", "# A\n", "tags"},
+		{"---\nschema: https://schemas.mlcgo.eu/forms/test/v1\ntitle: X\n---\n# A\n", "---\ntitle: X\n---\n# A\n", ""}, // own key: older mlcdoc rejects it
 		{"---\ntitle: [kaputt\n---\n# A\n", "---\ntitle: [kaputt\n---\n# A\n", ""},
 		{"---\ndoc_id: SOP-QM-001\ntitle: K\n---\n# {{title}} {{doc_id}}\n<!--mlc-signature\nsha256: x\n-->\n", "---\ntitle: K\n---\n# K SOP-QM-001\n", ""},
 	} {
