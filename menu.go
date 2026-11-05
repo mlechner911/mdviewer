@@ -76,6 +76,9 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.Add(label(t, "menuSaveAs", "Save As...")).SetAccelerator("CmdOrCtrl+Shift+s").OnClick(func(*application.Context) {
 		a.MenuSaveAsFile()
 	})
+	fileMenu.Add(label(t, "menuEmbedImages", "Embed Images…")).OnClick(func(*application.Context) {
+		emit("menu-embed-images")
+	})
 	// PDF functions need mlcdoc; without it (e.g. the bare Linux binary)
 	// they are not offered at all.
 	hasPDF := a.MLCDocVersion() != ""

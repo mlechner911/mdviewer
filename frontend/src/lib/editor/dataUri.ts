@@ -1,5 +1,5 @@
 // Inline images as base64 (data: URLs) are shown shortened in the editor:
-// "data:image/png;base64,‹2,8 MB›". The text stays unchanged (copy, save,
+// "🖼 logo.png ‹2,8 MB›". The text stays unchanged (copy, save,
 // search see all of it); a click on the box shows it in full. Long base64
 // lines otherwise make the editor slow and the document unreadable.
 import { StateEffect, StateField, type Extension } from '@codemirror/state';
@@ -68,16 +68,17 @@ export interface DataUriLabels {
 
 export function dataUriFolding(labels: DataUriLabels): Extension {
   const decorator = new MatchDecorator({
-    regexp: /data:([a-zA-Z]+\/[a-zA-Z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)/g,
+    regexp: /data:([a-zA-Z]+\/[a-zA-Z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)(?:\s+"([^"\n]*)")?/g,
     decorate(add, from, _to, m, view) {
       const payload = m[2];
       if (payload.length < MIN_PAYLOAD) return;
-      const start = from + m[0].length - payload.length;
+      const start = from + m[0].indexOf(';base64,') + ';base64,'.length;
       if (view.state.field(expanded).has(start)) return;
       const type = (m[1] ?? '').split('/')[1]?.toUpperCase() ?? '';
       const bytes = Math.floor((payload.length * 3) / 4) - (payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0);
-      const label = `‹${[labels.image, type].filter(Boolean).join(' ')}, ${formatBytes(bytes, labels.locale)}›`;
-      add(start, start + payload.length, Decoration.replace({ widget: new PayloadWidget(start, label, labels.expandHint) }));
+      const size = formatBytes(bytes, labels.locale);
+      const label = m[3] ? `🖼 ${m[3]} ‹${size}›` : `🖼 ‹${[labels.image, type].filter(Boolean).join(' ')}, ${size}›`;
+      add(from, from + m[0].length, Decoration.replace({ widget: new PayloadWidget(start, label, labels.expandHint) }));
     },
   });
   const plugin = ViewPlugin.fromClass(

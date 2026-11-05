@@ -42,6 +42,11 @@ import {
   SetPDFPreviewNoImages,
   SetUnsavedChanges,
   CloseApp,
+  ChooseImage,
+  InspectImage,
+  ImageMarkdown,
+  PlanEmbedImages,
+  EmbedImages,
   MLCFormSchema,
   MLCFormLayout,
   MLCFillForm,
@@ -63,6 +68,7 @@ import type {
   FormRef as MLCFormRef,
 } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
 export type { MLCFormField, MLCFormBlock, MLCFormRef };
+export type { ImageChoice as MLCImageChoice, ImageSpec as MLCImageSpec, EmbedPlan as MLCEmbedPlan, EmbedResult as MLCEmbedResult } from '../../bindings/marksafe/models';
 import { get } from 'svelte/store';
 import { t } from '../i18n';
 
@@ -392,6 +398,29 @@ export async function closeApp(): Promise<void> {
 export async function mlcFormSchema(md: string): Promise<MLCFormField[]> {
   if (!isWailsReady()) return [];
   try { return ((await MLCFormSchema(md)) ?? []).filter((f): f is MLCFormField => !!f); } catch (err) { console.error('mlcFormSchema failed:', err); return []; }
+}
+
+/** Pick an image file; "" when cancelled. */
+export async function chooseImage(docPath: string): Promise<string> {
+  return (await ChooseImage(docPath)) ?? '';
+}
+/** Check an image file; throws with a message for the user. */
+export async function inspectImage(path: string, docPath: string) {
+  return await InspectImage(path, docPath);
+}
+/** The Markdown of an image from the dialog; throws with a message for the user. */
+export async function imageMarkdown(spec: { path: string; dataUri: string; alt: string; embed: boolean }, docPath: string): Promise<string> {
+  return await ImageMarkdown(spec, docPath);
+}
+/** What embedding would do. */
+export async function planEmbedImages(md: string, docPath: string) {
+  const p = await PlanEmbedImages(md, docPath);
+  return { images: p.images ?? [], bytes: p.bytes, missing: p.missing ?? [] };
+}
+/** md with its images embedded. */
+export async function embedImages(md: string, docPath: string) {
+  const r = await EmbedImages(md, docPath);
+  return { markdown: r.markdown, embedded: r.embedded ?? [], missing: r.missing ?? [] };
 }
 
 /** The form for the mask: fields with the text in between, in document order. */

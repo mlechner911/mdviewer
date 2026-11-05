@@ -27,7 +27,8 @@
     onmlcanalysis,
     tableFit,
     oncursortable,
-    oneditfield
+    oneditfield,
+    onpasteimage
   }: {
     value: string;
     theme: EffectiveTheme_t;
@@ -44,6 +45,8 @@
     oncursortable?: (line: number) => void;
     /** Open the field dialog for the form field at line, col (MLC extension). */
     oneditfield?: (line: number, col: number) => void;
+    /** A picture was pasted (data: URL); text on the clipboard goes first. */
+    onpasteimage?: (dataUri: string) => void;
   } = $props();
 
   // Right-click on a form field: edit it in the field dialog.
@@ -321,6 +324,17 @@
         languageCompartment.of(languageExtensions($locale)),
         EditorView.lineWrapping,
         EditorView.domEventHandlers({
+          paste(e) {
+            const data = e.clipboardData;
+            if (!onpasteimage || !data || data.getData('text/plain')) return false;
+            const file = Array.from(data.files).find((f) => f.type.startsWith('image/'));
+            if (!file) return false;
+            e.preventDefault();
+            const reader = new FileReader();
+            reader.onload = () => onpasteimage?.(String(reader.result));
+            reader.readAsDataURL(file);
+            return true;
+          },
           contextmenu(e, view) {
             const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
             if (pos == null) return false;

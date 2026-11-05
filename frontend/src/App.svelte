@@ -14,6 +14,7 @@
   import BrowseView from './shared/browse/BrowseView.svelte';
   import mlcMarkdownCSS from '../../packages/mlc-markdown/styles/mlc-markdown.css?raw';
   import { propertyOptions } from '../../packages/mlcext-editor/src/index';
+  import { formatBytes } from './lib/editor/dataUri';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
@@ -26,6 +27,7 @@
   import NewFromTemplateModal from './components/NewFromTemplateModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import FieldDialog from './components/FieldDialog.svelte';
+  import ImageDialog from './components/ImageDialog.svelte';
   // Optional Sensor Monitor module: the real one in the Sensor Monitor
   // variant, null in the standard build (vite.config.ts).
   import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts, license as sensorMonitorLicense, productName } from '$sensormonitor';
@@ -55,6 +57,8 @@
      *  and never replaces the form. sourcePath: the form's file, the
      *  starting point of relative images while filling it in. */
     form?: { ref: backend.MLCFormRef; hidden?: boolean; sourcePath?: string | null };
+    /** "Don't embed" was answered: not asked again for this tab. */
+    embedDeclined?: boolean;
   }
 
   // --- Svelte 5 Runes: State ---
@@ -165,6 +169,53 @@
     else editorComponent?.insertText(text);
   }
 
+  // Image dialog: a file chosen there or dropped, or a picture from the
+  // clipboard. Several dropped files come one after the other.
+  let imageDialog = $state<{ path: string | null; dataUri: string | null } | null>(null);
+  let imageQueue: string[] = [];
+  function nextImage() {
+    const path = imageQueue.shift();
+    imageDialog = path ? { path, dataUri: null } : null;
+  }
+  function applyImage(text: string) {
+    editorComponent?.insertText(text);
+    nextImage();
+  }
+
+  // Offers to embed the images of a tab. False when the user cancels saving.
+  // force: asked for by the menu, so it also says when there is nothing to do.
+  async function offerEmbed(index: number, force = false): Promise<boolean> {
+    const tab = tabs[index];
+    if (!tab || (tab.embedDeclined && !force)) return true;
+    const sig = await backend.mlcSignatureState(tab.content);
+    if (sig.signed && sig.intact) {
+      if (force) showToast($t('embedSigned'), 5000, 'error');
+      return true;
+    }
+    const docPath = imagePathOf(tab) ?? '';
+    const plan = await backend.planEmbedImages(tab.content, docPath);
+    const missing = plan.missing.length ? ' ' + $t('embedMissing', plan.missing.join(', ')) : '';
+    if (!plan.images.length) {
+      if (force) showToast(missing ? missing.trim() : $t('embedNone'), 6000, missing ? 'error' : 'info');
+      return true;
+    }
+    const message = $t('embedBody', String(plan.images.length), formatBytes(plan.bytes, $locale))
+      + (plan.bytes > 5 * 1024 * 1024 ? ' ' + $t('embedLarge') : '') + missing;
+    const answer = await new Promise<ConfirmAnswer>((resolve) => (confirmAsk = {
+      title: $t('embedTitle'), message, confirmLabel: $t('embedYes'), cancelLabel: $t('cancel'), altLabel: $t('embedNo'), resolve,
+    }));
+    if (answer === 'cancel') return false;
+    if (answer === 'alt') {
+      tab.embedDeclined = true;
+      return true;
+    }
+    const res = await backend.embedImages(tab.content, docPath);
+    tab.content = res.markdown;
+    tab.isDirty = true;
+    showToast($t('embedDone', String(res.embedded.length)), 3000, 'info');
+    return true;
+  }
+
   async function suggestedWatermark(): Promise<string> {
     return (await sensorMonitor?.suggestWatermark?.(pdfWatermark)) ?? '';
   }
@@ -250,6 +301,7 @@
       showToast($t('formFillByMissing'), 4000, 'error');
       return;
     }
+    if (!(await offerEmbed(index))) return;
     try {
       isSaving = true;
       const res = await backend.saveFilledForm(tab.content, tab.form.ref, filledBy.trim(), asNew ? '' : tab.path ?? '');
@@ -612,6 +664,7 @@
     if (!tab) return;
     // A filled-in form is saved as a record, under a new name.
     if (tab.form) return saveFilledForm(true);
+    if (!(await offerEmbed(activeTabIndex))) return;
 
     try {
       isSaving = true;
@@ -703,6 +756,11 @@
 
   // Markdown files dropped on the window.
   async function handleFileDrop(paths: string[]) {
+    const images = (paths ?? []).filter((p) => /\.(png|jpe?g|gif|webp|svg)$/i.test(p));
+    if (images.length && tabs[activeTabIndex] && !$isEditorHidden) {
+      imageQueue = images;
+      if (!imageDialog) nextImage();
+    }
     const files: { path: string; content: string }[] = [];
     for (const path of paths ?? []) {
       if (!/\.(md|markdown|mdown|mkd|mdx)$/i.test(path)) continue;
@@ -730,6 +788,7 @@
     'menu-open-file': handleOpen,
     'menu-open-recent': handleOpenRecent,
     'menu-save-file': () => saveOnce('save'),
+    'menu-embed-images': () => void offerEmbed(activeTabIndex, true),
     'menu-save-file-as': () => saveOnce('saveAs'),
     'menu-new-tab': addNewTab,
     'menu-new-from-template': () => (showTemplateModal = true),
@@ -972,6 +1031,17 @@
   theme={$effectiveAppTheme}
 />
 
+{#if imageDialog}
+  <ImageDialog
+    path={imageDialog.path}
+    dataUri={imageDialog.dataUri}
+    docPath={imagePathOf(tabs[activeTabIndex])}
+    preferEmbed={!!tabs[activeTabIndex]?.form}
+    theme={$effectiveAppTheme}
+    onApply={applyImage}
+    onClose={() => { imageQueue = []; imageDialog = null; }}
+  />
+{/if}
 {#if fieldDialog}
   <FieldDialog
     initial={fieldDialog.initial}
@@ -1208,6 +1278,12 @@
         {#if tabs[activeTabIndex]}
           <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
           <button
+            onclick={() => (imageDialog = { path: null, dataUri: null })}
+            class="w-6 h-6 flex items-center justify-center rounded text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}"
+            title={$t('imageInsert')}
+            aria-label={$t('imageInsert')}
+          >🖼</button>
+          <button
             onclick={insertField}
             class="px-1.5 h-6 flex items-center rounded text-[11px] font-bold font-mono whitespace-nowrap hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}"
             title="{$t('fieldDialogInsert')} (Ctrl+Shift+F)"
@@ -1228,6 +1304,7 @@
           tableFit={backend.mlcFitTable}
           oncursortable={(l: number) => (cursorTable = l)}
           oneditfield={editField}
+          onpasteimage={(dataUri: string) => (imageDialog = { path: null, dataUri })}
         />
       </div>
       {/if}
