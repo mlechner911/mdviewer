@@ -158,6 +158,9 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   check box; table header plus row, e.g. "Charge (1)"; for a field alone on
   its line the line above). The label is a guess from the text, so a mask
   shows the field name as well.
+  `mlcext.FormLayout` adds the document's text: fields and Markdown in
+  document order, without text a field already shows as its label and
+  without tables that hold fields, whose cells become labels.
 - **Signature fields** name **who** signs, not how: on paper today, later
   with the signing PIN in the Sensor Monitor or on a signature pad. Write
   one per person (`[@#sig_vernichtend Unterschrift: Vernichtende Person]`,

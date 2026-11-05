@@ -5,13 +5,20 @@
    * entry goes through mlcext.FillFields straight into the Markdown, so the
    * editor and the PDF preview always show the document as it will be
    * saved. The labels are guessed from the text around a field, so the
-   * field name stands next to them.
+   * field name stands next to them. The document's other text stands between
+   * the fields (mlcext.FormLayout): whoever fills in also reads the instructions.
    */
-  import { mlcFormSchema, mlcFillForm, type MLCFormField } from '../lib/backend';
-  import { t } from '../i18n';
+  import { MlcMarkdown } from 'mlc-markdown-svelte';
+  import { mlcFormLayout, mlcFillForm, type MLCFormBlock, type MLCFormField } from '../lib/backend';
+  import { locale, t } from '../i18n';
+  import { createMdHooks, highlight, loadKatex, resolveUrl } from '../lib/mdHooks';
 
-  let { md, filledBy, theme, onchange, onfilledby, onsave, onload, onclose }: {
+  let { md, filePath = null, imagesRevision = 0, filledBy, theme, onchange, onfilledby, onsave, onload, onclose, onsecurity, onopenfile }: {
     md: string;
+    /** Where relative images and links start from: for a new record its form. */
+    filePath?: string | null;
+    /** Raised when a folder or domain was allowed: images are checked again. */
+    imagesRevision?: number;
     /** The app theme (not the preview's): the mask is part of the app. */
     theme: 'dark' | 'light';
     filledBy: string;
@@ -20,9 +27,19 @@
     onsave: () => void;
     onload: () => void;
     onclose: () => void;
+    onsecurity?: (detail: { type: 'path' | 'url'; resource: string }) => void;
+    onopenfile?: (detail: { path: string }) => void;
   } = $props();
 
-  let fields = $state<MLCFormField[]>([]);
+  const { checkImages, onNavigate, loadMermaid } = createMdHooks({
+    filePath: () => filePath,
+    mermaid: () => ({ theme: theme === 'dark' ? 'dark' : 'default' }),
+    onsecurity: (detail) => onsecurity?.(detail),
+    onopenfile: (detail) => onopenfile?.(detail),
+  });
+
+  let blocks = $state<MLCFormBlock[]>([]);
+  const fields = $derived(blocks.flatMap((b) => (b.field ? [b.field] : [])));
   // What the user is typing in a field: a value is stored trimmed, so the
   // input keeps its own text while it has the focus.
   let drafts = $state<Record<string, string>>({});
@@ -30,18 +47,17 @@
 
   $effect(() => {
     const source = md;
+    // A change from outside the mask wins over what a field still holds.
+    if (source !== produced) drafts = {};
     clearTimeout(timer);
-    timer = setTimeout(async () => (fields = await mlcFormSchema(source)), 120);
+    timer = setTimeout(async () => (blocks = await mlcFormLayout(source)), 120);
   });
 
-  const sections = $derived.by(() => {
-    const out: { title: string; fields: MLCFormField[] }[] = [];
-    for (const f of fields) {
-      const title = f.section ?? '';
-      if (!out.length || out[out.length - 1].title !== title) out.push({ title, fields: [] });
-      out[out.length - 1].fields.push(f);
-    }
-    return out;
+  // Stable keys while typing: a field keeps its input and its focus.
+  const items = $derived.by(() => {
+    let texts = 0;
+    let n = 0;
+    return blocks.map((b) => (b.field ? { key: `f${n++}:${b.field.name}`, text: '', f: b.field as MLCFormField } : { key: `t${texts++}`, text: b.text ?? '', f: null }));
   });
   const missing = $derived(fields.filter((f) => f.kind !== 'signature' && f.kind !== 'check' && !f.value).length);
   const signatures = $derived(fields.filter((f) => f.kind === 'signature').length);
@@ -117,10 +133,13 @@
     {#if !fields.length}
       <p class="empty">{$t('formFillNone')}</p>
     {/if}
-    {#each sections as s (s.title + s.fields[0]?.name)}
-      <section>
-        {#if s.title}<h3>{s.title}</h3>{/if}
-        {#each s.fields as f, i (f.name + ':' + i)}
+    {#each items as item (item.key)}
+      {#if !item.f}
+        {#key imagesRevision}
+          <div class="text"><MlcMarkdown source={item.text} locale={$locale} {theme} docHeader={false} rawHtml="sanitize" {highlight} {resolveUrl} {onNavigate} {loadKatex} {loadMermaid} onRendered={checkImages} /></div>
+        {/key}
+      {:else}
+        {@const f = item.f}
           <div class="row" class:signature={f.kind === 'signature'}>
             {#if f.kind === 'check'}
               <label class="check">
@@ -154,8 +173,7 @@
             {/if}
             <span class="name" title={f.tooltip ?? ''}>{f.name}{#if f.prefill} · {$t('formFillPrefill')}{/if}</span>
           </div>
-        {/each}
-      </section>
+      {/if}
     {/each}
     {#if signatures}<p class="note">{$t('formFillSignatureNote')}</p>{/if}
   </div>
@@ -178,7 +196,7 @@
   .body { overflow-y: auto; padding: 0.75rem 1rem 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
   .by { display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px dashed color-mix(in srgb, currentColor 20%, transparent); }
   .by span { opacity: 0.75; white-space: nowrap; }
-  h3 { font-weight: 700; margin: 0.25rem 0 0.4rem; font-size: 13px; }
+  .text { font-size: 13px; }
   .row { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr; column-gap: 0.75rem; row-gap: 0.1rem; align-items: center; padding: 0.2rem 0; }
   .row .name { grid-column: 2; font-family: var(--mlc-md-font-mono, monospace); font-size: 10.5px; opacity: 0.45; }
   .label { opacity: 0.85; }

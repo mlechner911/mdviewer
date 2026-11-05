@@ -73,6 +73,11 @@ func FormSchema(md string) []FormField {
 				to = fields[i+1].Offset
 			}
 			before, after := labelText(md[from:f.Offset]), labelText(md[f.End:to])
+			// "Kontrolle: [@#k] Ort: [@#o ___]": the box has its label, "Ort" belongs
+			// to the next field. Without one, "[@#s] Sonstiges: [@#t ___]" labels the box.
+			if before != "" && to < lineEnd && strings.HasSuffix(strings.TrimSpace(md[f.End:to]), ":") {
+				after = ""
+			}
 			switch {
 			case f.Kind == SignatureField && f.Role != "":
 				ff.Label = f.Role
@@ -92,10 +97,110 @@ func FormSchema(md string) []FormField {
 	return out
 }
 
+// FormBlock is one part of a form in document order: text or a field.
+type FormBlock struct {
+	// Text is Markdown between fields, for reading.
+	Text string `json:"text,omitempty"`
+	// Field is nil for text.
+	Field *FormField `json:"field,omitempty"`
+}
+
+// FormLayout is the whole form for an input mask: the fields of FormSchema
+// with the document's text in between, so whoever fills it in also reads its
+// instructions. Text a field already shows as its label is left out; so are
+// tables with fields, whose cells become labels. Fill hints stay.
+func FormLayout(md string) []FormBlock {
+	md = ExpandVariables(RemoveSignature(md))
+	fields, _ := ExtractFields(md)
+	schema := FormSchema(md)
+	ls := strings.Split(md, "\n")
+	used := make([]bool, len(ls))
+	mark := func(i int) {
+		if i >= 0 && i < len(used) {
+			used[i] = true
+		}
+	}
+	leading, trailing := map[int]string{}, map[int]string{}
+	for i, f := range fields {
+		ff := schema[i]
+		endLine, _ := position(md, f.End)
+		for l := f.Line; l <= endLine; l++ {
+			mark(l - 1)
+		}
+		if isTableLine(ls[f.Line-1]) {
+			for k := f.Line - 2; k >= 0 && isTableLine(ls[k]); k-- {
+				mark(k)
+			}
+			for k := f.Line; k < len(ls) && isTableLine(ls[k]); k++ {
+				mark(k)
+			}
+			continue
+		}
+		mark(groupAboveAt(ls, f.Line))
+		lineStart := strings.LastIndexByte(md[:f.Offset], '\n') + 1
+		lineEnd := len(md)
+		if k := strings.IndexByte(md[f.End:], '\n'); k >= 0 {
+			lineEnd = f.End + k
+		}
+		first := i == 0 || fields[i-1].End <= lineStart
+		last := i+1 == len(fields) || fields[i+1].Offset >= lineEnd
+		before, after := labelText(md[lineStart:f.Offset]), labelText(md[f.End:lineEnd])
+		if first && before != "" && before != ff.Label && f.Kind != SignatureField {
+			leading[i] = strings.TrimSpace(reListMark.ReplaceAllString(reComment.ReplaceAllString(md[lineStart:f.Offset], ""), ""))
+		}
+		if last && after != "" && after != ff.Label {
+			trailing[i] = strings.TrimSpace(reComment.ReplaceAllString(md[f.End:lineEnd], ""))
+		}
+		if first && last && before == "" && after == "" && ff.Label != "" && ff.Label == lineAbove(ls, f.Line) {
+			if k := lineAboveAt(ls, f.Line); k >= 0 {
+				if _, heading := atxHeading(ls[k]); !heading {
+					mark(k)
+				}
+			}
+		}
+	}
+	_, _, bodyLine := splitFrontMatter(md)
+	out := []FormBlock{}
+	var text []string
+	addText := func(s string) {
+		s = strings.TrimSpace(reHiddenComment.ReplaceAllString(s, ""))
+		if s != "" {
+			out = append(out, FormBlock{Text: s})
+		}
+	}
+	flush := func() {
+		addText(strings.Join(text, "\n"))
+		text = nil
+	}
+	next := 0
+	for n := bodyLine; n < len(ls); n++ {
+		for next < len(fields) && fields[next].Line-1 == n {
+			flush()
+			if t := leading[next]; t != "" {
+				addText(t)
+			}
+			out = append(out, FormBlock{Field: &schema[next]})
+			if t := trailing[next]; t != "" {
+				addText(t)
+			}
+			next++
+		}
+		if !used[n] {
+			text = append(text, ls[n])
+		}
+	}
+	flush()
+	return out
+}
+
+func isTableLine(s string) bool { return strings.HasPrefix(strings.TrimSpace(s), "|") }
+
 var (
-	reComment  = regexp.MustCompile(`(?s)<!--.*?-->`)
-	reListMark = regexp.MustCompile(`^\s*(?:[*+-]|\d+[.)])\s+`)
-	reEmphasis = regexp.MustCompile(`\*\*|__|\*|` + "`")
+	// reHiddenComment: every comment but a fill hint "<!--! … -->".
+	reHiddenComment = regexp.MustCompile(`(?s)<!--(?:[^!].*?)?-->`)
+	reComment       = regexp.MustCompile(`(?s)<!--.*?-->`)
+	reListMark      = regexp.MustCompile(`^\s*(?:[*+-]|\d+[.)])\s+`)
+	reEmphasis      = regexp.MustCompile(`\*\*|__|\*|` + "`")
 )
 
 // labelText cleans a piece of a Markdown line into label text: comments,
@@ -153,38 +258,55 @@ func sectionAbove(ls []string, line int) string {
 // lineAbove is the nearest non-empty line above (a field alone on its line,
 // e.g. a multi-line text area under its question).
 func lineAbove(ls []string, line int) string {
+	i := lineAboveAt(ls, line)
+	if i < 0 {
+		return ""
+	}
+	if h, ok := atxHeading(ls[i]); ok {
+		return plainText(h)
+	}
+	return labelText(ls[i])
+}
+
+// lineAboveAt is the index of that line, -1 when there is none.
+func lineAboveAt(ls []string, line int) int {
 	for i := line - 2; i >= 0 && i < len(ls); i-- {
 		if t := labelText(ls[i]); t != "" && !strings.HasPrefix(t, "[@") {
-			if h, ok := atxHeading(ls[i]); ok {
-				return plainText(h)
-			}
-			return t
+			return i
 		}
 		if strings.TrimSpace(ls[i]) != "" {
-			return ""
+			return -1
 		}
 	}
-	return ""
+	return -1
 }
 
 // groupAbove: for an indented list item the parent item's text.
 func groupAbove(ls []string, line int) string {
+	if i := groupAboveAt(ls, line); i >= 0 {
+		return labelText(ls[i])
+	}
+	return ""
+}
+
+// groupAboveAt is the index of that parent item, -1 when there is none.
+func groupAboveAt(ls []string, line int) int {
 	if line-1 >= len(ls) || !reListMark.MatchString(ls[line-1]) {
-		return ""
+		return -1
 	}
 	indent := indentOf(ls[line-1])
 	if indent == 0 {
-		return ""
+		return -1
 	}
 	for i := line - 2; i >= 0; i-- {
 		if strings.TrimSpace(ls[i]) == "" {
 			continue
 		}
 		if indentOf(ls[i]) < indent && reListMark.MatchString(ls[i]) {
-			return labelText(ls[i])
+			return i
 		}
 	}
-	return ""
+	return -1
 }
 
 func indentOf(s string) int { return len(s) - len(strings.TrimLeft(s, " \t")) }

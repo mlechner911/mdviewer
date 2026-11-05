@@ -25,6 +25,12 @@ func (a *App) MLCFormSchema(md string) []mlcext.FormField {
 	return mlcext.FormSchema(md)
 }
 
+// MLCFormLayout is the form for the input mask: its fields with the text in
+// between.
+func (a *App) MLCFormLayout(md string) []mlcext.FormBlock {
+	return mlcext.FormLayout(md)
+}
+
 // MLCFillForm sets values (field name → value) into md.
 func (a *App) MLCFillForm(md string, values map[string]string) string {
 	out, _ := mlcext.FillFields(md, values)

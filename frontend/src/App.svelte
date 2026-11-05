@@ -52,8 +52,9 @@
     isDirty: boolean;
     /** Being filled in: the form it comes from (mlcext.FormRef). Stays
      *  when the mask is closed (hidden), so saving still writes a record
-     *  and never replaces the form. */
-    form?: { ref: backend.MLCFormRef; hidden?: boolean };
+     *  and never replaces the form. sourcePath: the form's file, the
+     *  starting point of relative images while filling it in. */
+    form?: { ref: backend.MLCFormRef; hidden?: boolean; sourcePath?: string | null };
   }
 
   // --- Svelte 5 Runes: State ---
@@ -186,6 +187,9 @@
     try { localStorage.setItem('marksafe_filled_by', name); } catch { /* private mode */ }
   }
   const canFill = $derived(!!mlcAnalysis?.fields?.length && (!tabs[activeTabIndex]?.form || !!tabs[activeTabIndex]?.form?.hidden));
+  // Relative images and links of a tab start from this file.
+  const imagePathOf = (tab: Tab | undefined) => tab?.form?.sourcePath ?? tab?.path ?? null;
+  let imagesRevision = $state(0);
   const filling = $derived(!!tabs[activeTabIndex]?.form && !tabs[activeTabIndex]?.form?.hidden);
 
   async function startFill() {
@@ -202,7 +206,7 @@
       tab.form = { ref };
     } else {
       const newTab = createNewTab(`${(tab.title || $t('untitled')).replace(/\.md$/, '')} – ${$t('formFillTab')}`, tab.content);
-      newTab.form = { ref };
+      newTab.form = { ref, sourcePath: tab.path };
       tabs = [...tabs, newTab];
       activeTabIndex = tabs.length - 1;
     }
@@ -328,6 +332,7 @@
       await backend.addURLToWhitelist(securityResource);
     }
     showSecurityModal = false;
+    imagesRevision++;
     debouncedUpdate(markdown, currentPreviewTheme.chromaStyle);
   }
 
@@ -459,7 +464,7 @@
   async function handleExportPdf() {
     const tab = tabs[activeTabIndex];
     if (!tab || !mlcdocVersion) return;
-    const res = await backend.exportPDF(tab.content, tab.path ?? '', await suggestedWatermark());
+    const res = await backend.exportPDF(tab.content, imagePathOf(tab) ?? '', await suggestedWatermark());
     if (res.error) {
       showPdfError(res);
       return;
@@ -671,7 +676,7 @@
     }
     const wm = await suggestedWatermark();
     showToast($t('printPreparing'), 2000, 'info');
-    const res = await backend.printPDF(tab.content, tab.path ?? '', wm);
+    const res = await backend.printPDF(tab.content, imagePathOf(tab) ?? '', wm);
     if (res.error) {
       showPdfError(res);
       return;
@@ -1330,11 +1335,13 @@
         {/if}
       </div>
       {#if showPdfPreview}
-        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={tabs[activeTabIndex]?.path} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
+        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={imagePathOf(tabs[activeTabIndex])} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
       {/if}
       {#if filling && !showPdfPreview}
         <FormFillPanel
           md={tabs[activeTabIndex].content}
+          filePath={imagePathOf(tabs[activeTabIndex])}
+          {imagesRevision}
           {filledBy}
           theme={$effectiveAppTheme}
           onchange={fillChanged}
@@ -1342,6 +1349,8 @@
           onsave={() => saveFilledForm()}
           onload={loadFillValues}
           onclose={() => { const f = tabs[activeTabIndex].form; if (f) f.hidden = true; }}
+          onsecurity={handleSecurityRequest}
+          onopenfile={handleOpenExternalMD}
         />
       {/if}
       <div class="flex flex-1 min-h-0 flex-col" class:hidden={showPdfPreview || filling}>
@@ -1350,7 +1359,8 @@
         source={markdown}
         theme={currentPreviewTheme} 
         fontSize={fontSize} 
-        currentFilePath={tabs[activeTabIndex]?.path}
+        currentFilePath={imagePathOf(tabs[activeTabIndex])}
+        {imagesRevision}
         analysis={mlcAnalysis}
         onsecurity_request={handleSecurityRequest}
         onopen_file={handleOpenExternalMD}

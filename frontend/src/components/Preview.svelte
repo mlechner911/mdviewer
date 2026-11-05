@@ -10,12 +10,11 @@
    */
   import 'katex/dist/katex.min.css';
   import 'mlc-markdown/styles.css';
-  import hljs from 'highlight.js/lib/common';
   import hljsLight from 'highlight.js/styles/github.css?raw';
   import hljsDark from 'highlight.js/styles/github-dark.css?raw';
   import { MlcMarkdown } from 'mlc-markdown-svelte';
   import DocInfoCard from './DocInfoCard.svelte';
-  import { BrowserOpenURL } from '../lib/wails';
+  import { createMdHooks, highlight, IMAGE_PLACEHOLDER, loadKatex, resolveUrl } from '../lib/mdHooks';
   import * as backend from '../lib/backend';
   import type { Theme } from '../themes';
   import { untrack } from 'svelte';
@@ -27,6 +26,7 @@
     theme,
     fontSize = 100,
     currentFilePath = null,
+    imagesRevision = 0,
     analysis = null,
     onsecurity_request,
     onopen_file,
@@ -37,6 +37,8 @@
     theme: Theme;
     fontSize?: number;
     currentFilePath?: string | null;
+    /** Raised when a folder or domain was allowed: images are checked again. */
+    imagesRevision?: number;
     /** mlcext.Analyze of the document: the "how the Sensor Monitor reads it" card. */
     analysis?: backend.MLCAnalysis | null;
     onsecurity_request?: (detail: { type: 'path' | 'url'; resource: string }) => void;
@@ -68,86 +70,12 @@
   });
   const shownSource = $derived(showExamples && filled?.from === source ? filled.text : source);
 
-  // Images are not requested before the whitelist check: the renderer gets a
-  // transparent placeholder carrying the real URL, checked after rendering.
-  const PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  const MARK = '#mlc-img=';
-  function resolveUrl(url: string, kind: 'link' | 'image'): string {
-    if (kind === 'image' && url && !url.startsWith('data:')) return PIXEL + MARK + encodeURIComponent(url);
-    return url;
-  }
-
-  function highlight(code: string, lang: string): string | undefined {
-    if (!hljs.getLanguage(lang)) return undefined;
-    return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
-  }
-
-  async function baseDir(): Promise<string> {
-    return currentFilePath ? await backend.getParentDir(currentFilePath) : '';
-  }
-
-  async function checkImages(root: HTMLElement) {
-    for (const img of Array.from(root.querySelectorAll('img'))) {
-      const src = img.getAttribute('src') ?? '';
-      const at = src.indexOf(MARK);
-      if (!src.startsWith(PIXEL) || at < 0) continue;
-      const url = decodeURIComponent(src.slice(at + MARK.length));
-      img.dataset.src = url;
-      if (/^https?:\/\//i.test(url)) {
-        try {
-          const domain = new URL(url).hostname;
-          if (await backend.isURLAllowed(domain)) img.src = url;
-          else {
-            img.style.display = 'none';
-            onsecurity_request?.({ type: 'url', resource: domain });
-          }
-        } catch {
-          img.style.display = 'none';
-        }
-        continue;
-      }
-      const abs = await backend.resolveRelativePath(await baseDir(), url);
-      if (await backend.isPathAllowed(abs)) {
-        img.src = '/local-resource?path=' + encodeURIComponent(abs); // the handler checks again
-      } else {
-        img.style.display = 'none';
-        onsecurity_request?.({ type: 'path', resource: await backend.getParentDir(abs) });
-      }
-    }
-  }
-
-  function onNavigate({ href, kind }: { href: string; kind: string }): boolean {
-    if (kind === 'anchor') return false; // the component jumps inside the document
-    if (kind === 'external') {
-      void (async () => {
-        try {
-          const domain = new URL(href).hostname;
-          if (await backend.isURLAllowed(domain)) BrowserOpenURL(href);
-          else onsecurity_request?.({ type: 'url', resource: domain });
-        } catch {
-          console.error('Invalid URL clicked:', href);
-        }
-      })();
-      return true;
-    }
-    if (/\.(md|markdown)(#.*)?$/i.test(href)) {
-      void (async () => {
-        const abs = await backend.resolveRelativePath(await baseDir(), href.replace(/#.*$/, ''));
-        if (await backend.isPathAllowed(abs)) onopen_file?.({ path: abs });
-        else onsecurity_request?.({ type: 'path', resource: await backend.getParentDir(abs) });
-      })();
-      return true;
-    }
-    console.warn('Direct file links are blocked for security. Use Markdown files or explicit whitelist.');
-    return true;
-  }
-
-  async function loadMermaid() {
-    const { default: mermaid } = await import('mermaid');
-    mermaid.initialize({ startOnLoad: false, theme: theme.mermaidTheme, themeVariables: theme.mermaidVars || {}, fontFamily: 'inherit' });
-    return mermaid;
-  }
-  const loadKatex = async () => (await import('katex')).default;
+  const { checkImages, onNavigate, loadMermaid } = createMdHooks({
+    filePath: () => currentFilePath,
+    mermaid: () => ({ theme: theme.mermaidTheme, themeVariables: theme.mermaidVars || {} }),
+    onsecurity: (detail) => onsecurity_request?.(detail),
+    onopenfile: (detail) => onopen_file?.(detail),
+  });
 
   async function rendered(el: HTMLElement) {
     await checkImages(el);
@@ -179,7 +107,7 @@
     clone.querySelectorAll('.mlc-docinfo, .mlc-md-frontmatter').forEach((el) => el.remove());
     for (const img of Array.from(clone.querySelectorAll('img'))) {
       const src = img.getAttribute('src') ?? '';
-      if (src.startsWith(PIXEL)) {
+      if (src.startsWith(IMAGE_PLACEHOLDER)) {
         img.remove(); // not allowed, never loaded
         continue;
       }
@@ -214,7 +142,7 @@
   </label>
 {/if}
 <div bind:this={container} class="preview-container flex-1 overflow-auto p-8 {theme.containerClass}" style="--preview-scale: {fontSize / 100};">
-  {#key theme.id}
+  {#key `${theme.id}:${imagesRevision}`}
     <MlcMarkdown
       bind:this={view}
       source={shownSource}

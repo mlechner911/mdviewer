@@ -43,6 +43,7 @@ import {
   SetUnsavedChanges,
   CloseApp,
   MLCFormSchema,
+  MLCFormLayout,
   MLCFillForm,
   MLCFormRefOf,
   SaveFilledForm,
@@ -58,9 +59,10 @@ import type {
   FieldSpec as MLCFieldSpec,
   FieldEdit as MLCFieldEdit,
   FormField as MLCFormField,
+  FormBlock as MLCFormBlock,
   FormRef as MLCFormRef,
 } from '../../bindings/github.com/mlechner911/mdviewer/mlcext/models';
-export type { MLCFormField, MLCFormRef };
+export type { MLCFormField, MLCFormBlock, MLCFormRef };
 import { get } from 'svelte/store';
 import { t } from '../i18n';
 
@@ -390,6 +392,12 @@ export async function closeApp(): Promise<void> {
 export async function mlcFormSchema(md: string): Promise<MLCFormField[]> {
   if (!isWailsReady()) return [];
   try { return ((await MLCFormSchema(md)) ?? []).filter((f): f is MLCFormField => !!f); } catch (err) { console.error('mlcFormSchema failed:', err); return []; }
+}
+
+/** The form for the mask: fields with the text in between, in document order. */
+export async function mlcFormLayout(md: string): Promise<MLCFormBlock[]> {
+  if (!isWailsReady()) return [];
+  try { return ((await MLCFormLayout(md)) ?? []).filter((b): b is MLCFormBlock => !!b); } catch (err) { console.error('mlcFormLayout failed:', err); return []; }
 }
 
 /** md with values (field name → value) set into its fields. */
