@@ -24,7 +24,7 @@ new EditorView({ extensions: [basicSetup, markdown(), mlcExtension(source, { onA
 | Diagnostics with line, gutter and message | `Analyze().diagnostics` |
 | Completion after `[@` and `<!--`: fields, date/time, multi-line, prefill fields | `Analyze().lists.prefill` |
 | Completion in the front matter: keys and `event_kinds` | `Analyze().lists` |
-| `mlcSnippets()` and `insertMlcSnippet()` for host menus | the same building blocks |
+| `mlcSnippets()` and `insertMlcSnippet()` for host menus; with a schema without the old prefill names | the same building blocks |
 | Completion of a schema's properties after `[@#`, description on hover (`locale` option picks the language) | `Analyze().schema` |
 | `fieldHint({ label, title, onEdit })`: a box after the field under the cursor, double click on a field; `onEdit(line, col)` opens the host's field dialog. `fieldAt()`, `fieldAtCursor()` | field positions from `Analyze` |
 

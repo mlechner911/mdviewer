@@ -272,8 +272,11 @@ export interface MlcSnippet {
 const LINE = '______________________________';
 const AREA = '_'.repeat(70);
 
-/** Building blocks of the extension, for completion and host menus. */
-export function mlcSnippets(lists?: MlcLists | null): MlcSnippet[] {
+/**
+ * Building blocks of the extension, for completion and host menus. With a
+ * schema, new fields take its names, so the old prefill names are left out.
+ */
+export function mlcSnippets(lists?: MlcLists | null, schema?: MlcSchema | null): MlcSnippet[] {
   const base: MlcSnippet[] = [
     { label: 'Textfeld', detail: '[@#name ____]', template: `[@#\${name} ${LINE}]` },
     { label: 'Ankreuzfeld', detail: '[@#name]', template: '[@#${name}]' },
@@ -288,12 +291,8 @@ export function mlcSnippets(lists?: MlcLists | null): MlcSnippet[] {
     { label: 'Feld bis Seitenende', detail: 'wächst bis zum Seitenende', template: `[@#\${name} ${AREA}\n…]` },
     { label: 'Tooltip am Feld', detail: '<!--* … -->', template: '<!--* ${Hinweis} -->' },
     { label: 'Ausfülltipp', detail: '<!--! … --> (nur in der App)', template: '<!--! ${So arbeiten Sie mit diesem Blatt.} -->' },
-    {
-      label: 'Dokumentkopf',
-      detail: 'Titel, Dokumenten-ID, Version',
-      template: '# ${Titel}\n\n**Dokumenten-ID:** ${SOP-XX-001} | **Version:** ${1.0}\n\n---\n\n${}',
-    },
   ];
+  if (schema) return base;
   const prefill = (lists?.prefill ?? []).map((p) => ({
     label: `Vorausgefüllt: ${p.name}`,
     detail: p.label,
@@ -391,7 +390,7 @@ function mlcCompletions(context: CompletionContext, locale: string): CompletionR
   const comment = context.matchBefore(/<!--?[-*!]?/);
   const match = field ?? comment;
   if (!match) return null;
-  const options: Completion[] = mlcSnippets(lists)
+  const options: Completion[] = mlcSnippets(lists, analysis?.schema)
     .filter((s) => (field ? s.template.startsWith('[@') : s.template.startsWith('<!--')))
     .map((s) => ({
       label: s.label,

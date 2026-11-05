@@ -13,7 +13,7 @@
   import Preview from './components/Preview.svelte';
   import BrowseView from './shared/browse/BrowseView.svelte';
   import mlcMarkdownCSS from '../../packages/mlc-markdown/styles/mlc-markdown.css?raw';
-  import { mlcSnippets, propertyOptions } from '../../packages/mlcext-editor/src/index';
+  import { propertyOptions } from '../../packages/mlcext-editor/src/index';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
@@ -442,7 +442,6 @@
     { kind: 'WARNING', label: 'alertWarning', color: '#9a6700' },
     { kind: 'CAUTION', label: 'alertCaution', color: '#cf222e' },
   ] as const;
-  const mlcMenu = $derived(mlcAnalysis?.detected ? mlcSnippets(mlcAnalysis.lists) : []);
 
   // PDF preview rendered by mlcdoc, offered for MLC documents when mlcdoc
   // is installed. The HTML preview stays mounted (export, scroll sync).
@@ -972,7 +971,9 @@
   <FieldDialog
     initial={fieldDialog.initial}
     usedNames={(mlcAnalysis?.fields ?? []).filter((f) => f.named).map((f) => f.name)}
-    prefill={(mlcAnalysis?.lists?.prefill ?? []).map((p) => ({ name: p.name, label: p.label }))}
+    prefill={(mlcAnalysis?.lists?.prefill ?? [])
+      .filter((p) => !mlcAnalysis?.schema || p.name === fieldDialog?.initial?.name) // with a schema: only the old name being edited
+      .map((p) => ({ name: p.name, label: p.label }))}
     properties={propertyOptions(mlcAnalysis?.schema, [], '', $locale).map((o) => ({ name: o.name, label: o.detail }))}
     theme={$effectiveAppTheme}
     onApply={applyField}
@@ -1199,28 +1200,14 @@
             {/each}
           </div>
         </details>
-        {#if mlcMenu.length > 0}
-          <!-- MLC Markdown Extension (non-standard): only for MLC documents -->
+        {#if tabs[activeTabIndex]}
           <div class="h-4 w-px {dividerClass} shrink-0 mx-0.5"></div>
-          <details class="mlc-menu relative shrink-0">
-            <summary
-              class="list-none cursor-pointer px-1.5 h-6 flex items-center rounded text-[11px] font-bold hover:bg-black/10 dark:hover:bg-white/10 {buttonClass}"
-              title={$t('mlcInsertTitle')}
-            >MLC ▾</summary>
-            <div class="fixed z-50 mt-1 py-1 min-w-56 rounded border shadow-lg text-xs {toolbarClass}">
-              <button
-                class="w-full text-left px-3 py-1 flex justify-between gap-4 font-semibold hover:bg-black/10 dark:hover:bg-white/10"
-                onclick={(e) => { insertField(); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
-              ><span>{$t('fieldInsert')}</span><span class="opacity-60 font-mono">Ctrl+Shift+F</span></button>
-              <div class="my-1 border-t opacity-30"></div>
-              {#each mlcMenu as item}
-                <button
-                  class="w-full text-left px-3 py-1 flex justify-between gap-4 hover:bg-black/10 dark:hover:bg-white/10"
-                  onclick={(e) => { editorComponent?.insertSnippet(item); (e.currentTarget as HTMLElement).closest('details')?.removeAttribute('open'); }}
-                ><span>{item.label}</span><span class="opacity-60 font-mono">{item.detail}</span></button>
-              {/each}
-            </div>
-          </details>
+          <button
+            onclick={insertField}
+            class="px-1.5 h-6 flex items-center rounded text-[11px] font-bold font-mono whitespace-nowrap hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0 {buttonClass}"
+            title="{$t('fieldDialogInsert')} (Ctrl+Shift+F)"
+            aria-label={$t('fieldDialogInsert')}
+          >[_]</button>
         {/if}
       </div>
       {#if tabs[activeTabIndex]}

@@ -10,7 +10,7 @@
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
   import { tags as t } from '@lezer/highlight';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import { mlcExtension, insertMlcSnippet, fieldHint, fieldAt, toPos, type MlcSource, type MlcAnalysis, type MlcSnippet } from '../../../packages/mlcext-editor/src/index';
+  import { mlcExtension, fieldHint, fieldAt, toPos, type MlcSource, type MlcAnalysis } from '../../../packages/mlcext-editor/src/index';
   import { editorPhrases } from '../lib/editor/phrases';
   import { dataUriFolding } from '../lib/editor/dataUri';
   import { tableHint, tableAtCursor } from '../lib/editor/tableHint';
@@ -295,13 +295,6 @@
     const cursor = first.from + insert.length;
     editorView.dispatch({ changes: { from: first.from, to: last.to, insert }, selection: { anchor: cursor } });
     editorView.focus();
-  }
-
-  /**
-   * insertSnippet inserts a building block of the MLC Markdown Extension.
-   */
-  export function insertSnippet(snippet: MlcSnippet) {
-    if (editorView) insertMlcSnippet(editorView, snippet);
   }
 
   /**
