@@ -43,6 +43,9 @@ type Options struct {
 	// the network: bundled, a local file or the signed-in server. Nil: no
 	// schema is known by name.
 	Schemas func(id string) (FieldSchema, bool)
+	// PDF: the caller can make a PDF, so HTML that does not appear in it as
+	// written is noted (html-pdf-missing, html-pdf-plain).
+	PDF bool
 }
 
 // Check validates md against the MLC Markdown Extension and returns the
@@ -117,6 +120,9 @@ func Check(md string, opt Options) []Diagnostic {
 	checkComments(md, add)
 	checkGlyphs(md, add)
 	checkTables(md, add)
+	if opt.PDF {
+		ds = append(ds, htmlDiagnostics(md)...)
+	}
 
 	slices.SortStableFunc(ds, func(a, b Diagnostic) int {
 		if a.Line != b.Line {

@@ -38,6 +38,22 @@ Automatic heading anchors follow GitHub: lower case, space becomes `-`, letters
 (umlauts included), digits, `-` and `_` are kept, and duplicates get `-1`,
 `-2` and so on. `## Größe & Übersicht` gives `#größe--übersicht`.
 
+### HTML in Markdown
+
+The HTML preview and the HTML export show HTML as GitHub does. The PDF does
+not render HTML, so `mlcext.PDFHTML` prepares it on the way to the PDF:
+
+| In the Markdown | In the PDF |
+| --- | --- |
+| `<b>`, `<strong>`, `<i>`, `<em>`, `<s>`, `<del>`, `<strike>`, `<code>` | as `**…**`, `*…*`, `~~…~~`, `` `…` `` |
+| `<br>`, `<a href>`, comments, a page break `<div style="page-break-after: always"></div>` | as written |
+| other inline tags: `<u>`, `<sub>`, `<sup>`, `<mark>`, `<span>`, `<font>` … | the text without the tag |
+| HTML blocks (`<div>`, `<p>`, `<details>`, `<table>` …) and `<img>` | left out |
+
+Where a PDF can be made, the editor notes the last two rows in every
+document (`html-pdf-plain` info, `html-pdf-missing` warning; `Options.PDF`),
+and the export lists them among its warnings.
+
 ## 3. MLC Markdown Extension (MLC-specific)
 
 These features exist only for MLC documents. The PDF toolkit `mlcdoc` defines

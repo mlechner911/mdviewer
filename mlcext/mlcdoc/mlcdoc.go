@@ -30,6 +30,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mlechner911/mdviewer/mlcext"
 )
 
 // MinVersion is the oldest mlcdoc this package works with.
@@ -150,6 +152,7 @@ type Pages struct {
 // RenderPDF renders req to a PDF.
 func (c *Client) RenderPDF(ctx context.Context, req Request) (*Document, error) {
 	md, ignored := Prepare(req.Markdown)
+	md, notes := mlcext.PDFHTML(md)
 	md, files := imageFiles(md, req)
 	var doc *Document
 	err := c.run(ctx, md, req.BaseDir, req.Layout, files, []map[string]any{
@@ -159,7 +162,7 @@ func (c *Client) RenderPDF(ctx context.Context, req Request) (*Document, error) 
 		if err != nil {
 			return err
 		}
-		doc = &Document{PDF: b, Pages: info.Pages, Title: info.Title, Renderer: info.Renderer, Warnings: info.Warnings, Ignored: ignored}
+		doc = &Document{PDF: b, Pages: info.Pages, Title: info.Title, Renderer: info.Renderer, Warnings: append(notes, info.Warnings...), Ignored: ignored}
 		return nil
 	})
 	return doc, err
@@ -171,6 +174,7 @@ func (c *Client) RenderPages(ctx context.Context, req Request, dpi int) (*Pages,
 		dpi = 110
 	}
 	md, ignored := Prepare(req.Markdown)
+	md, notes := mlcext.PDFHTML(md)
 	md, files := imageFiles(md, req)
 	var pages *Pages
 	err := c.run(ctx, md, req.BaseDir, req.Layout, files, []map[string]any{
@@ -180,7 +184,7 @@ func (c *Client) RenderPages(ctx context.Context, req Request, dpi int) (*Pages,
 	}, func(dir string, info stepInfo) error {
 		files, _ := filepath.Glob(filepath.Join(dir, "pages", "*.png"))
 		sort.Slice(files, func(i, j int) bool { return pageNo(files[i]) < pageNo(files[j]) })
-		pages = &Pages{Warnings: withoutPlaceholderWarnings(info.Warnings), Ignored: ignored}
+		pages = &Pages{Warnings: append(notes, withoutPlaceholderWarnings(info.Warnings)...), Ignored: ignored}
 		for _, f := range files {
 			b, err := os.ReadFile(f)
 			if err != nil {

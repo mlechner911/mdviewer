@@ -33,6 +33,7 @@ if mlcext.Detect(md) {
 | `EventKinds`, `PrefillFields`, `FrontMatterKeys` | The shared lists; change them here first |
 | `HeadingSlug` | Heading anchors exactly like GitHub and mlcmd2pdf |
 | `Analyze` | Everything an editor needs: findings, field and hint positions, lists |
+| `PDFHTML`, `Options.PDF`, `AnalyzeWith` | HTML on the way to the PDF: Markdown where it has a form, else text or left out; `Options.PDF` adds the editor's notes (`html-pdf-*`), also outside the extension |
 | `FieldSchema`, `ParseFieldSchema`, `LoadSchemas`, `DocumentSchema`, `AnalyzeWithSchemas` | Schemas for field names with a dot (format: `mlc-field-schema.schema.json`); `Options.Schemas` finds one by its ID, never over the network |
 | `LoadTemplates`, `TemplateInfo.Render`, `SuggestRefNo` | Templates as data: schema (`*.json`, see `mlc-template.schema.json`) + Markdown body; built-in starting set, overridable from a folder |
 | `StoredText` | The text as it is rendered: signature removed, variables replaced, upload front matter removed |

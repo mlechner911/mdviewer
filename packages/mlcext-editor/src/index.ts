@@ -193,7 +193,7 @@ export function isBeingTyped(doc: Text, d: MlcDiagnostic, cursor: number): boole
 }
 
 function toCMDiagnostics(doc: Text, a: MlcAnalysis, source: MlcSource | undefined, cursor: number): CMDiagnostic[] {
-  if (!a.detected) return [];
+  // Outside the extension the host may still send notes (HTML in the PDF).
   return (a.diagnostics ?? []).filter((d) => !isBeingTyped(doc, d, cursor)).map((d) => {
     const label = source?.fix && d.code ? source.fixLabel?.(d.code) : null;
     const actions = label

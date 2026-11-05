@@ -80,19 +80,28 @@ func SharedLists() Lists {
 // Analyze checks md like Check with RequireHeader and also returns the
 // positions of fields and hints. For plain Markdown (Detect is false) it
 // returns only the lists.
-func Analyze(md string) Analysis { return AnalyzeWithSchemas(md, nil) }
+func Analyze(md string) Analysis { return AnalyzeWith(md, Options{}) }
 
 // AnalyzeWithSchemas is Analyze for a caller that can find schemas by their
 // ID (Options.Schemas).
 func AnalyzeWithSchemas(md string, schemas func(id string) (FieldSchema, bool)) Analysis {
+	return AnalyzeWith(md, Options{Schemas: schemas})
+}
+
+// AnalyzeWith is Analyze with the caller's Schemas and PDF options. With PDF,
+// a document outside the extension gets the HTML notes too.
+func AnalyzeWith(md string, opt Options) Analysis {
 	a := Analysis{Diagnostics: []Diagnostic{}, Fields: []FieldSpan{}, Hints: []HintSpan{}, Lists: SharedLists()}
 	if !Detect(md) {
+		if opt.PDF {
+			a.Diagnostics = append(a.Diagnostics, htmlDiagnostics(md)...)
+		}
 		return a
 	}
 	a.Detected = true
-	a.Diagnostics = Check(md, Options{RequireHeader: true, Schemas: schemas})
+	a.Diagnostics = Check(md, Options{RequireHeader: true, Schemas: opt.Schemas, PDF: opt.PDF})
 	if ref := DocumentSchema(md); ref.Err == nil {
-		a.Schema = resolveSchema(ref, schemas)
+		a.Schema = resolveSchema(ref, opt.Schemas)
 	}
 	s := &scanner{src: md, section: "feld"}
 	s.run()
