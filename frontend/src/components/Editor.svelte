@@ -395,7 +395,7 @@
           })]
         : []),
       editorPhrases(loc),
-      dataUriFolding({ image: $tr('dataUriImage'), expandHint: $tr('dataUriExpand'), locale: loc }),
+      dataUriFolding({ image: $tr('dataUriImage'), expandHint: $tr('dataUriExpand'), collapseHint: $tr('dataUriCollapse'), locale: loc }),
     ];
   }
   $effect(() => {
