@@ -7,11 +7,15 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ### Added
 - **Field names with a dot** (`[@#probe.calibration.last]`) for properties a **field schema** describes. The schema comes from the front matter (`schema:` with an `https://schemas.mlcgo.eu/…/v1` address or inline) and is looked up in the folder **File › Open Field Schemas Folder**. The editor completes property names, shows their description on hover, warns about unknown properties and about a date pattern on a text field; the preview can show the schema's example values. In the PDF a dotted name becomes real form levels (`probe` › `calibration` › `last`).
 - **Filling in a form** shows the document's text, images and links between the fields, so the instructions stay in view. Field names under the inputs can be hidden.
-- **Images:** 🖼 in the toolbar inserts a file, a picture from the clipboard or a dropped file, as a reference or embedded in the document. Saving a filled-in form and Save As offer to embed the document's images, also **File › Embed Images…**; a signed document is never changed. The editor shows an embedded image as `🖼 logo.png ‹44,9 KB›`.
+- **HTML in the PDF:** `<b>`, `<strong>`, `<i>`, `<em>`, `<s>`, `<del>` and `<code>` print as bold, italic, struck through and code; other inline tags print their text. HTML blocks such as `<div>` or `<details>` do not appear in the PDF; the editor marks them when a PDF can be made, and the export says so. The HTML preview and export stay as on GitHub.
+- **Installer:** the last page offers to run MarkSafe.
+- **Start page** shows what MarkSafe can do, with an embedded logo.
+- **Images:** 🖼 in the toolbar inserts a file, a picture from the clipboard or a dropped file, as a reference or embedded in the document. Saving a filled-in form and Save As offer to embed the document's images, also **File › Embed Images…**; a signed document is never changed. The editor shows an embedded image as `🖼 logo.png ‹44,9 KB›`; a click shows the data, ▲ or Esc shortens it again.
 
 ### Changed
 - The toolbar menu **MLC ▾** is replaced by a button for the form field dialog, shown for every document. With a schema, the old prefill names are no longer suggested; existing ones stay valid.
 - The bundled PDF toolkit is mlcdoc 0.20.0 (mlcmd2pdf 3.29.0).
+- The toolbar groups the headings H1 to H3 in a menu **H ▾**.
 
 ### Fixed
 - Cancelling a file dialog on Windows no longer reports an error.
