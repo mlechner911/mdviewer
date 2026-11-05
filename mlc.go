@@ -11,7 +11,7 @@ import "github.com/mlechner911/mdviewer/mlcext"
 // hint positions and the shared lists, for the editor and the status bar.
 // Plain Markdown gets an empty analysis (Detected false).
 func (a *App) AnalyzeMLC(md string) mlcext.Analysis {
-	return mlcext.Analyze(md)
+	return mlcext.AnalyzeWithSchemas(md, a.findSchema)
 }
 
 // MLCMoveHeader is the quick fix "Kopf ins Front Matter übernehmen": the

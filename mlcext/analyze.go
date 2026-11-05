@@ -77,13 +77,17 @@ func SharedLists() Lists {
 // Analyze checks md like Check with RequireHeader and also returns the
 // positions of fields and hints. For plain Markdown (Detect is false) it
 // returns only the lists.
-func Analyze(md string) Analysis {
+func Analyze(md string) Analysis { return AnalyzeWithSchemas(md, nil) }
+
+// AnalyzeWithSchemas is Analyze for a caller that can find schemas by their
+// ID (Options.Schemas).
+func AnalyzeWithSchemas(md string, schemas func(id string) (FieldSchema, bool)) Analysis {
 	a := Analysis{Diagnostics: []Diagnostic{}, Fields: []FieldSpan{}, Hints: []HintSpan{}, Lists: SharedLists()}
 	if !Detect(md) {
 		return a
 	}
 	a.Detected = true
-	a.Diagnostics = Check(md, Options{RequireHeader: true})
+	a.Diagnostics = Check(md, Options{RequireHeader: true, Schemas: schemas})
 	s := &scanner{src: md, section: "feld"}
 	s.run()
 	fm, _ := ParseFrontMatter(md)

@@ -1,6 +1,8 @@
 package mlcext
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -91,5 +93,53 @@ func TestInvalidSchemas(t *testing.T) {
 func TestNoSchemaNoFindings(t *testing.T) {
 	if got := schemaCodes("[@#eigen ____]\n", Options{}); len(got) != 0 {
 		t.Errorf("got %v", got)
+	}
+}
+
+func TestLoadSchemas(t *testing.T) {
+	dir := t.TempDir()
+	const good = "id: https://schemas.example/forms/x/v1\nfields:\n  a.b: { type: text }\n"
+	for name, content := range map[string]string{
+		"a.yaml":    good,
+		"b.yml":     good,                                      // same ID
+		"c.yaml":    "fields:\n  a.b: { type: text }\n",        // no ID
+		"d.yaml":    "id: https://x.example/f/v1\nfields: [ a", // broken
+		"notes.txt": "ignored",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, errs := LoadSchemas(dir)
+	if _, ok := got["https://schemas.example/forms/x/v1"]; !ok || len(got) != 1 {
+		t.Errorf("schemas: %v", got)
+	}
+	if len(errs) != 3 {
+		t.Errorf("want 3 problems, got %v", errs)
+	}
+	if got, errs := LoadSchemas(filepath.Join(dir, "missing")); len(got) != 0 || errs != nil {
+		t.Errorf("missing folder: %v %v", got, errs)
+	}
+}
+
+func TestAnalyzeUsesSchemas(t *testing.T) {
+	const id = "https://schemas.example/forms/x/v1"
+	md := "---\ndoc_id: FB-1\nversion: \"1\"\nschema: " + id + "\n---\n[@#a.typo ____]\n"
+	resolve := func(string) (FieldSchema, bool) {
+		return FieldSchema{ID: id, Fields: map[string]SchemaField{"a.b": {Type: "text"}}}, true
+	}
+	found := func(a Analysis, code string) bool {
+		for _, d := range a.Diagnostics {
+			if d.Code == code {
+				return true
+			}
+		}
+		return false
+	}
+	if a := AnalyzeWithSchemas(md, resolve); !found(a, "field-unknown-property") {
+		t.Errorf("with schemas: %+v", a.Diagnostics)
+	}
+	if a := Analyze(md); !found(a, "schema-unknown") {
+		t.Errorf("without schemas: %+v", a.Diagnostics)
 	}
 }

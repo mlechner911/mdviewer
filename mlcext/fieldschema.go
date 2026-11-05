@@ -3,6 +3,9 @@ package mlcext
 import (
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -84,6 +87,45 @@ func (s FieldSchema) Validate() error {
 		}
 	}
 	return nil
+}
+
+// LoadSchemas reads the schema files (*.yaml, *.yml) of dir by their ID, in
+// name order. A missing folder is no error. A bad file, one without an ID or
+// a second file with the same ID is left out and reported; the others still
+// count.
+func LoadSchemas(dir string) (map[string]FieldSchema, []error) {
+	out := map[string]FieldSchema{}
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return out, nil
+	}
+	if err != nil {
+		return out, []error{fmt.Errorf("schemas lesen: %w", err)}
+	}
+	var errs []error
+	for _, e := range entries {
+		ext := strings.ToLower(filepath.Ext(e.Name()))
+		if e.IsDir() || (ext != ".yaml" && ext != ".yml") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", e.Name(), err))
+			continue
+		}
+		s, err := ParseFieldSchema(data)
+		switch _, seen := out[s.ID]; {
+		case err != nil:
+			errs = append(errs, fmt.Errorf("%s: %w", e.Name(), err))
+		case s.ID == "":
+			errs = append(errs, fmt.Errorf("%s: Die Datei hat keine `id`.", e.Name()))
+		case seen:
+			errs = append(errs, fmt.Errorf("%s: Die Kennung %s gibt es schon in einer anderen Datei.", e.Name(), s.ID))
+		default:
+			out[s.ID] = s
+		}
+	}
+	return out, errs
 }
 
 func (s FieldSchema) names() []string { return sortedKeys(s.Fields) }
