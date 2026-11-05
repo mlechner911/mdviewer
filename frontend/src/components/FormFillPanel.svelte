@@ -45,6 +45,15 @@
   let drafts = $state<Record<string, string>>({});
   let timer: ReturnType<typeof setTimeout>;
 
+  // The field names under the inputs help whoever writes the form, not
+  // whoever fills it in. Remembered for this computer.
+  const NAMES_KEY = 'marksafe_fill_hide_names';
+  let hideNames = $state((() => { try { return localStorage.getItem(NAMES_KEY) === '1'; } catch { return false; } })());
+  function setHideNames(hide: boolean) {
+    hideNames = hide;
+    try { localStorage.setItem(NAMES_KEY, hide ? '1' : '0'); } catch { /* private mode */ }
+  }
+
   $effect(() => {
     const source = md;
     // A change from outside the mask wins over what a field still holds.
@@ -121,6 +130,10 @@
     <span class="title">{$t('formFillTitle')}</span>
     <span class="count">{fields.length} {$t('formFillFields')}{#if missing} · {missing} {$t('formFillEmpty')}{/if}</span>
     <div class="spacer"></div>
+    <label class="names" title={$t('formFillNamesHint')}>
+      <input type="checkbox" checked={!hideNames} onchange={(e) => setHideNames(!e.currentTarget.checked)} />
+      <span>{$t('formFillNames')}</span>
+    </label>
     <button onclick={onload} title={$t('formFillLoadHint')}>{$t('formFillLoad')}</button>
     <button class="primary" onclick={onsave} title={$t('formFillSaveHint')}>{$t('formFillSave')}</button>
     <button onclick={onclose} title={$t('formFillCloseHint')} aria-label={$t('formFillCloseHint')}>✕</button>
@@ -140,7 +153,7 @@
         {/key}
       {:else}
         {@const f = item.f}
-          <div class="row" class:signature={f.kind === 'signature'}>
+          <div class="row" class:signature={f.kind === 'signature'} title={f.tooltip ?? ''}>
             {#if f.kind === 'check'}
               <label class="check">
                 <input type="checkbox" checked={f.value === 'x'} onchange={(e) => set(f.name, e.currentTarget.checked ? 'x' : '')} />
@@ -171,7 +184,11 @@
                 <input id="ff-{f.name}" value={shown(f)} placeholder={f.pattern ?? ''} maxlength={f.pattern ? [...f.pattern].length : undefined} oninput={(e) => typed(f.name, e.currentTarget.value)} onblur={() => done(f.name)} autocomplete="off" />
               {/if}
             {/if}
-            <span class="name" title={f.tooltip ?? ''}>{f.name}{#if f.prefill} · {$t('formFillPrefill')}{/if}</span>
+            {#if !hideNames}
+              <span class="name">{f.name}{#if f.prefill} · {$t('formFillPrefill')}{/if}</span>
+            {:else if f.prefill}
+              <span class="name">{$t('formFillPrefill')}</span>
+            {/if}
           </div>
       {/if}
     {/each}
@@ -190,6 +207,7 @@
   .title { font-weight: 700; }
   .count { opacity: 0.6; font-size: 12px; }
   .spacer { flex: 1; }
+  .names { display: flex; align-items: center; gap: 0.3rem; font-size: 12px; opacity: 0.8; white-space: nowrap; }
   button { padding: 0.15rem 0.6rem; border-radius: 4px; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); font-size: 12px; }
   button:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
   button.primary { background: #c94c35; border-color: #c94c35; color: white; }
