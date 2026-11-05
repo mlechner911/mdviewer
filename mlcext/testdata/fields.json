@@ -356,6 +356,93 @@
   },
   {
     "markdown": "[@#a.b ___]",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "a.b",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 3,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@#probe.calibration.last TT.MM.JJJJ] [@#probe.name ____] [@#probe_name ____] [@#ok]\n",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "probe.calibration.last",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 10,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "TT.MM.JJJJ",
+        "tooltip": "TT.MM.JJJJ",
+        "line": 1,
+        "col": 1
+      },
+      {
+        "kind": "text",
+        "name": "probe.name",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 4,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 39
+      },
+      {
+        "kind": "text",
+        "name": "probe_name",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 4,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 59
+      },
+      {
+        "kind": "check",
+        "name": "ok",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 79
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@#A.b ___]",
     "fields": [],
     "errors": [
       {
@@ -364,6 +451,118 @@
         "col": 1
       }
     ]
+  },
+  {
+    "markdown": "[@#a..b ___]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-name",
+        "line": 1,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "[@#a-b.c ___]",
+    "fields": [],
+    "errors": [
+      {
+        "code": "field-name",
+        "line": 1,
+        "col": 1
+      }
+    ]
+  },
+  {
+    "markdown": "[@#a] [@#a.b]",
+    "fields": [
+      {
+        "kind": "check",
+        "name": "a",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": [
+      {
+        "code": "field-name-prefix",
+        "line": 1,
+        "col": 7
+      }
+    ]
+  },
+  {
+    "markdown": "[@#a.b.c] [@#a.b]",
+    "fields": [
+      {
+        "kind": "check",
+        "name": "a.b.c",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": [
+      {
+        "code": "field-name-prefix",
+        "line": 1,
+        "col": 11
+      }
+    ]
+  },
+  {
+    "markdown": "[@#ab] [@#a.b]",
+    "fields": [
+      {
+        "kind": "check",
+        "name": "ab",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
+      },
+      {
+        "kind": "check",
+        "name": "a.b",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 8
+      }
+    ],
+    "errors": []
   },
   {
     "markdown": "[@#x] [@#x]",

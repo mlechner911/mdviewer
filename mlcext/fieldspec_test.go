@@ -18,6 +18,7 @@ var fieldSpecCases = []struct {
 }{
 	{FieldSpec{Kind: "text", Name: "ort", Chars: 12}, "[@#ort ____________]", FieldSpec{}},
 	{FieldSpec{Kind: "text"}, "[@____________________]", FieldSpec{Kind: "text", Chars: 20}},
+	{FieldSpec{Kind: "text", Name: "probe.calibration.last", Chars: 4}, `[@#probe.calibration.last ____]`, FieldSpec{}},
 	{FieldSpec{Kind: "text", Name: "name", Chars: 20, Value: "Dr. Anna Berger"}, `[@#name __Dr\. Anna Berger___]`, FieldSpec{}},
 	{FieldSpec{Kind: "text", Name: "ort", Chars: 10, Tooltip: "Raum oder  Station"}, "[@#ort __________] <!--* Raum oder Station -->", FieldSpec{Kind: "text", Name: "ort", Chars: 10, Tooltip: "Raum oder Station"}},
 	{FieldSpec{Kind: "check", Name: "ok"}, "[@#ok]", FieldSpec{}},
@@ -75,7 +76,7 @@ func TestFormatFieldAndFieldAt(t *testing.T) {
 func TestFormatFieldErrors(t *testing.T) {
 	for _, s := range []FieldSpec{
 		{Kind: "text", Name: "größe"},
-		{Kind: "text", Name: "a.b"},
+		{Kind: "text", Name: "A.b"},
 		{Kind: "pattern", Name: "d"},
 		{Kind: "pattern", Name: "d", Pattern: "__.__"},
 		{Kind: "pattern", Name: "d", Pattern: "HH:MM", Value: "12:30:00"},

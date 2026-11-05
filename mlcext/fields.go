@@ -275,10 +275,8 @@ func (s *scanner) field() int {
 			end = len(after)
 		}
 		id := after[:end]
-		if id == "" || strings.IndexFunc(id, func(r rune) bool {
-			return !(unicode.IsLetter(r) || unicode.IsNumber(r) || r == '-' || r == '_')
-		}) >= 0 {
-			s.fail("field-name", fmt.Sprintf("Feldname %q: nur Buchstaben, Ziffern, `-` und `_` (kein `.`, er trennt Ebenen in PDF-Feldnamen).", id))
+		if !validFieldName(id) {
+			s.fail("field-name", fmt.Sprintf("Feldname %q: Buchstaben, Ziffern, `-` und `_`; mit Punkt nur kleingeschriebene Wörter wie `probe.name`.", id))
 			return n
 		}
 		name, named = id, true
@@ -315,6 +313,10 @@ func (s *scanner) field() int {
 	for _, other := range s.fields {
 		if other.Name == f.Name {
 			s.fail("field-duplicate", fmt.Sprintf("Feldname `%s` kommt zweimal vor.", f.Name))
+			return n
+		}
+		if isFieldPrefix(other.Name, f.Name) || isFieldPrefix(f.Name, other.Name) {
+			s.fail("field-name-prefix", fmt.Sprintf("Feldnamen `%s` und `%s`: Ein Name kann nicht zugleich Feld und Ebene eines anderen sein.", other.Name, f.Name))
 			return n
 		}
 	}

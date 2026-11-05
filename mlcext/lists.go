@@ -71,7 +71,7 @@ func IsPrefillField(name string) bool {
 // Sensor Monitor (approval, printing), never by the author. "meta" is the
 // block mlcdoc reserves for data it does not render; a filled-in form
 // carries its record data there (FormRecordSchema).
-var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds", "attachment_kind", "attachment_once", "profile", "meta"}
+var FrontMatterKeys = []string{"doc_id", "version", "title", "description", "event_kinds", "attachment_kind", "attachment_once", "profile", "meta", "schema"}
 
 // AttachmentOther is the built-in kind "other" (Sonstiges) of the Sensor
 // Monitor: it has no template, so no document may claim its code.

@@ -17,6 +17,14 @@
   {
     "spec": {
       "kind": "text",
+      "name": "probe.calibration.last",
+      "chars": 4
+    },
+    "text": "[@#probe.calibration.last ____]"
+  },
+  {
+    "spec": {
+      "kind": "text",
       "name": "name",
       "chars": 20,
       "value": "Dr. Anna Berger"

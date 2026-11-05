@@ -55,6 +55,13 @@ export interface Scan {
 const isSpace = (c: string) => /\s/u.test(c);
 const isLetterOrNumber = (c: string) => /[\p{L}\p{N}]/u.test(c);
 
+// With a dot: a property a schema describes (`probe.calibration.last`).
+// Without one: the author's own field, as open as it always was, because
+// released documents are signed. Same rule as validFieldName in mlcext.
+const PROPERTY_NAME = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
+const validFieldName = (id: string) =>
+  id.includes('.') ? PROPERTY_NAME.test(id) : id !== '' && !/[^\p{L}\p{N}_-]/u.test(id);
+
 /** Heading text → anchor, exactly like mlcmd2pdf heading_slug and GitHub. */
 export function headingSlug(text: string): string {
   let out = '';
@@ -198,7 +205,7 @@ class Scanner {
       let end = after.search(/\s/u);
       if (end < 0) end = after.length;
       const id = after.slice(0, end);
-      if (id === '' || /[^\p{L}\p{N}_-]/u.test(id)) {
+      if (!validFieldName(id)) {
         this.fail('field-name');
         return n;
       }
@@ -238,6 +245,10 @@ class Scanner {
     if (tooltip) f.tooltip = tooltip;
     if (this.fields.some((o) => o.name === f.name)) {
       this.fail('field-duplicate');
+      return n;
+    }
+    if (this.fields.some((o) => o.name.startsWith(`${f.name}.`) || f.name.startsWith(`${o.name}.`))) {
+      this.fail('field-name-prefix');
       return n;
     }
     [f.line, f.col] = position(this.src, start);

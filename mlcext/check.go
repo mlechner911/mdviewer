@@ -39,6 +39,10 @@ type Options struct {
 	// "**Gültig ab:**" an error (the approval sets it). Off for other
 	// Markdown.
 	RequireHeader bool
+	// Schemas finds a schema the document names by its ID, without touching
+	// the network: bundled, a local file or the signed-in server. Nil: no
+	// schema is known by name.
+	Schemas func(id string) (FieldSchema, bool)
 }
 
 // Check validates md against the MLC Markdown Extension and returns the
@@ -107,6 +111,8 @@ func Check(md string, opt Options) []Diagnostic {
 			add(f.Line, f.Col, Info, "field-prefill", fmt.Sprintf("Feld `%s` wird aus einem Ereignis vorausgefüllt.", f.Name))
 		}
 	}
+
+	checkSchema(md, keyLines["schema"], fields, opt, add)
 
 	checkComments(md, add)
 	checkGlyphs(md, add)

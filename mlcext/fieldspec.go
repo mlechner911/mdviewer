@@ -3,7 +3,9 @@ package mlcext
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -153,14 +155,43 @@ func hasSignatureKeyword(p string) bool {
 	return strings.HasPrefix(l, "unterschrift:") || strings.HasPrefix(l, "signature:")
 }
 
+// propertyName is a field name with a dot: a property a schema describes,
+// such as "probe.calibration.last". Without a dot a name is the author's own,
+// so a new property can never take over an existing field.
+var propertyName = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`)
+
+// validFieldName is the scanner's rule. Names without a dot stay as open as
+// they always were: released documents are signed.
+func validFieldName(id string) bool {
+	if strings.Contains(id, ".") {
+		return propertyName.MatchString(id)
+	}
+	return id != "" && strings.IndexFunc(id, func(r rune) bool {
+		return !(unicode.IsLetter(r) || unicode.IsNumber(r) || r == '-' || r == '_')
+	}) < 0
+}
+
+// isFieldPrefix reports whether name is a level of other ("probe" of
+// "probe.name"). A PDF field is either a value or a level, never both.
+func isFieldPrefix(name, other string) bool {
+	return strings.HasPrefix(other, name+".")
+}
+
 func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 // checkFieldName: letters, digits, "-" and "_" (ASCII, as FillFields and
-// PDF field names expect); empty for an unnamed field.
+// PDF field names expect), or a property as in propertyName; empty for an
+// unnamed field.
 func checkFieldName(name string) error {
+	if strings.Contains(name, ".") {
+		if !propertyName.MatchString(name) {
+			return fmt.Errorf("Feldname %q: mit Punkt nur kleingeschriebene Wörter wie `probe.name`.", name)
+		}
+		return nil
+	}
 	for _, r := range name {
 		if !(r == '-' || r == '_' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9') {
-			return fmt.Errorf("Feldname %q: nur Buchstaben a–z, Ziffern, `-` und `_` (keine Umlaute, kein Punkt).", name)
+			return fmt.Errorf("Feldname %q: nur Buchstaben a–z, Ziffern, `-` und `_` (keine Umlaute).", name)
 		}
 	}
 	return nil

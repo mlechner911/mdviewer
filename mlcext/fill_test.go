@@ -159,3 +159,10 @@ func TestSignatureFieldsAreNotFilled(t *testing.T) {
 		t.Fatalf("%+v", s)
 	}
 }
+
+func TestFillFindsPropertyNames(t *testing.T) {
+	out, set := FillFields("[@#probe.calibration.last ______________]\n", map[string]string{"probe.calibration.last": "Fühler A"})
+	if len(set) != 1 || !strings.Contains(out, "[@#probe.calibration.last __Fühler A__") {
+		t.Errorf("got %q, set %v", out, set)
+	}
+}
