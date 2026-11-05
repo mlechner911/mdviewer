@@ -69,7 +69,7 @@ func (a *App) SaveFilledForm(md string, form mlcext.FormRef, filledBy, path stri
 		if dir := a.documentRoot(); dir != "" {
 			dlg.SetDirectory(dir)
 		}
-		path, err = dlg.PromptForSingleSelection()
+		path, err = promptPath(dlg)
 		if err != nil || path == "" {
 			return nil, err
 		}
@@ -92,10 +92,9 @@ func (a *App) SaveFilledForm(md string, form mlcext.FormRef, filledBy, path stri
 // object of field name → value (text, number or true/false for a check box).
 // For testing a form and for prefilling it from another system.
 func (a *App) LoadFormValues() (map[string]string, error) {
-	path, err := application.Get().Dialog.OpenFile().
+	path, err := promptPath(application.Get().Dialog.OpenFile().
 		SetTitle("Werte für das Formblatt laden").
-		AddFilter("JSON (*.json)", "*.json").
-		PromptForSingleSelection()
+		AddFilter("JSON (*.json)", "*.json"))
 	if err != nil || path == "" {
 		return nil, err
 	}

@@ -174,17 +174,13 @@ func (a *App) GetStyleCSS(style string) string {
 
 // OpenFile opens a native file dialog and returns the path and content.
 func (a *App) OpenFile() (*FileResult, error) {
-	path, err := application.Get().Dialog.OpenFile().
+	path, err := promptPath(application.Get().Dialog.OpenFile().
 		SetTitle("Open Markdown File").
 		AddFilter("Markdown Files (*.md)", "*.md").
 		AddFilter("Text Files (*.txt)", "*.txt").
-		AddFilter("All Files (*.*)", "*.*").
-		PromptForSingleSelection()
-	if err != nil {
+		AddFilter("All Files (*.*)", "*.*"))
+	if err != nil || path == "" {
 		return nil, err
-	}
-	if path == "" {
-		return nil, fmt.Errorf("user cancelled selection")
 	}
 	absPath, _ := filepath.Abs(path)
 	content, err := filesystem.ReadFile(absPath)
@@ -247,7 +243,7 @@ func (a *App) SaveFileAs(defaultFilename string, content string) (string, error)
 	if startDir != "" {
 		dlg.SetDirectory(startDir)
 	}
-	selectedPath, err := dlg.PromptForSingleSelection()
+	selectedPath, err := promptPath(dlg)
 	if err != nil {
 		return "", err
 	}
@@ -270,11 +266,10 @@ func (a *App) ExportHTML(htmlContent string, cssContent string, md string) (stri
 	if s := mlcext.SuggestFileName(md, ".html", true); s != "" {
 		name = s
 	}
-	path, err := application.Get().Dialog.SaveFile().
+	path, err := promptPath(application.Get().Dialog.SaveFile().
 		SetMessage("Export to HTML").
 		SetFilename(name).
-		AddFilter("HTML Files (*.html)", "*.html").
-		PromptForSingleSelection()
+		AddFilter("HTML Files (*.html)", "*.html"))
 	if err != nil {
 		return "", err
 	}

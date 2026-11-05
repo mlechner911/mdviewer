@@ -243,7 +243,7 @@ func (a *App) ExportPDF(md string, docPath string, watermark string) PDFResult {
 	if dir != "" {
 		dlg.SetDirectory(dir)
 	}
-	path, err := dlg.PromptForSingleSelection()
+	path, err := promptPath(dlg)
 	if err != nil {
 		return pdfError(err)
 	}

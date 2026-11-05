@@ -38,7 +38,7 @@ func (a *App) ChooseDocumentRoot() (string, error) {
 	if cur := a.documentRoot(); cur != "" {
 		dlg.SetDirectory(cur)
 	}
-	dir, err := dlg.PromptForSingleSelection()
+	dir, err := promptPath(dlg)
 	if err != nil || dir == "" {
 		return "", err
 	}
