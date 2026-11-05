@@ -310,7 +310,8 @@ The format is defined in
     mlcdoc's placeholder "Abbildung nicht verfügbar". The PDF preview can
     show placeholders for all images (switch "Bilder" in its bar); export
     and print always embed them. Raw HTML `<img>` is not set by mlcdoc; use
-    `![Text](bild.png)`.
+    `![Text](bild.png)`. WebP works only as a file reference: mlcdoc skips
+    an embedded WebP `data:` URL, so MarkSafe never embeds WebP.
   - **Table column widths** follow mlcmd2pdf: a separator row up to 72
     characters sizes the columns by content; a longer one makes the table
     full width with shares in proportion to the dashes. The check warns
