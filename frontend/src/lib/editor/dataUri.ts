@@ -2,8 +2,8 @@
 // "🖼 logo.png ‹2,8 MB›". The text stays unchanged (copy, save,
 // search see all of it); a click on the box shows it in full. Long base64
 // lines otherwise make the editor slow and the document unreadable.
-import { StateEffect, StateField, type Extension } from '@codemirror/state';
-import { Decoration, EditorView, MatchDecorator, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from '@codemirror/view';
+import { RangeSetBuilder, StateEffect, StateField, type EditorState, type Extension } from '@codemirror/state';
+import { Decoration, EditorView, WidgetType, type DecorationSet } from '@codemirror/view';
 
 /** Only payloads this long are shortened (small icons stay readable). */
 const MIN_PAYLOAD = 120;
@@ -66,39 +66,49 @@ export interface DataUriLabels {
   locale: string;
 }
 
-export function dataUriFolding(labels: DataUriLabels): Extension {
-  const decorator = new MatchDecorator({
-    regexp: /data:([a-zA-Z]+\/[a-zA-Z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)(?:\s+"([^"\n]*)")?/g,
-    decorate(add, from, _to, m, view) {
+const PAYLOAD = /data:([a-zA-Z]+\/[a-zA-Z0-9.+-]+)?;base64,([A-Za-z0-9+/=]+)(?:[ \t]+"([^"\n]*)")?/g;
+
+/**
+ * The shortened payloads of the whole document. Computed for all of it, not
+ * for the visible part: a payload is one line of megabytes, and a search that
+ * starts in the middle of it (scrolling) would not find its "data:".
+ */
+function payloads(state: EditorState, labels: DataUriLabels): DecorationSet {
+  const opened = state.field(expanded);
+  const b = new RangeSetBuilder<Decoration>();
+  for (let n = 1; n <= state.doc.lines; n++) {
+    const line = state.doc.line(n);
+    if (line.length < MIN_PAYLOAD || !line.text.includes(';base64,')) continue;
+    for (const m of line.text.matchAll(PAYLOAD)) {
       const payload = m[2];
-      if (payload.length < MIN_PAYLOAD) return;
+      if (payload.length < MIN_PAYLOAD) continue;
+      const from = line.from + (m.index ?? 0);
       const start = from + m[0].indexOf(';base64,') + ';base64,'.length;
-      if (view.state.field(expanded).has(start)) return;
+      if (opened.has(start)) continue;
       const type = (m[1] ?? '').split('/')[1]?.toUpperCase() ?? '';
       const bytes = Math.floor((payload.length * 3) / 4) - (payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0);
       const size = formatBytes(bytes, labels.locale);
       const label = m[3] ? `🖼 ${m[3]} ‹${size}›` : `🖼 ‹${[labels.image, type].filter(Boolean).join(' ')}, ${size}›`;
-      add(from, from + m[0].length, Decoration.replace({ widget: new PayloadWidget(start, label, labels.expandHint) }));
+      b.add(from, from + m[0].length, Decoration.replace({ widget: new PayloadWidget(start, label, labels.expandHint) }));
+    }
+  }
+  return b.finish();
+}
+
+export function dataUriFolding(labels: DataUriLabels): Extension {
+  const shortened = StateField.define<DecorationSet>({
+    create: (state) => payloads(state, labels),
+    update(deco, tr) {
+      const opened = tr.effects.some((e) => e.is(expand));
+      return tr.docChanged || opened ? payloads(tr.state, labels) : deco;
     },
+    provide: (f) => EditorView.decorations.from(f),
   });
-  const plugin = ViewPlugin.fromClass(
-    class {
-      decorations: DecorationSet;
-      constructor(view: EditorView) {
-        this.decorations = decorator.createDeco(view);
-      }
-      update(u: ViewUpdate) {
-        const opened = u.transactions.some((tr) => tr.effects.some((e) => e.is(expand)));
-        this.decorations = opened ? decorator.createDeco(u.view) : decorator.updateDeco(u, this.decorations);
-      }
-    },
-    { decorations: (v) => v.decorations },
-  );
   return [
     expanded,
-    plugin,
+    shortened,
     // The cursor jumps over a shortened payload instead of into it.
-    EditorView.atomicRanges.of((view) => view.plugin(plugin)?.decorations ?? Decoration.none),
+    EditorView.atomicRanges.of((view) => view.state.field(shortened)),
     EditorView.baseTheme({
       '.cm-data-uri': {
         padding: '0 0.35em',
