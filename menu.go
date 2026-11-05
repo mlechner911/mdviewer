@@ -44,6 +44,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 	fileMenu.Add(label(t, "menuChooseDocumentRoot", "Choose Document Folder…")).OnClick(func(*application.Context) {
 		go func() { _, _ = a.ChooseDocumentRoot() }()
 	})
+	fileMenu.Add(label(t, "menuOpenSchemasFolder", "Open Field Schemas Folder")).OnClick(func(*application.Context) {
+		go func() {
+			if err := a.openSchemasFolder(); err != nil {
+				logger().Error("Cannot open the schema folder", "error", err)
+			}
+		}()
+	})
 	fileMenu.AddSeparator()
 	fileMenu.Add(t["menuOpen"]).SetAccelerator("CmdOrCtrl+o").OnClick(func(*application.Context) {
 		a.MenuOpenFile()

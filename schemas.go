@@ -5,9 +5,13 @@ package main
 // a request, and own installations often have no internet.
 
 import (
+	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/mlechner911/mdviewer/mlcext"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // schemaProvider is optional for an extension: a module build that knows
@@ -23,6 +27,19 @@ func (a *App) schemasDir() string {
 		return ""
 	}
 	return filepath.Join(a.config.Dir(), "schemas")
+}
+
+// openSchemasFolder shows the schema folder in the file manager, created if
+// needed.
+func (a *App) openSchemasFolder() error {
+	dir := a.schemasDir()
+	if dir == "" {
+		return errors.New("no schema folder")
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create schema folder: %w", err)
+	}
+	return application.Get().Env.OpenFileManager(dir, false)
 }
 
 // findSchema looks up id for the analysis. It runs only for a document that

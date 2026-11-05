@@ -144,6 +144,10 @@ func TestAnalyzeUsesSchemas(t *testing.T) {
 	if a := Analyze(md); !found(a, "schema-unknown") {
 		t.Errorf("without schemas: %+v", a.Diagnostics)
 	}
+	// Without doc_id and version the field alone makes it an MLC document.
+	if a := AnalyzeWithSchemas("---\nschema: "+id+"\n---\n[@#a.typo ____]\n", resolve); !found(a, "field-unknown-property") {
+		t.Errorf("no doc_id: %+v", a.Diagnostics)
+	}
 }
 
 // The JSON schema is for editors; the Go code decides. They must not drift.
