@@ -49,6 +49,10 @@
           "description": "When a value exists. The words belong to the schema's owner."
         },
         "description": { "$ref": "#/$defs/text" },
+        "example": {
+          "$ref": "#/$defs/text",
+          "description": "A made-up value per language for a preview, never real data. A date is written as the field shows it, e.g. 16.10.2026."
+        },
         "fixed": {
           "type": "boolean",
           "description": "The person filling in the form cannot change the value."

@@ -14,13 +14,15 @@
 
   type UiKind = 'text' | 'multiline' | 'check' | 'date' | 'time' | 'pattern' | 'signature';
 
-  let { initial = null, usedNames = [], prefill = [], theme = 'dark', onApply, onClose }: {
+  let { initial = null, usedNames = [], prefill = [], properties = [], theme = 'dark', onApply, onClose }: {
     /** The field being edited; null inserts a new one. */
     initial?: backend.MLCFieldSpec | null;
     /** Names of the other fields in the document (duplicate warning). */
     usedNames?: string[];
     /** Field names the Sensor Monitor fills from an event. */
     prefill?: { name: string; label: string }[];
+    /** Properties of the document's schema, with their description. */
+    properties?: { name: string; label: string }[];
     theme?: EffectiveTheme_t;
     onApply: (text: string) => void;
     onClose: () => void;
@@ -86,6 +88,7 @@
 
   const duplicate = $derived(!!spec.name && spec.name !== (start?.name ?? '') && usedNames.includes(spec.name));
   const prefillLabel = $derived(prefill.find((p: { name: string; label: string }) => p.name === spec.name)?.label ?? '');
+  const propertyLabel = $derived(properties.find((p: { name: string; label: string }) => p.name === spec.name)?.label ?? '');
   const previewHtml = $derived.by(() => {
     if (!text) return '';
     try { return renderMarkdown(text, { locale: $locale }).html; } catch { return ''; }
@@ -127,9 +130,11 @@
           <input id="fd-name" type="text" bind:value={name} list="fd-prefill" spellcheck="false" autocomplete="off"
             placeholder={$t('fieldNameHint')} class="w-full px-2 py-1 rounded border font-mono select-text {inputClass}" />
           <datalist id="fd-prefill">
+            {#each properties as p}<option value={p.name}>{p.label}</option>{/each}
             {#each prefill as p}<option value={p.name}>{p.label}</option>{/each}
           </datalist>
           {#if duplicate}<p class="text-xs text-amber-500 mt-1">{$t('fieldNameDuplicate')}</p>{/if}
+          {#if propertyLabel}<p class="text-xs opacity-70 mt-1">{propertyLabel}</p>{/if}
           {#if prefillLabel}<p class="text-xs opacity-70 mt-1">{$t('fieldNamePrefill', prefillLabel)}</p>{/if}
         </div>
 

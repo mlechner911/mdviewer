@@ -16,6 +16,9 @@ type Analysis struct {
 	// legacy header lines as a fallback), for a "how the server sees it"
 	// display.
 	Document DocumentInfo `json:"document"`
+	// Schema the document uses, if it is valid and known; nil otherwise. For
+	// completion and descriptions in an editor.
+	Schema *FieldSchema `json:"schema,omitempty"`
 }
 
 // DocumentInfo is what the Sensor Monitor takes from a document.
@@ -88,6 +91,9 @@ func AnalyzeWithSchemas(md string, schemas func(id string) (FieldSchema, bool)) 
 	}
 	a.Detected = true
 	a.Diagnostics = Check(md, Options{RequireHeader: true, Schemas: schemas})
+	if ref := DocumentSchema(md); ref.Err == nil {
+		a.Schema = resolveSchema(ref, schemas)
+	}
 	s := &scanner{src: md, section: "feld"}
 	s.run()
 	fm, _ := ParseFrontMatter(md)

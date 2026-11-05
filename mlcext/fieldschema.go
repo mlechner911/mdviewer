@@ -38,6 +38,8 @@ type SchemaField struct {
 	// owner, so they are not checked here.
 	Requires    string            `yaml:"requires,omitempty" json:"requires,omitempty"`
 	Description map[string]string `yaml:"description,omitempty" json:"description,omitempty"`
+	// Example is a made-up value per language for a preview; never real data.
+	Example map[string]string `yaml:"example,omitempty" json:"example,omitempty"`
 	// Fixed: the value cannot be changed by the person filling in the form.
 	Fixed bool `yaml:"fixed,omitempty" json:"fixed,omitempty"`
 	// Right is what the filling tool requires for a value; empty: nothing.
@@ -200,12 +202,7 @@ func checkSchema(md string, line int, fields []Field, opt Options, add func(int,
 		add(line, 1, Error, "frontmatter-schema", ref.Err.Error())
 		return
 	}
-	schema := ref.Inline
-	if schema == nil && ref.Present && opt.Schemas != nil {
-		if s, ok := opt.Schemas(ref.ID); ok {
-			schema = &s
-		}
-	}
+	schema := resolveSchema(ref, opt.Schemas)
 	if schema == nil && ref.Present {
 		add(line, 1, Info, "schema-unknown", fmt.Sprintf("Schema `%s` ist hier nicht bekannt; die Felder mit Punkt werden nicht geprüft.", ref.ID))
 		return
@@ -224,7 +221,10 @@ func checkSchema(md string, line int, fields []Field, opt Options, add func(int,
 			add(f.Line, f.Col, Info, "field-no-schema", fmt.Sprintf("Feld `%s`: Das Dokument nennt kein Schema, die Eigenschaft wird nicht geprüft.", f.Name))
 			continue
 		}
-		if _, ok := schema.Fields[f.Name]; ok {
+		if prop, ok := schema.Fields[f.Name]; ok {
+			if kind := patternKind(f.Pattern); kind != "" && kind != prop.Type {
+				add(f.Line, f.Col, Warning, "field-type-pattern", fmt.Sprintf("Feld `%s` hat das Muster `%s`, das Schema nennt den Typ `%s`.", f.Name, f.Pattern, prop.Type))
+			}
 			continue
 		}
 		msg := fmt.Sprintf("Feld `%s` steht nicht im Schema.", f.Name)
@@ -233,6 +233,36 @@ func checkSchema(md string, line int, fields []Field, opt Options, add func(int,
 		}
 		add(f.Line, f.Col, Error, "field-unknown-property", msg)
 	}
+}
+
+// resolveSchema is the schema ref stands for; nil when it names none or an
+// unknown one.
+func resolveSchema(ref SchemaRef, schemas func(id string) (FieldSchema, bool)) *FieldSchema {
+	if ref.Inline != nil || ref.ID == "" || schemas == nil {
+		return ref.Inline
+	}
+	if s, ok := schemas(ref.ID); ok {
+		return &s
+	}
+	return nil
+}
+
+// patternKind says what a field's pattern asks for, as a schema type: "date",
+// "time", "datetime", or "" for any other pattern. "MM" alone is both month
+// and minute, so it decides nothing.
+func patternKind(pattern string) string {
+	p := strings.ToUpper(pattern)
+	date := strings.Contains(p, "TT") || strings.Contains(p, "DD") || strings.Contains(p, "JJ") || strings.Contains(p, "YY")
+	clock := strings.Contains(p, "HH")
+	switch {
+	case date && clock:
+		return "datetime"
+	case date:
+		return "date"
+	case clock:
+		return "time"
+	}
+	return ""
 }
 
 // nearestName is the name closest to name, if it is close enough to be a typo.

@@ -18,7 +18,9 @@
   import { BrowserOpenURL } from '../lib/wails';
   import * as backend from '../lib/backend';
   import type { Theme } from '../themes';
-  import { locale } from '../i18n';
+  import { untrack } from 'svelte';
+  import { exampleValues } from '../../../packages/mlcext-editor/src/schemaHelp';
+  import { locale, t } from '../i18n';
 
   let {
     source = '',
@@ -46,6 +48,25 @@
   let container = $state<HTMLElement>();
   let view = $state<{ scrollToLine(line: number): void }>();
   const mlcDoc = $derived(!!analysis?.detected);
+
+  // Example values from the schema: only what is shown here changes, never
+  // the document, the PDF or the file.
+  let examplesOn = $state(false);
+  let filled = $state<{ from: string; text: string } | null>(null);
+  const examples = $derived(exampleValues(analysis?.schema, $locale));
+  const hasExamples = $derived(Object.keys(examples).length > 0);
+  const showExamples = $derived(examplesOn && hasExamples);
+  $effect(() => {
+    const md = source;
+    const values = examples;
+    if (!showExamples) return;
+    untrack(() => {
+      void backend.mlcFillForm(md, values).then((text) => {
+        if (md === source) filled = { from: md, text };
+      });
+    });
+  });
+  const shownSource = $derived(showExamples && filled?.from === source ? filled.text : source);
 
   // Images are not requested before the whitelist check: the renderer gets a
   // transparent placeholder carrying the real URL, checked after rendering.
@@ -133,6 +154,11 @@
     onrendered?.(el);
   }
 
+  /** The preview shows example values, not what the document says. */
+  export function showingExamples(): boolean {
+    return showExamples;
+  }
+
   /** Scroll so that source line `line` is at the top. */
   export function scrollToLine(line: number) {
     view?.scrollToLine(line);
@@ -181,11 +207,17 @@
 
 {@html '<' + 'style' + '>' + (theme.id === 'dark' ? hljsDark : hljsLight) + '</' + 'style' + '>'}
 
+{#if hasExamples}
+  <label class="flex items-center gap-2 px-8 py-1 text-xs {theme.containerClass} {showExamples ? 'text-amber-500' : 'opacity-70'}">
+    <input type="checkbox" bind:checked={examplesOn} />
+    {$t('previewExamples')}
+  </label>
+{/if}
 <div bind:this={container} class="preview-container flex-1 overflow-auto p-8 {theme.containerClass}" style="--preview-scale: {fontSize / 100};">
   {#key theme.id}
     <MlcMarkdown
       bind:this={view}
-      {source}
+      source={shownSource}
       locale={$locale}
       theme={theme.id}
       frontMatter={mlcDoc ? 'hide' : 'box'}

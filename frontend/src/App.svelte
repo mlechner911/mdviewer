@@ -13,7 +13,7 @@
   import Preview from './components/Preview.svelte';
   import BrowseView from './shared/browse/BrowseView.svelte';
   import mlcMarkdownCSS from '../../packages/mlc-markdown/styles/mlc-markdown.css?raw';
-  import { mlcSnippets } from '../../packages/mlcext-editor/src/index';
+  import { mlcSnippets, propertyOptions } from '../../packages/mlcext-editor/src/index';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
   import WhitelistModal from './components/WhitelistModal.svelte';
   import ConfirmModal from './components/ConfirmModal.svelte';
@@ -647,6 +647,10 @@
         @media print { body { background: #ffffff; padding: 0; } }`;
       // The rendered preview (diagrams, formulas, embedded images), so the
       // file shows offline exactly what the preview shows.
+      if (previewComponent?.showingExamples()) {
+        showToast($t('exportExamplesOn'), 5000, 'error');
+        return;
+      }
       const article = (await previewComponent?.getExportHTML()) ?? '';
       if (!article) return;
       await backend.exportHTML(article, mlcMarkdownCSS + '\n' + pageCSS + '\n' + (previewComponent?.codeCSS() ?? ''), activeTab?.content ?? '');
@@ -969,6 +973,7 @@
     initial={fieldDialog.initial}
     usedNames={(mlcAnalysis?.fields ?? []).filter((f) => f.named).map((f) => f.name)}
     prefill={(mlcAnalysis?.lists?.prefill ?? []).map((p) => ({ name: p.name, label: p.label }))}
+    properties={propertyOptions(mlcAnalysis?.schema, [], '', $locale).map((o) => ({ name: o.name, label: o.detail }))}
     theme={$effectiveAppTheme}
     onApply={applyField}
     onClose={() => (fieldDialog = null)}

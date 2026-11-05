@@ -345,7 +345,7 @@
             return true;
           },
         }),
-        ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a) })] : []),
+        ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a), locale: () => $locale })] : []),
         ...(mlcSource && oneditfield
           ? [fieldHint({ label: '✎ ' + $tr('fieldHintLabel'), title: $tr('fieldHintTitle'), onEdit: (l, c) => oneditfield?.(l, c) })]
           : []),

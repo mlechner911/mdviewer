@@ -13,9 +13,10 @@
 // snippets for the shared lists.
 
 import { StateEffect, StateField, EditorState, type Extension, type Text } from '@codemirror/state';
-import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from '@codemirror/view';
+import { Decoration, EditorView, ViewPlugin, hoverTooltip, type DecorationSet, type ViewUpdate } from '@codemirror/view';
 import { lintGutter, setDiagnostics, type Diagnostic as CMDiagnostic } from '@codemirror/lint';
 import { snippet, type Completion, type CompletionContext, type CompletionResult } from '@codemirror/autocomplete';
+import { fieldHelp, propertyInsertion, propertyOptions, type MlcSchema } from './schemaHelp';
 
 // ---------- The analysis (JSON of mlcext.Analysis) ----------
 
@@ -68,6 +69,8 @@ export interface MlcAnalysis {
   fields: MlcFieldSpan[] | null;
   hints: MlcHintSpan[] | null;
   lists: MlcLists;
+  /** The schema the document uses, if it is valid and known. */
+  schema?: MlcSchema | null;
 }
 
 /** Where the analysis comes from: the host calls mlcext.Analyze. */
@@ -87,6 +90,8 @@ export interface MlcOptions {
   debounce?: number;
   /** Called with every fresh analysis (status bar, menus …). */
   onAnalysis?: (analysis: MlcAnalysis) => void;
+  /** Language of schema descriptions, read each time they are shown. */
+  locale?: () => string;
 }
 
 // ---------- Positions ----------
@@ -135,7 +140,8 @@ function buildDecorations(doc: Text, a: MlcAnalysis): DecorationSet {
     ranges.push(
       Decoration.mark({
         class: `cm-mlc-field cm-mlc-field-${f.kind}${f.prefill ? ' cm-mlc-field-prefill' : ''}`,
-        attributes: { title },
+        // A schema's description comes as a tooltip (schemaHover) instead.
+        attributes: f.named && fieldHelp(a.schema, f.name, '') ? {} : { title },
       }).range(from, to),
     );
   }
@@ -173,9 +179,22 @@ export function currentAnalysis(state: EditorState): MlcAnalysis | null {
   return state.field(mlcField, false)?.analysis ?? null;
 }
 
-function toCMDiagnostics(doc: Text, a: MlcAnalysis, source?: MlcSource): CMDiagnostic[] {
+/** What the checker says about a field that is still being typed. */
+const UNFINISHED_FIELD = ['field-unclosed', 'field-name'];
+
+/**
+ * A field the cursor is still in: "[@#" is no error yet, the author is typing.
+ * It counts again as soon as the cursor leaves it.
+ */
+export function isBeingTyped(doc: Text, d: MlcDiagnostic, cursor: number): boolean {
+  if (!UNFINISHED_FIELD.includes(d.code)) return false;
+  const from = toPos(doc, d.line, d.col);
+  return cursor > from && cursor <= doc.lineAt(from).to;
+}
+
+function toCMDiagnostics(doc: Text, a: MlcAnalysis, source: MlcSource | undefined, cursor: number): CMDiagnostic[] {
   if (!a.detected) return [];
-  return (a.diagnostics ?? []).map((d) => {
+  return (a.diagnostics ?? []).filter((d) => !isBeingTyped(doc, d, cursor)).map((d) => {
     const label = source?.fix && d.code ? source.fixLabel?.(d.code) : null;
     const actions = label
       ? [
@@ -209,11 +228,13 @@ function analyzer(source: MlcSource, opt: MlcOptions) {
   return ViewPlugin.fromClass(
     class {
       timer: ReturnType<typeof setTimeout> | undefined;
+      /** A finding is held back while the cursor is in its field. */
+      heldBack = false;
       constructor(readonly view: EditorView) {
         this.schedule(0);
       }
       update(u: ViewUpdate) {
-        if (u.docChanged) this.schedule(opt.debounce ?? 300);
+        if (u.docChanged || (u.selectionSet && this.heldBack)) this.schedule(opt.debounce ?? 300);
       }
       schedule(delay: number) {
         clearTimeout(this.timer);
@@ -225,7 +246,10 @@ function analyzer(source: MlcSource, opt: MlcOptions) {
         // A stale answer (the text changed meanwhile) is dropped; the
         // pending run brings the fresh one.
         if (!a || this.view.state.doc.toString() !== text) return;
-        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(this.view.state.doc, a, source)));
+        const { doc, selection } = this.view.state;
+        const cursor = selection.main.head;
+        this.heldBack = !!a.detected && (a.diagnostics ?? []).some((d) => isBeingTyped(doc, d, cursor));
+        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(doc, a, source, cursor)));
         this.view.dispatch({ effects: setAnalysis.of(a) });
         opt.onAnalysis?.(a);
       }
@@ -298,8 +322,28 @@ function inFrontMatter(state: EditorState, pos: number): boolean {
   return false;
 }
 
-function mlcCompletions(context: CompletionContext): CompletionResult | null {
-  const lists = currentAnalysis(context.state)?.lists ?? null;
+/** Completion of a schema's properties after "[@#". */
+function schemaCompletions(context: CompletionContext, a: MlcAnalysis | null, locale: string): CompletionResult | null {
+  const typed = context.matchBefore(/\[@#[a-z0-9_.]*/);
+  if (!typed || !a?.schema) return null;
+  const used = (a.fields ?? []).filter((f) => f.named).map((f) => f.name);
+  const options = propertyOptions(a.schema, used, typed.text.slice(3), locale).map(
+    (o): Completion => ({
+      label: o.name,
+      detail: o.detail,
+      type: 'property',
+      apply(view, _completion, from, to) {
+        const insert = propertyInsertion(o.name, o.type, view.state.doc.lineAt(to).text.slice(to - view.state.doc.lineAt(to).from));
+        view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
+      },
+    }),
+  );
+  return { from: typed.from + 3, options, validFor: /^[a-z0-9_.]*$/ };
+}
+
+function mlcCompletions(context: CompletionContext, locale: string): CompletionResult | null {
+  const analysis = currentAnalysis(context.state);
+  const lists = analysis?.lists ?? null;
 
   if (inFrontMatter(context.state, context.pos)) {
     const line = context.state.doc.lineAt(context.pos);
@@ -340,14 +384,56 @@ function mlcCompletions(context: CompletionContext): CompletionResult | null {
     };
   }
 
+  const property = schemaCompletions(context, analysis, locale);
+  if (property) return property;
+
   const field = context.matchBefore(/\[@[#\w-]*/);
   const comment = context.matchBefore(/<!--?[-*!]?/);
   const match = field ?? comment;
   if (!match) return null;
   const options: Completion[] = mlcSnippets(lists)
     .filter((s) => (field ? s.template.startsWith('[@') : s.template.startsWith('<!--')))
-    .map((s) => ({ label: s.label, detail: s.detail, type: 'text', apply: snippet(s.template) }));
+    .map((s) => ({
+      label: s.label,
+      detail: s.detail,
+      type: 'text',
+      apply(view, completion, from, to) {
+        // The editor has closed the bracket itself; the snippet brings its own.
+        const closed = field && view.state.doc.sliceString(to, to + 1) === ']';
+        snippet(s.template)(view, completion, from, closed ? to + 1 : to);
+      },
+    }));
   return { from: match.from, options, filter: false };
+}
+
+// ---------- Schema descriptions ----------
+
+function schemaHover(locale: () => string) {
+  return hoverTooltip((view, pos) => {
+    const a = currentAnalysis(view.state);
+    if (!a?.schema) return null;
+    for (const f of a.fields ?? []) {
+      const from = toPos(view.state.doc, f.line, f.col);
+      const to = toPos(view.state.doc, f.endLine, f.endCol);
+      if (pos < from || pos > to || !f.named) continue;
+      const help = fieldHelp(a.schema, f.name, locale());
+      if (!help) return null;
+      return {
+        pos: from,
+        end: to,
+        above: true,
+        create() {
+          const dom = document.createElement('div');
+          dom.className = 'cm-mlc-schema-help';
+          const name = dom.appendChild(document.createElement('strong'));
+          name.textContent = f.name;
+          for (const line of help) dom.appendChild(document.createElement('div')).textContent = line;
+          return { dom };
+        },
+      };
+    }
+    return null;
+  });
 }
 
 // ---------- Theme ----------
@@ -360,6 +446,7 @@ const mlcTheme = EditorView.baseTheme({
   },
   '.cm-mlc-field-prefill': { borderBottomStyle: 'dashed' },
   '.cm-mlc-hint': { color: '#8a6d00', fontStyle: 'italic' },
+  '.cm-mlc-schema-help': { padding: '4px 8px', maxWidth: '28rem' },
   '&dark .cm-mlc-field': {
     backgroundColor: 'rgba(240, 128, 104, 0.14)',
     borderBottomColor: 'rgba(240, 128, 104, 0.6)',
@@ -375,14 +462,21 @@ const mlcTheme = EditorView.baseTheme({
  * diagnostic, only the "[@" completion.
  */
 export function mlcExtension(source: MlcSource, opt: MlcOptions = {}): Extension {
+  const locale = opt.locale ?? (() => 'en');
+  // One function for the life of the editor: CodeMirror compares sources by
+  // identity, and a new one per call restarts the query for ever (no list).
+  const complete = (context: CompletionContext) => mlcCompletions(context, locale());
   return [
+    schemaHover(locale),
     mlcField,
     analyzer(source, opt),
     lintGutter(),
-    EditorState.languageData.of(() => [{ autocomplete: mlcCompletions }]),
+    EditorState.languageData.of(() => [{ autocomplete: complete }]),
     mlcTheme,
   ];
 }
+
+export { exampleValues, fieldHelp, localizedText, propertyOptions, type MlcSchema, type MlcSchemaField } from './schemaHelp';
 
 // Field dialog support: box at the field under the cursor, double click.
 export { fieldHint, fieldAt, fieldAtCursor, type FieldHintOptions } from './fieldHint';

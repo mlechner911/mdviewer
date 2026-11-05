@@ -75,7 +75,11 @@ export function fieldHint(opt: FieldHintOptions): Extension {
         }
         compute(state: EditorState) {
           const f = fieldAtCursor(state);
-          if (!f) {
+          // "[@]" with the cursor inside is an author starting to type, not a
+          // check box to edit.
+          const from = f ? toPos(state.doc, f.line, f.col) : 0;
+          const starting = state.doc.sliceString(from, from + 3) === '[@]' && state.selection.main.head === from + 2;
+          if (!f || starting) {
             this.decorations = Decoration.none;
             return;
           }

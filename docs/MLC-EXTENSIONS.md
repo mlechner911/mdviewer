@@ -235,6 +235,13 @@ schema:
 - **A schema describes and grants nothing.** Whoever fills in values decides
   from their own list.
 
+In the editor, `[@#` completes the schema's properties and sets a matching
+pattern. Hovering a field shows its description in the app's language, and the
+field dialog offers the properties too. A property can carry a made-up
+`example`; the preview then offers to show these values. That changes only what
+the preview shows, never the file, the PDF or the print, and the HTML export
+stays off while they are on.
+
 The format is defined in
 [`mlcext/mlc-field-schema.schema.json`](../mlcext/mlc-field-schema.schema.json).
 
@@ -245,6 +252,7 @@ The format is defined in
 | `#a` next to `#a.b` | error | `field-name-prefix` |
 | Document names no schema, property unchecked | info | `field-no-schema` |
 | Schema not known here, properties unchecked | info | `schema-unknown` |
+| Pattern that does not fit the property's type | warning | `field-type-pattern` |
 | Old name the schema lists under `legacy` | info | `field-legacy` |
 
 ## Tooling

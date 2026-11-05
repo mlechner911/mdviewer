@@ -11,6 +11,11 @@ const doc = (h: string) => {
 };
 
 describe('form fields (display)', () => {
+  it('shows a name with a dot, also with a value from a schema example', () => {
+    const d = doc(html('[@#probe.calibration.last TT.MM.JJJJ=16\\.10\\.1980] [@#probe.name __Fühler A__]'));
+    expect(d.querySelector('[data-field="probe.calibration.last"]')!.textContent).toContain('16.10.1980');
+    expect(d.querySelector('[data-field="probe.name"]')!.textContent).toContain('Fühler A');
+  });
   it('check box, line, pattern, preset, tooltip', () => {
     const d = doc(html('Ort: [@#ort ____Kühlraum A____] <!--* z. B. Labor -->\n\nDatum: [@#d TT.MM.JJJJ] ok: [@]\n'));
     const ort = d.querySelector('[data-field="ort"]')!;

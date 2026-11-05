@@ -365,6 +365,7 @@ tasks:
         fi
       # mlcext is its own module (MLC Markdown Extension checker), not part of ./...
       - cd mlcext && go test ./...
+      - cd packages/mlc-markdown && npx vitest run --root ../mlcext-editor
 
   install:
     desc: Install backend and frontend dependencies

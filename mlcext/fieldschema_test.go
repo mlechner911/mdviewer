@@ -190,3 +190,46 @@ func TestJSONSchemaMatchesCode(t *testing.T) {
 		t.Errorf("types: %v, code %v", kind.Enum, SchemaFieldTypes)
 	}
 }
+
+func TestPatternAgainstSchemaType(t *testing.T) {
+	head := "---\nschema: { fields: { a.text: { type: text }, a.date: { type: date }, a.time: { type: time }, a.at: { type: datetime } } }\n---\n"
+	for field, warn := range map[string]bool{
+		"[@#a.text TT.MM.JJJJ]":     true,
+		"[@#a.text HH:MM]":          true,
+		"[@#a.text ____]":           false,
+		"[@#a.date TT.MM.JJJJ]":     false,
+		"[@#a.date HH:MM]":          true,
+		"[@#a.date ____]":           false,
+		"[@#a.time HH:MM]":          false,
+		"[@#a.at TT.MM.JJJJ HH:MM]": false,
+		"[@#a.at TT.MM.JJJJ]":       true,
+		"[@#a.text ABC-999]":        false,
+	} {
+		got := schemaCodes(head+field+"\n", Options{})
+		if schemaHasCode(got, "field-type-pattern") != warn {
+			t.Errorf("%s: warn %v, got %v", field, warn, got)
+		}
+	}
+}
+
+func TestAnalysisCarriesTheSchema(t *testing.T) {
+	if a := Analyze(inlineSchema + "[@#patient.name ____]\n"); a.Schema == nil || a.Schema.Fields["patient.name"].Description["de"] != "Name" {
+		t.Errorf("inline: %+v", a.Schema)
+	}
+	if a := Analyze("---\nschema: https://x.example/f/v1\n---\n[@#a.b ____]\n"); a.Schema != nil {
+		t.Errorf("unknown: %+v", a.Schema)
+	}
+	if a := Analyze("---\nschema: nonsense\n---\n[@#a.b ____]\n"); a.Schema != nil {
+		t.Errorf("invalid: %+v", a.Schema)
+	}
+}
+
+func TestExampleIsRead(t *testing.T) {
+	s, err := ParseFieldSchema([]byte("fields:\n  a.b: { type: text, example: { de: Kühlraum A } }\n"))
+	if err != nil || s.Fields["a.b"].Example["de"] != "Kühlraum A" {
+		t.Errorf("got %+v, %v", s, err)
+	}
+	if out, set := FillFields("[@#a.b TT.MM.JJJJ] [@#a.c ______]\n", map[string]string{"a.b": "16.10.1980", "a.c": "x"}); len(set) != 2 || !strings.Contains(out, `[@#a.b TT.MM.JJJJ=16\.10\.1980]`) {
+		t.Errorf("fill: %q %v", out, set)
+	}
+}
