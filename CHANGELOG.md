@@ -4,8 +4,13 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.12.0] – 2026-11-06
+
 ### Added
 - **MarkSafePlus:** after signing in to the Sensor Monitor, the module fetches its field schema and keeps a copy, so fields with a dot are checked also when signed out or offline. A schema in the local folder takes precedence; File › Settings… shows the schema and when it was fetched.
+
+### Changed
+- MarkSafe is built with **Wails 3.1.0** (was 3.0.0-beta.17) and Go 1.26.10. This brings security fixes in the desktop framework and its dependencies, and fixes for Windows: no crash when the menu bar is drawn or dark mode is applied on some Windows builds, the window takes the focus back when activated, and Tab no longer stays trapped in the page.
 
 ## [1.11.0] – 2026-11-06
 
