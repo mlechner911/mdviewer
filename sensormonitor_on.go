@@ -12,6 +12,9 @@ import (
 	sensormonitor "marksafe/frontend/src/sensormonitor/backend"
 )
 
+// The module answers the core's schema lookup (schemas.go).
+var _ schemaProvider = (*sensormonitor.Extension)(nil)
+
 func init() {
 	productName = "MarkSafePlus"
 	webviewDataPath = func() string {

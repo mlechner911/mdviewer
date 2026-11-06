@@ -806,6 +806,8 @@
     'menu-settings': () => { if (settingsSections.length) showSettings = true; },
     'app-close-requested': () => void closeRequested(),
     'set-theme': (theme: string) => appTheme.set(theme as any),
+    // A module learned or dropped a schema: check the open document again.
+    'schemas-changed': () => debouncedUpdate(markdown, currentPreviewTheme.chromaStyle),
   };
 
   onMount(() => {

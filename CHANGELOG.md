@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **MarkSafePlus:** after signing in to the Sensor Monitor, the module fetches its field schema and keeps a copy, so fields with a dot are checked also when signed out or offline. A schema in the local folder takes precedence; File › Settings… shows the schema and when it was fetched.
+
 ## [1.11.0] – 2026-11-06
 
 ### Added
