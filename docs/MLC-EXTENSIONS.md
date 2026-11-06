@@ -1,11 +1,17 @@
 # MLC Markdown Extension
 
 > [!IMPORTANT]
-> The MLC Markdown Extension is **not standard Markdown**. It is an
-> MLC-specific extension for documents of the MLC Sensor Monitor (SOPs,
-> forms, reports) that are turned into PDFs by the MLC PDF toolkit
-> (`mlcdoc`). Files that use it are still valid Markdown. Other Markdown tools
-> show the extension's syntax as plain text and hide its comments.
+> The MLC Markdown Extension is **not standard Markdown**. At its core it is
+> a **form extension**: fields in the text, a page header from the front
+> matter and a signature note, turned into fillable PDF forms by the MLC PDF
+> toolkit (`mlcdoc`). It suits any SOP, form or report written in Markdown;
+> MarkSafe and the MLC Sensor Monitor are two of its users. Files that use it
+> are still valid Markdown. Other Markdown tools show the extension's syntax
+> as plain text and hide its comments.
+>
+> A few keys only matter to a host that publishes documents, such as the
+> Sensor Monitor (approval, attachment kinds, profile, events). They are
+> marked as such below; MarkSafe accepts them but needs none of them.
 
 MarkSafe supports three levels of Markdown. This page explains which features
 belong to which level, so it is always clear what is portable and what is not.
@@ -73,7 +79,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 | Document id and version | front matter `doc_id: SOP-QM-001`, `version: "1.0"`, `title: …` | page header (via the layout file, see below) | ✅ checked; ⏳ document header in the preview |
 | Legacy header line | `**Dokumenten-ID:** SOP-QM-001 \| **Version:** 1.0` in the text | read as a fallback only | ✅ warning `header-in-body`, error on a contradiction |
 | Variables | `{{doc_id}}`, `{{version}}`, `{{title}}` in the text | replaced with the front matter values when rendering | ✅ checked; ⏳ replaced in the preview |
-| Signature | `<!--mlc-signature … -->` at the end of the file (old form: a `signature:` block before the front matter) | seal of the Sensor Monitor; not part of the content | ✅ recognised, left out of the content; ⏳ "signed by … on …" in the preview |
+| Signature | `<!--mlc-signature … -->` at the end of the file (old form: a `signature:` block before the front matter) | seal of the publishing host (e.g. the Sensor Monitor); not part of the content | ✅ recognised, left out of the content; ⏳ "signed by … on …" in the preview |
 | Signature field | `[@Unterschrift: Rolle]`, `[@#name Unterschrift: Rolle]` (English `Signature:`, either case) | room to sign above a line, the role below it; an empty PDF signature field (mlcmd2pdf 3.28.0) | ✅ checked, highlighted; preview shows the line and the role |
 | Filled-in form | front matter `meta:` with `schema: mlc-form-record/v1`, values in the fields | not printed (mlcdoc does not read `meta`) | ✅ checked (`mlcext.FillFields`, `FieldValues`, `FormSchema`, `SetFormRecord`); fill mode with input mask |
 | Layout front matter | `header`, `footer`, `signatures`, `toc`, `page-size` … | page header/footer, signature block, layout | ⏳ generic metadata table |
@@ -85,19 +91,19 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 - Raw HTML: the extension itself only defines the two forms above (page
   break, anchor target). MarkSafe shows other embedded HTML (e.g.
   `<details>`, `<kbd>`) after sanitizing it: scripts, event handlers, styles
-  and form elements are removed. The PDF conversion (mlcdoc) may render
-  embedded HTML differently or not at all; use it sparingly in documents
-  meant for PDF or the Sensor Monitor.
+  and form elements are removed. On the way to the PDF only a few inline
+  tags survive (see "HTML in Markdown" above); use HTML sparingly in
+  documents meant for PDF.
 - Escape a literal `[@` as `\[@`.
 - Fields cannot be placed in headings or image captions, and a field cannot
   span a blank line.
-- Validity dates and approval status are **not** written in the document. The
-  Sensor Monitor sets them on approval.
+- Validity dates and approval status are **not** written in the document. A
+  publishing host such as the Sensor Monitor sets them on approval.
 - **The front matter is the only place for id, version and title** (`doc_id`,
   `version`, `title`, like Hugo and Jekyll). Allowed keys: `doc_id`, `title`,
   `version`, `description`, `event_kinds`, `attachment_kind`, `attachment_once`, `profile`,
   `meta` (see below). The kind (SOP, VA, FB, INFO) follows from the `doc_id` prefix.
-- **Attachment kind** (Sensor Monitor): `attachment_kind: SB` makes the template a kind of
+- **Attachment kind** (publishing host, e.g. the Sensor Monitor): `attachment_kind: SB` makes the template a kind of
   attachment — files attached to an event or device are chosen by kind instead of a typed title,
   and get identifiers like `EV-2026-0820/SB-1`. The code is 1 to 8 capitals or digits, needs a
   `doc_id`, `ANH` is reserved for "other", and the Sensor Monitor fixes it once the template is
@@ -105,7 +111,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   new version. The header line in the text is the legacy
   form: still read, but it gives a warning; when both say different things,
   that is an error.
-- **Profile ("Steckbrief", Sensor Monitor, `mlcext` 0.15.0):** a shipped template explains
+- **Profile ("Steckbrief", publishing host, e.g. the Sensor Monitor, `mlcext` 0.15.0):** a shipped template explains
   itself in one block, so the front matter stays readable:
 
   ```yaml
@@ -135,7 +141,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   (`unknown-variable`, or `template-placeholder-left` for a template
   placeholder that was not filled in), except a placeholder declared in
   `profile.adapt` (see above). Not replaced inside code.
-- **Signature:** the Sensor Monitor seals a released document with a comment
+- **Signature:** a publishing host (e.g. the Sensor Monitor) seals a released document with a comment
   at the very end:
 
   ```markdown
@@ -278,8 +284,8 @@ The format is defined in
 
 - **Checker** ([`mlcext`](../mlcext), Go module
   `github.com/mlechner911/mdviewer/mlcext`): validates the extension and
-  reports problems with line and column. MarkSafe and the Sensor Monitor use
-  the same module. MarkSafe shows the result in the status bar.
+  reports problems with line and column. Every tool that handles these
+  documents uses the same module (MarkSafe, hosts such as the Sensor Monitor). MarkSafe shows the result in the status bar.
 - **Editor support** ([`packages/mlcext-editor`](../packages/mlcext-editor),
   CodeMirror 6): highlights fields and hints, shows the checker's messages at
   their lines, and offers the building blocks after `[@` and in the editor's
@@ -362,7 +368,7 @@ The format is defined in
   [`mlcext/mlc-template.schema.json`](../mlcext/mlc-template.schema.json);
   editors validate templates with it. A created document must pass the
   checker; whether its ID is free among the approved documents only the
-  Sensor Monitor can tell, on upload.
+  publishing host can tell, on upload.
 - **Filling in a form** ("Ausfüllen" in the preview bar, for a document
   with form fields): the form opens in a new tab without a file, and an
   input mask takes the place of the preview. Every entry goes straight into
@@ -382,7 +388,7 @@ The format is defined in
 - **Document folder** (File → "Choose Document Folder…", "Open Document
   Folder", `Ctrl+Shift+D`): one fixed base folder for the document
   collection, like an Obsidian vault. It is a workspace only: status,
-  versions and approval stay in the Sensor Monitor. The browse window shows
+  versions and approval stay with a publishing host such as the Sensor Monitor. The browse window shows
   a "Dokumente" overview (ID, kind, title, version, fields, check result).
   Templates for the team (schema + body, see above) go into `_vorlagen/`
   in that folder.

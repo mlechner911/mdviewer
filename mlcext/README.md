@@ -1,13 +1,14 @@
 # mlcext — checker for the MLC Markdown Extension
 
 > [!IMPORTANT]
-> The MLC Markdown Extension is **not standard Markdown**. It is an
-> MLC-specific extension for documents of the MLC Sensor Monitor (SOPs, forms)
-> that the MLC PDF toolkit turns into fillable PDFs. See
+> The MLC Markdown Extension is **not standard Markdown**. It is a form
+> extension for Markdown documents (SOPs, forms, reports) that the MLC PDF
+> toolkit turns into fillable PDFs. See
 > [docs/MLC-EXTENSIONS.md](../docs/MLC-EXTENSIONS.md).
 
-A small, standalone Go module with its own `go.mod`. MarkSafe and the Sensor
-Monitor both use it, so there is exactly one implementation of these rules.
+A small, standalone Go module with its own `go.mod`. Every tool that handles
+these documents uses it — MarkSafe, and hosts such as the MLC Sensor Monitor —
+so there is exactly one implementation of these rules.
 
 ```go
 import "github.com/mlechner911/mdviewer/mlcext"
@@ -39,8 +40,8 @@ if mlcext.Detect(md) {
 | `StoredText` | The text as it is rendered: signature removed, variables replaced, upload front matter removed |
 | `mlcdoc.New`, `Client.RenderPDF`, `Client.RenderPages` | PDF and page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`): version check, front matter preparation (`mlcdoc.Prepare`), typed `RenderError` with line |
 
-Severity: **error** means the Sensor Monitor rejects the document or mlcdoc
-cannot render it; **warning** means it is accepted but probably not intended;
+Severity: **error** means mlcdoc cannot render the document or a host such as
+the Sensor Monitor rejects it; **warning** means it is accepted but probably not intended;
 **info** marks intended behavior, such as a field filled from an event.
 
 Shared test cases: `testdata/fields.json` (form fields) and `testdata/meta.json`
@@ -49,8 +50,7 @@ Shared test cases: `testdata/fields.json` (form fields) and `testdata/meta.json`
 'TestFieldVectors|TestMetaVectors' -update` after a deliberate change.
 
 Tests: `go test ./...`. `MLCEXT_SEEDS=<dir> go test ./...` additionally
-checks every `.md` file in `<dir>`, for example the Sensor Monitor's template
-seeds, which must all be free of errors.
+checks every `.md` file in `<dir>`, for example a host's template seeds, which must all be free of errors.
 
 ## Templates
 

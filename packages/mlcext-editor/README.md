@@ -4,7 +4,8 @@
 > The MLC Markdown Extension is **not standard Markdown**. See
 > [docs/MLC-EXTENSIONS.md](../../docs/MLC-EXTENSIONS.md).
 
-Editor support shared by MarkSafe and the MLC Sensor Monitor admin. It
+Editor support for the form extension, shared by every editor that writes
+such documents (MarkSafe, the admin of the MLC Sensor Monitor). It
 implements **no rules**: everything it shows comes from the Go checker
 [`mlcext`](../../mlcext) (`mlcext.Analyze`), which the host hands in. MarkSafe
 calls it over Wails, a web frontend through its server. There is one

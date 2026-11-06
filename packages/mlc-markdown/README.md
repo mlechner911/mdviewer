@@ -1,12 +1,13 @@
 # mlc-markdown
 
-Display of Markdown with the **MLC Markdown Extension** — the same look in
+Display of Markdown with the **MLC Markdown Extension**, the form extension
+for Markdown — the same look in every tool that shows it, for example
 MarkSafe, the MLC Sensor Monitor and the MLC Terminal.
 
 > [!IMPORTANT]
 > The MLC Markdown Extension is **not standard Markdown**: form fields
 > `[@…]`, field tooltips `<!--* … -->`, fill tips `<!--! … -->`, page breaks
-> and anchor targets for documents of the MLC Sensor Monitor. See
+> and anchor targets for Markdown forms and SOPs. See
 > [docs/MLC-EXTENSIONS.md](https://github.com/mlechner911/mdviewer/blob/main/docs/MLC-EXTENSIONS.md).
 
 **Display only.** Whether a document is valid is decided by the Go module

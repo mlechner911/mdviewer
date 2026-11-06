@@ -1,13 +1,13 @@
 # {{title}}
 
-<!--! **So arbeiten Sie mit diesem Formblatt:** Füllen Sie die Felder am Bildschirm aus und speichern Sie das PDF. Felder mit einem Ereignis-Bezug füllt der Sensor Monitor vor. Dieser Hinweis ist aufklappbar und wird nicht gedruckt. -->
+<!--! **So arbeiten Sie mit diesem Formblatt:** Füllen Sie die Felder am Bildschirm aus und speichern Sie das PDF. Felder mit einem Ereignis-Bezug kann ein angebundenes System wie der Sensor Monitor vorfüllen. Dieser Hinweis ist aufklappbar und wird nicht gedruckt. -->
 
 > [!NOTE]
 > Beispiel für alle Feldarten der MLC-Erweiterung. Was hier steht, gehört zu {{doc_id}}, Fassung {{version}}. Nicht Benötigtes einfach löschen. Eine neue Seite beginnt mit `<div class="page-break"></div>` auf einer eigenen Zeile.
 
 ## 1. Vorausgefüllt aus dem Ereignis
 
-Diese Feldnamen füllt der Sensor Monitor, wenn das Formblatt an einem Ereignis geöffnet wird.
+Diese Feldnamen füllt ein angebundenes System wie der Sensor Monitor, wenn das Formblatt an einem Ereignis geöffnet wird. Ohne ein solches System sind es gewöhnliche Felder.
 
 * **Ereignis:** [@#ereignis ____________]
 * **Beginn:** [@#entdeckt_datum TT.MM.JJJJ] um [@#entdeckt_uhrzeit HH:MM] Uhr

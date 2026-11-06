@@ -1,12 +1,12 @@
 # {{title}}
 
-<!--! **So arbeiten Sie mit diesem Formblatt:** Füllen Sie die Felder am Bildschirm aus und speichern Sie das PDF. Felder mit einem Ereignis-Bezug füllt der Sensor Monitor vor. -->
+<!--! **So arbeiten Sie mit diesem Formblatt:** Füllen Sie die Felder am Bildschirm aus und speichern Sie das PDF. Felder mit einem Ereignis-Bezug kann ein angebundenes System wie der Sensor Monitor vorfüllen. -->
 
 ---
 
 ### TEIL 1: Erfassung
 
-*   **Ereignis im Sensor Monitor:** [@#ereignis ____________]
+*   **Ereignis:** [@#ereignis ____________]
 *   **Datum:** [@#entdeckt_datum TT.MM.JJJJ] **Uhrzeit:** [@#entdeckt_uhrzeit HH:MM]
 *   **Ort / Gerät:** [@#ort ______________________________] <!--* z. B. Kühlraum A, Gerät 2 -->
 
