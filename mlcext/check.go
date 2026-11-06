@@ -118,7 +118,7 @@ func Check(md string, opt Options) []Diagnostic {
 	checkSchema(md, keyLines["schema"], fields, opt, add)
 
 	checkComments(md, add)
-	checkGlyphs(md, add)
+	checkGlyphs(md, fields, add)
 	checkTables(md, add)
 	if opt.PDF {
 		ds = append(ds, htmlDiagnostics(md)...)

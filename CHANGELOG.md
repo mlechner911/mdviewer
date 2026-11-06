@@ -18,6 +18,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 - The toolbar groups the headings H1 to H3 in a menu **H ▾**.
 
 ### Fixed
+- The check now warns when a form field holds characters the PDF's field font lacks (`pdf-field-glyph-missing`, `mlcext.HasPDFFieldGlyph`): ✔, ✅ or ⇒ print in the text but as an empty box in a field.
 - Cancelling a file dialog on Windows no longer reports an error.
 - Filling in: an edit in the Markdown now replaces what a field of the mask still showed, and images resolve from the form's folder in the mask, the preview and the PDF.
 - `Kontrolle: [@#k] Ort: [@#o]`: "Ort" labels only the following field, not the check box.

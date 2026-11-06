@@ -1,6 +1,9 @@
 package mlcext
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestPDFSymbolsPrint(t *testing.T) {
 	for _, g := range PDFSymbols {
@@ -37,5 +40,38 @@ func TestCheckGlyphs(t *testing.T) {
 	}
 	if len(got) != 2 || got[0] != "„🧠“" || got[1] != "„📌“" {
 		t.Errorf("missing glyphs: %q", got)
+	}
+}
+
+func TestHasPDFFieldGlyph(t *testing.T) {
+	for _, r := range "äöüß€°µ≤→αЖ\n" {
+		if !HasPDFFieldGlyph(r) {
+			t.Errorf("%q must print in a field", r)
+		}
+	}
+	// Measured with mlcdoc 0.19.1: these print in the text, not in a field.
+	for _, r := range "✔✘✅❌⇒\u0615\u064B🧠" {
+		if HasPDFFieldGlyph(r) {
+			t.Errorf("%q must count as missing in a field", r)
+		}
+	}
+}
+
+func TestCheckFieldGlyphs(t *testing.T) {
+	md := "# Prüfung\n\nStatus ✔: [@#status __✔ ok ⇒ weiter__]\n\nOrt: [@#ort __Kühlraum 4 °C__]\n"
+	var field, text []Diagnostic
+	for _, d := range Check(md, Options{}) {
+		switch d.Code {
+		case "pdf-field-glyph-missing":
+			field = append(field, d)
+		case "pdf-glyph-missing":
+			text = append(text, d)
+		}
+	}
+	if len(text) != 0 {
+		t.Errorf("text: %v", text)
+	}
+	if len(field) != 1 || field[0].Line != 3 || !strings.Contains(field[0].Message, "„✔“, „⇒“") || !strings.Contains(field[0].Message, "`status`") {
+		t.Errorf("field: %v", field)
 	}
 }

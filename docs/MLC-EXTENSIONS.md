@@ -329,7 +329,11 @@ The format is defined in
     symbols print as they are (☐ ☑ ⚠ ℹ ★ ⚙ ⚡ ☎ ✉, arrows, shapes, some
     faces); pictographs such as 🧠 📌 🔒 print as an empty box. The check
     reports them (`pdf-glyph-missing`); the editor's symbol menu offers only
-    characters that print (`mlcext.PDFSymbols`).
+    characters that print (`mlcext.PDFSymbols`). **Inside a form field**
+    only Liberation Sans applies, without fallback or colored symbols: ✔ ✘
+    ✅ ❌ ⇒ print in the text but as an empty box in a field. The check
+    reports that per field (`pdf-field-glyph-missing`,
+    `mlcext.HasPDFFieldGlyph`); umlauts, Greek, Cyrillic, € ° µ ≤ → work.
   - **Printing** renders the same PDF and opens it in the system's PDF
     viewer, which prints it, so the paper looks like the export.
   - Front matter keys `mlcdoc` does not know (tags, event_kinds …) are left

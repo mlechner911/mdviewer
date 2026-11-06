@@ -2,6 +2,7 @@ package mlcext
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"unicode"
@@ -43,6 +44,19 @@ func HasPDFGlyph(r rune) bool {
 	return i < len(pdfGlyphRanges) && pdfGlyphRanges[i][0] <= r
 }
 
+// HasPDFFieldGlyph reports whether r prints inside a form field of the PDF.
+// A field uses only the field font (Liberation Sans, pdfFieldGlyphRanges):
+// no DejaVu fallback and no colored substitutes, so ✔, ✅ and ⇒ that print
+// in the text show as an empty box in a field. Line breaks count as
+// printable.
+func HasPDFFieldGlyph(r rune) bool {
+	if r < 0x80 {
+		return r >= 0x20 || r == '\n'
+	}
+	i := sort.Search(len(pdfFieldGlyphRanges), func(i int) bool { return pdfFieldGlyphRanges[i][1] >= r })
+	return i < len(pdfFieldGlyphRanges) && pdfFieldGlyphRanges[i][0] <= r
+}
+
 // SymbolGroup is a group of the editor's symbol palette.
 type SymbolGroup struct {
 	Name    string   `json:"name"`
@@ -64,23 +78,43 @@ var PDFSymbols = []SymbolGroup{
 
 // checkGlyphs warns about characters that print as an empty box in the PDF
 // (each character once, at its first place; code and comments included,
-// front matter not).
-func checkGlyphs(md string, add func(int, int, Severity, string, string)) {
+// front matter not). Text inside form fields is checked against the field
+// font instead (once per field, all its missing characters).
+func checkGlyphs(md string, fields []Field, add func(int, int, Severity, string, string)) {
 	start := len(md) - len(frontMatterBlock(md).body)
 	end := endSignatureAt(md)
 	if end < start {
 		return
 	}
+	inField := func(at int) bool {
+		for _, f := range fields {
+			if at >= f.Offset && at < f.End {
+				return true
+			}
+		}
+		return false
+	}
 	seen := map[rune]bool{}
 	for i, r := range md[start:end] {
-		if r < 0x80 || seen[r] || HasPDFGlyph(r) || unicode.IsSpace(r) {
+		if r < 0x80 || seen[r] || HasPDFGlyph(r) || unicode.IsSpace(r) || inField(start+i) {
 			continue
 		}
 		seen[r] = true
 		line, col := position(md, start+i)
 		add(line, col, Warning, "pdf-glyph-missing", fmt.Sprintf("„%c“ (U+%04X) fehlt in der Schrift des PDFs und erscheint dort als leeres Kästchen.", r, r))
 		if len(seen) >= 20 {
-			return
+			break
+		}
+	}
+	for _, f := range fields {
+		var missing []string
+		for _, r := range f.Value {
+			if !HasPDFFieldGlyph(r) && !slices.Contains(missing, string(r)) {
+				missing = append(missing, string(r))
+			}
+		}
+		if len(missing) > 0 {
+			add(f.Line, f.Col, Warning, "pdf-field-glyph-missing", fmt.Sprintf("Feld `%s`: „%s“ fehlt in der Schrift der PDF-Formularfelder (Liberation Sans) und erscheint im Feld als leeres Kästchen; z. B. `⇒` durch `=>` ersetzen.", f.Name, strings.Join(missing, "“, „")))
 		}
 	}
 }
