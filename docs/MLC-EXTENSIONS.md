@@ -224,8 +224,8 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 
 ### Field names with a dot and schemas
 
-> **Not released yet.** `mlcmd2pdf` still rejects a name with a dot, so such a
-> document produces no PDF until that is done (T-MD2PD-20261105-01).
+> Needs mlcdoc 0.20.0 (mlcmd2pdf 3.29.0) or later, bundled from MarkSafe
+> 1.11.0; older versions reject a name with a dot.
 
 A dot decides what a field name means:
 

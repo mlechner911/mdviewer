@@ -4,6 +4,8 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.11.0] – 2026-11-06
+
 ### Added
 - **Field names with a dot** (`[@#probe.calibration.last]`) for properties a **field schema** describes. The schema comes from the front matter (`schema:` with an `https://schemas.mlcgo.eu/…/v1` address or inline) and is looked up in the folder **File › Open Field Schemas Folder**. The editor completes property names, shows their description on hover, warns about unknown properties and about a date pattern on a text field; the preview can show the schema's example values. In the PDF a dotted name becomes real form levels (`probe` › `calibration` › `last`).
 - **Filling in a form** shows the document's text, images and links between the fields, so the instructions stay in view. Field names under the inputs can be hidden.
