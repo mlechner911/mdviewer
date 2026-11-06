@@ -62,7 +62,7 @@ MIT License - Copyright (c) 2026 Michael Lechner
 
 Exception:
 
-- **MLC PDF toolkit `mlcdoc`**, shipped with the installers: its own license files, installed next to it (`licenses/mlcdoc`).
+- **MLC PDF toolkit `mlcdoc`**, shipped with the installers: Elastic License 2.0 (from mlcdoc 0.21.0) and the licenses of its parts, installed next to it (`licenses/mlcdoc`).
 
 ---
 *For technical details and build instructions, see **[DEVELOPER.md](./DEVELOPER.md)** and **[THEMING.md](./THEMING.md)**. Changes per release: **[CHANGELOG.md](./CHANGELOG.md)**. The standalone directory browser: **[marksafe_browse](./marksafe_browse/README.md)**.*

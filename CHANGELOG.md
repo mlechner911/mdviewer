@@ -14,7 +14,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 - The toolbar menu **MLC ▾** is replaced by a button for the form field dialog, shown for every document. With a schema, the old prefill names are no longer suggested; existing ones stay valid.
-- The bundled PDF toolkit is mlcdoc 0.20.0 (mlcmd2pdf 3.29.0).
+- The bundled PDF toolkit is mlcdoc 0.21.0 (mlcmd2pdf 3.29.0). From this version mlcdoc is under the **Elastic License 2.0** (`licenses/mlcdoc/LICENSE-mlcdoc`); MarkSafe stays MIT. Its packages now also carry the licenses of the fonts Inter, Dancing Script and JetBrains Mono and of the PRC reader.
 - The toolbar groups the headings H1 to H3 in a menu **H ▾**.
 
 ### Fixed
