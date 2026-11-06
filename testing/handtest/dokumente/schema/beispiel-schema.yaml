@@ -1,0 +1,10 @@
+# In den Ordner kopieren, den "Datei > Ordner für Feld-Schemas öffnen" zeigt.
+id: https://schemas.mlcgo.eu/forms/test/v1
+title: { de: "Testschema", en: "Test schema" }
+fields:
+  patient.name: { type: text, example: { de: "Erika Muster", en: "Jane Doe" }, description: { de: "Name", en: "Name" } }
+  patient.birth_date: { type: date, example: { de: "16.10.1980", en: "16.10.1980" }, description: { de: "Geburtsdatum", en: "Date of birth" } }
+  patient.visit_time: { type: time, example: { de: "08:30", en: "08:30" }, requires: visit, description: { de: "Uhrzeit des Besuchs", en: "Time of the visit" } }
+  patient.number: { type: number, fixed: true, description: { de: "Patientennummer", en: "Patient number" } }
+legacy:
+  name: patient.name

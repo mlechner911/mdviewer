@@ -183,6 +183,65 @@ tasks:
       # Portable use: mlcdoc next to the executable.
       - cp "{{.MLCDOC_DIR}}/windows/mlcdoc.exe" "{{.BIN_DIR}}/mlcdoc.exe"
 
+  handtest:prepare:
+    desc: Windows test builds and the hand test documents → dropzone/marksafe-test (SENSOR=1 also MarkSafePlus); see testing/handtest/README.md
+    vars:
+      OUT: '{{.DROPZONE}}/marksafe-test'
+      MODULE_DOCS: frontend/src/sensormonitor/docs
+    preconditions:
+      - sh: '[ -z "{{.SENSOR_TAG}}" ] || [ -f {{.MODULE_DOCS}}/HANDTEST.md ]'
+        msg: "SENSOR=1 needs the private submodule frontend/src/sensormonitor"
+    cmds:
+      - mkdir -p "{{.OUT}}"
+      # MarkSafePlus first, so bin/ and frontend/.variant end on standard.
+      - |
+        {{if .SENSOR_TAG}}
+        task build:windows SENSOR=1
+        cp "{{.BIN_DIR}}/marksafe.exe" "{{.OUT}}/test-marksafeplus.exe"
+        cp "{{.BIN_DIR}}/marksafe-amd64-installer.exe" "{{.OUT}}/test-marksafeplus-setup.exe"
+        {{end}}
+      - task build:windows
+      - cp "{{.BIN_DIR}}/marksafe.exe" "{{.OUT}}/test-marksafe.exe"
+      - cp "{{.BIN_DIR}}/marksafe-amd64-installer.exe" "{{.OUT}}/test-marksafe-setup.exe"
+      - rm -rf "{{.OUT}}/handtest" && mkdir -p "{{.OUT}}/handtest"
+      - cp -r testing/handtest/dokumente/. "{{.OUT}}/handtest/"
+      - cp testing/handtest/README.md "{{.OUT}}/handtest/HANDTEST.md"
+      - |
+        {{if .SENSOR_TAG}}
+        mkdir -p "{{.OUT}}/handtest/plus"
+        cp {{.MODULE_DOCS}}/handtest/* "{{.OUT}}/handtest/plus/"
+        cp {{.MODULE_DOCS}}/HANDTEST.md "{{.OUT}}/handtest/plus/HANDTEST-PLUS.md"
+        {{end}}
+      # STAND.txt: what was built, for the report (task handtest:report).
+      - |
+        commit=$(git rev-parse --short HEAD)
+        if [ -n "$(git status --porcelain --untracked-files=no -- . ':!frontend/package-lock.json')" ]; then commit="$commit+lokal"; fi
+        {
+          echo "version=$(cat VERSION)"
+          echo "commit=$commit"
+          {{if .SENSOR_TAG}}echo "plus=$(git -C frontend/src/sensormonitor rev-parse --short HEAD)"{{end}}
+          echo "built=$(date '+%Y-%m-%dT%H:%M')"
+        } > "{{.OUT}}/handtest/STAND.txt"
+        cat "{{.OUT}}/handtest/STAND.txt"
+      - echo "Hand test ready in {{.OUT}} — list in handtest/HANDTEST.md{{if .SENSOR_TAG}} and handtest/plus/HANDTEST-PLUS.md{{end}}"
+
+  handtest:report:
+    desc: 'Report the hand test to the Doc Hub: task handtest:report -- standard|plus passed|failed "note"'
+    vars:
+      STAND: '{{.DROPZONE}}/marksafe-test/handtest/STAND.txt'
+    cmds:
+      - |
+        set -- {{.CLI_ARGS}}
+        case "$1" in standard|plus) ;; *) echo "usage: task handtest:report -- standard|plus passed|failed \"note\"" >&2; exit 2 ;; esac
+        case "$2" in passed|failed) ;; *) echo "status must be passed or failed" >&2; exit 2 ;; esac
+        stand="?"
+        if [ -f "{{.STAND}}" ]; then
+          . "{{.STAND}}"
+          stand="$version $commit"
+          if [ "$1" = plus ]; then stand="$stand, Modul ${plus:-?}"; fi
+        fi
+        dochub-cli test report "other-win11-$1" --status "$2" --note "$stand${3:+: $3}"
+
   build:macos:remote:
     desc: "Build and sign the macOS universal .app + .dmg on macstudio via SSH → /mnt/data2tb/dropzone/marksafe-{VERSION}.dmg"
     vars:
