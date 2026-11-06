@@ -119,6 +119,24 @@ tasks:
     cmds:
       - ./scripts/sync-version.sh --check
 
+  mlcdoc:test:
+    desc: PDF tests of mlcext against the bundled mlcdoc (Linux); fails when a test is skipped
+    deps: [mlcdoc:fetch]
+    dir: mlcext
+    env:
+      MLCDOC_PATH: '{{.MLCDOC_DIR}}/linux/mlcdoc'
+    cmds:
+      # Without mlcdoc or pdftotext the tests skip themselves and go test
+      # stays green; here a skip is a failure.
+      - |
+        out=$(go test -count=1 -v ./mlcdoc/ 2>&1); rc=$?
+        echo "$out"
+        [ $rc -eq 0 ] || exit $rc
+        if echo "$out" | grep -q -- '--- SKIP'; then
+          echo "ERROR - tests skipped (mlcdoc $("$MLCDOC_PATH" --version), pdftotext?)" >&2
+          exit 1
+        fi
+
   mlcdoc:fetch:
     desc: Extract the pinned mlcdoc release (Windows + Linux binary, licenses) into build/mlcdoc for bundling
     status:
@@ -365,7 +383,11 @@ tasks:
         fi
       # mlcext is its own module (MLC Markdown Extension checker), not part of ./...
       - cd mlcext && go test ./...
+      # three npm packages, each with its own tests (mlc-markdown runs the
+      # shared vectors of mlcext/testdata)
       - cd packages/mlc-markdown && npx vitest run --root ../mlcext-editor
+      - cd packages/mlc-markdown && npx vitest run
+      - cd packages/mlc-markdown-svelte && npx vitest run
 
   install:
     desc: Install backend and frontend dependencies
