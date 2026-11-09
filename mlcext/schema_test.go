@@ -159,3 +159,19 @@ func TestFormSchemaCheckQuestion(t *testing.T) {
 		}
 	}
 }
+
+func TestFormSchemaGroupParentWithFields(t *testing.T) {
+	md := "*   **QMB:** [@#abschluss_name ______] **Datum:** [@#abschluss_datum TT.MM.JJJJ]\n" +
+		"    - [@#sig_abschluss Unterschrift: QMB (Abschluss)]\n\n" +
+		"1. Zeuge\n    - Name: [@#z_name ___]\n"
+	got := map[string]FormField{}
+	for _, f := range FormSchema(md) {
+		got[f.Name] = f
+	}
+	if g := got["sig_abschluss"]; g.Group != "" || g.Label != "QMB (Abschluss)" {
+		t.Errorf("sig_abschluss: group %q label %q", g.Group, g.Label)
+	}
+	if g := got["z_name"].Group; g != "Zeuge" {
+		t.Errorf("z_name: group %q", g)
+	}
+}

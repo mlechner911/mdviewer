@@ -304,12 +304,18 @@ func lineAboveAt(ls []string, line int) int {
 	return -1
 }
 
-// groupAbove: for an indented list item the parent item's text.
+// groupAbove: for an indented list item the parent item's text. A parent
+// with fields of its own is no group heading ("QMB: [@#name ___]" above
+// "- [@#sig Unterschrift: QMB]"): its fields come before in a mask anyway.
 func groupAbove(ls []string, line int) string {
-	if i := groupAboveAt(ls, line); i >= 0 {
-		return labelText(ls[i])
+	i := groupAboveAt(ls, line)
+	if i < 0 {
+		return ""
 	}
-	return ""
+	if fields, _ := ExtractFields(ls[i]); len(fields) > 0 {
+		return ""
+	}
+	return labelText(ls[i])
 }
 
 // groupAboveAt is the index of that parent item, -1 when there is none.

@@ -8,6 +8,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 - **Signing flow** in the front matter (`signatures:` with `field`, `who`, `after`, `requires`, `not_same`, `when`): the editor checks it against the form's fields; mlcdoc's printed signature lines under the same key keep working.
 
 ### Fixed
+- A field indented under a list item that has fields of its own no longer shows that item's field syntax as its group in the form schema.
 - A check box with its question before it on the line (`Frage? [@#a] Ja [@#b] Nein`) now carries that question in the form schema, not just "Ja"/"Nein".
 
 ## [1.12.0] – 2026-11-06
