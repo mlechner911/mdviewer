@@ -102,7 +102,7 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 - **The front matter is the only place for id, version and title** (`doc_id`,
   `version`, `title`, like Hugo and Jekyll). Allowed keys: `doc_id`, `title`,
   `version`, `description`, `event_kinds`, `attachment_kind`, `attachment_once`, `profile`,
-  `meta` (see below). The kind (SOP, VA, FB, INFO) follows from the `doc_id` prefix.
+  `meta`, `schema`, `signatures` (see below). The kind (SOP, VA, FB, INFO) follows from the `doc_id` prefix.
 - **Attachment kind** (publishing host, e.g. the Sensor Monitor): `attachment_kind: SB` makes the template a kind of
   attachment — files attached to an event or device are chosen by kind instead of a typed title,
   and get identifiers like `EV-2026-0820/SB-1`. The code is 1 to 8 capitals or digits, needs a
@@ -162,8 +162,28 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   signature (it becomes a new version). Older documents carry the signature
   as a `signature:` front matter block before the document's own front
   matter; both forms are read (`mlcext.SplitSignature`). Not to be confused
-  with `signatures:` in the layout front matter of mlcdoc: those are the
-  printed signature lines.
+  with `signatures:` in the front matter: the signing flow, or in mlcdoc's
+  form the printed signature lines.
+- **Signing flow** (`signatures:`, `mlcext` 0.17.0): who signs a form, in which order and under
+  which conditions — the same form as the Sensor Monitor's catalog:
+
+  ```yaml
+  signatures:
+    - field: sig_qmb          # the signature field [@#sig_qmb Unterschrift: …]
+      who: "Qualitätsbeauftragte/r (QMB)"
+      right: K                # a right of the publishing host; "" = anyone signed in
+      after: [sig_entdecker]  # signed before
+      requires: [ursache, risiko_kritisch|risiko_major]  # filled in before; a|b = one of them
+      not_same: [sig_leitung] # four-eyes principle
+      when: "nur bei einer Datenlücke"  # conditional: may be skipped with a reason
+  ```
+
+  The check reports a step without a named signature field or without `who`, a field twice,
+  `after`/`not_same` naming no other step, `requires` naming no fillable field, a loop in
+  `after` (errors), and a signature field without a step (warning). `right` is only text here;
+  enforcing the flow is up to the publishing host. mlcdoc uses the same key for its printed
+  signature lines (`role`, `name`, `hint`, `caption`): a list without step keys stays mlcdoc's,
+  a flow is removed before rendering (`mlcdoc.Prepare`).
 - **Filling a form** (`mlcext.FillFields`, plan P-SENS-20261028-01): the
   values go **into the fields**, so a filled-in form is still the same form
   and renders as PDF/A with the values in its fields:

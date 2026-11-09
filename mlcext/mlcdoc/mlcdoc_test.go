@@ -108,6 +108,16 @@ func TestKeysMatchBinary(t *testing.T) { // needs mlcdoc
 }
 
 // A dotted field name becomes real PDF levels. Needs mlcdoc 0.20.0.
+// A form with a signing flow renders: the flow is not mlcdoc's.
+func TestRenderPDFWithSignatureFlow(t *testing.T) { // needs mlcdoc
+	c := client(t)
+	md := "---\ndoc_id: FB-1\ntitle: T\nsignatures:\n  - field: sig_a\n    who: A\n---\n" +
+		"# T\n\n[@#sig_a Unterschrift: A]\n"
+	if _, err := c.RenderPDF(context.Background(), Request{Markdown: md}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRenderPDFDottedFieldNames(t *testing.T) {
 	c := client(t)
 	if compare(semver(c.Version()), semver("mlcdoc 0.20.0")) < 0 {
@@ -136,7 +146,9 @@ func TestPrepare(t *testing.T) {
 		{"---\ntitle: X\ntags: [a, b]\naliases: [c]\n---\n# A\n", "---\ntitle: X\n---\n# A\n", "tags,aliases"},
 		{"---\nevent_kinds: [DEVIATION]\n---\n\n# A\n", "# A\n", ""}, // own keys: removed, not reported
 		{"---\ndoc_id: X\ntags: [a]\n---\n# A\n", "# A\n", "tags"},
-		{"---\nschema: https://schemas.mlcgo.eu/forms/test/v1\ntitle: X\n---\n# A\n", "---\ntitle: X\n---\n# A\n", ""}, // own key: older mlcdoc rejects it
+		{"---\nschema: https://schemas.mlcgo.eu/forms/test/v1\ntitle: X\n---\n# A\n", "---\ntitle: X\n---\n# A\n", ""},         // own key: older mlcdoc rejects it
+		{"---\ntitle: X\nsignatures:\n  - field: sig_a\n    who: A\n---\n# A\n", "---\ntitle: X\n---\n# A\n", ""},              // signing flow: mlcdoc rejects it
+		{"---\ntitle: X\nsignatures:\n  - role: QMB\n---\n# A\n", "---\ntitle: X\nsignatures:\n  - role: QMB\n---\n# A\n", ""}, // mlcdoc's signature lines stay
 		{"---\ntitle: [kaputt\n---\n# A\n", "---\ntitle: [kaputt\n---\n# A\n", ""},
 		{"---\ndoc_id: SOP-QM-001\ntitle: K\n---\n# {{title}} {{doc_id}}\n<!--mlc-signature\nsha256: x\n-->\n", "---\ntitle: K\n---\n# K SOP-QM-001\n", ""},
 	} {

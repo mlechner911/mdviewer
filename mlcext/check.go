@@ -116,6 +116,7 @@ func Check(md string, opt Options) []Diagnostic {
 	}
 
 	checkSchema(md, keyLines["schema"], fields, opt, add)
+	checkSignatureFlow(md, fields, add)
 
 	checkComments(md, add)
 	checkGlyphs(md, fields, add)

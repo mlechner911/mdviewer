@@ -98,7 +98,10 @@ func prepareContent(md string) (string, []string) {
 	kept := m.Content[:0:0]
 	removed := false
 	for i := 0; i+1 < len(m.Content); i += 2 {
-		if slices.Contains(Keys, m.Content[i].Value) {
+		// "signatures:" is mlcdoc's signature lines or mlcext's signing flow,
+		// which mlcdoc rejects.
+		flow := m.Content[i].Value == "signatures" && mlcext.IsSignatureFlowNode(m.Content[i+1])
+		if slices.Contains(Keys, m.Content[i].Value) && !flow {
 			kept = append(kept, m.Content[i], m.Content[i+1])
 			continue
 		}

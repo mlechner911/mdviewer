@@ -37,6 +37,8 @@ if mlcext.Detect(md) {
 | `PDFHTML`, `Options.PDF`, `AnalyzeWith` | HTML on the way to the PDF: Markdown where it has a form, else text or left out; `Options.PDF` adds the editor's notes (`html-pdf-*`), also outside the extension |
 | `FieldSchema`, `ParseFieldSchema`, `LoadSchemas`, `DocumentSchema`, `AnalyzeWithSchemas` | Schemas for field names with a dot (format: `mlc-field-schema.schema.json`); `Options.Schemas` finds one by its ID, never over the network |
 | `LoadTemplates`, `TemplateInfo.Render`, `SuggestRefNo` | Templates as data: schema (`*.json`, see `mlc-template.schema.json`) + Markdown body; built-in starting set, overridable from a folder |
+| `FormSchema`, `FormLayout` | Fields of a form for an input mask: label, section, group, for a check box the question before the first box of its line (`Question`); the layout adds the text in between |
+| `SignatureFlow`, `IsSignatureFlowNode` | The signing flow from `signatures:` in the front matter (who signs, after whom, what must be filled in, four eyes); `Check` validates it. mlcdoc's printed signature lines under the same key stay mlcdoc's |
 | `StoredText` | The text as it is rendered: signature removed, variables replaced, upload front matter removed |
 | `mlcdoc.New`, `Client.RenderPDF`, `Client.RenderPages` | PDF and page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`): version check, front matter preparation (`mlcdoc.Prepare`), typed `RenderError` with line |
 

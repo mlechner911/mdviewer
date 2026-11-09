@@ -243,8 +243,9 @@ func StoredText(md string) string {
 	if len(node.Content) > 0 {
 		m := node.Content[0]
 		for i := 0; i+1 < len(m.Content); i += 2 {
-			if !slices.Contains(FrontMatterKeys, m.Content[i].Value) {
-				return md
+			k := m.Content[i].Value
+			if !slices.Contains(FrontMatterKeys, k) || (k == "signatures" && !IsSignatureFlowNode(m.Content[i+1])) {
+				return md // mlcdoc layout, such as its signature lines
 			}
 		}
 	}
