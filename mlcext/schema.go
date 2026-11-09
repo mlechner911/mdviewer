@@ -23,11 +23,16 @@ type FormField struct {
 	Section string `json:"section,omitempty"`
 	// Group is the list item a nested item belongs to ("2. Zeuge" above
 	// "- Name:"), empty otherwise.
-	Group   string `json:"group,omitempty"`
-	Pattern string `json:"pattern,omitempty"`
-	Tooltip string `json:"tooltip,omitempty"`
-	Chars   int    `json:"chars,omitempty"`
-	Rows    int    `json:"rows,omitempty"`
+	Group string `json:"group,omitempty"`
+	// Question of a check box: the text before the first box of its line
+	// when every field up to this one is a box ("Wurde X umgesetzt? [@#x_ja]
+	// Ja [@#x_nein] Nein" → "Wurde X umgesetzt?"); Label stays the answer.
+	// Empty when there is no such text or it is the label already.
+	Question string `json:"question,omitempty"`
+	Pattern  string `json:"pattern,omitempty"`
+	Tooltip  string `json:"tooltip,omitempty"`
+	Chars    int    `json:"chars,omitempty"`
+	Rows     int    `json:"rows,omitempty"`
 	// Role of a signature field: who signs. A mask shows it as "to be
 	// signed by …", never as an input.
 	Role string `json:"role,omitempty"`
@@ -91,6 +96,11 @@ func FormSchema(md string) []FormField {
 				ff.Label = lineAbove(srcLines, f.Line)
 			}
 			ff.Group = groupAbove(srcLines, f.Line)
+			if f.Kind == CheckBox {
+				if q := checkQuestion(md, fields, i, lineStart); q != ff.Label {
+					ff.Question = q
+				}
+			}
 		}
 		out = append(out, ff)
 	}
@@ -191,6 +201,19 @@ func FormLayout(md string) []FormBlock {
 	}
 	flush()
 	return out
+}
+
+// checkQuestion is the text before the first field on the line of check box
+// fields[i], "" when a field other than a check box comes before it.
+func checkQuestion(md string, fields []Field, i, lineStart int) string {
+	j := i
+	for j > 0 && fields[j-1].End > lineStart {
+		j--
+		if fields[j].Kind != CheckBox {
+			return ""
+		}
+	}
+	return labelText(md[lineStart:fields[j].Offset])
 }
 
 func isTableLine(s string) bool { return strings.HasPrefix(strings.TrimSpace(s), "|") }

@@ -132,3 +132,30 @@ func TestFormLayoutKeepsAllFields(t *testing.T) {
 		t.Errorf("got %v\nwant %v", names, want)
 	}
 }
+
+func TestFormSchemaCheckQuestion(t *testing.T) {
+	md := "## Wirksamkeit\n" +
+		"*   **Wurden alle Maßnahmen fristgerecht umgesetzt?** [@#fristgerecht_ja] Ja  [@#fristgerecht_nein] Nein\n" +
+		"*   **Ist der Fehler seitdem erneut aufgetreten?** [@#erneut_ja] Ja  [@#erneut_nein] Nein\n" +
+		"* [@#ware_ok] Ware in Ordnung\n" +
+		"Kontrolle: [@#k] Ort: [@#o ___]\n" +
+		"Name: [@#n ___] [@#gesehen] gesehen\n"
+	got := map[string]FormField{}
+	for _, f := range FormSchema(md) {
+		got[f.Name] = f
+	}
+	for _, c := range []struct{ name, label, question string }{
+		{"fristgerecht_ja", "Ja", "Wurden alle Maßnahmen fristgerecht umgesetzt?"},
+		{"fristgerecht_nein", "Nein", "Wurden alle Maßnahmen fristgerecht umgesetzt?"},
+		{"erneut_ja", "Ja", "Ist der Fehler seitdem erneut aufgetreten?"},
+		{"erneut_nein", "Nein", "Ist der Fehler seitdem erneut aufgetreten?"},
+		{"ware_ok", "Ware in Ordnung", ""},
+		{"k", "Kontrolle", ""},
+		{"gesehen", "gesehen", ""},
+	} {
+		f := got[c.name]
+		if f.Label != c.label || f.Question != c.question {
+			t.Errorf("%s: label %q question %q, want %q / %q", c.name, f.Label, f.Question, c.label, c.question)
+		}
+	}
+}
