@@ -1,0 +1,96 @@
+[
+  {
+    "alt": "Foto",
+    "text": "Foto",
+    "size": {}
+  },
+  {
+    "alt": "Foto|200",
+    "text": "Foto",
+    "size": {
+      "width": 200
+    }
+  },
+  {
+    "alt": "Foto|200x100",
+    "text": "Foto",
+    "size": {
+      "width": 200,
+      "height": 100
+    }
+  },
+  {
+    "alt": "Foto|50%",
+    "text": "Foto",
+    "size": {
+      "percent": 50
+    }
+  },
+  {
+    "alt": "Foto | 100% ",
+    "text": "Foto",
+    "size": {
+      "percent": 100
+    }
+  },
+  {
+    "alt": "|300",
+    "text": "",
+    "size": {
+      "width": 300
+    }
+  },
+  {
+    "alt": "A|B|120",
+    "text": "A|B",
+    "size": {
+      "width": 120
+    }
+  },
+  {
+    "alt": "Ja|Nein",
+    "text": "Ja|Nein",
+    "size": {}
+  },
+  {
+    "alt": "Foto|",
+    "text": "Foto|",
+    "size": {}
+  },
+  {
+    "alt": "Foto|200px",
+    "text": "Foto",
+    "size": {},
+    "error": true
+  },
+  {
+    "alt": "Foto|200x",
+    "text": "Foto",
+    "size": {},
+    "error": true
+  },
+  {
+    "alt": "Foto|150%",
+    "text": "Foto",
+    "size": {},
+    "error": true
+  },
+  {
+    "alt": "Foto|0%",
+    "text": "Foto",
+    "size": {},
+    "error": true
+  },
+  {
+    "alt": "Foto|0",
+    "text": "Foto",
+    "size": {},
+    "error": true
+  },
+  {
+    "alt": "Foto|200x0",
+    "text": "Foto",
+    "size": {},
+    "error": true
+  }
+]
