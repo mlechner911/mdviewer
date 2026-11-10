@@ -88,14 +88,17 @@ func AnalyzeWithSchemas(md string, schemas func(id string) (FieldSchema, bool)) 
 	return AnalyzeWith(md, Options{Schemas: schemas})
 }
 
-// AnalyzeWith is Analyze with the caller's Schemas and PDF options. With PDF,
-// a document outside the extension gets the HTML notes too.
+// AnalyzeWith is Analyze with the caller's Schemas and PDF options. A
+// document outside the extension gets the image size check, with PDF also
+// the HTML notes.
 func AnalyzeWith(md string, opt Options) Analysis {
 	a := Analysis{Diagnostics: []Diagnostic{}, Fields: []FieldSpan{}, Hints: []HintSpan{}, Lists: SharedLists()}
 	if !Detect(md) {
 		if opt.PDF {
 			a.Diagnostics = append(a.Diagnostics, htmlDiagnostics(md)...)
 		}
+		// Image sizes are plain Markdown too: checked in every document.
+		a.Diagnostics = append(a.Diagnostics, imageSizeDiagnostics(md, opt.PDF)...)
 		return a
 	}
 	a.Detected = true

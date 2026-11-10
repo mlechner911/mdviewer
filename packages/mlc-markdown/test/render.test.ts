@@ -182,3 +182,30 @@ describe('table alignment', () => {
     expect([...d.querySelectorAll('td')].map((c) => c.getAttribute('align'))).toEqual(['left', 'right', 'center']);
   });
 });
+
+describe('image size in the alt text', () => {
+  const img = (md: string) => doc(html(md)).querySelector('img')!;
+  it('width, box and percent; the size leaves the alt text', () => {
+    expect(img('![Foto|200](a.png)').getAttribute('style')).toBe('width:200px;max-width:100%');
+    expect(img('![Foto|200](a.png)').getAttribute('alt')).toBe('Foto');
+    expect(img('![Foto|200x100](a.png)').getAttribute('style')).toBe('max-width:min(200px,100%);max-height:100px;width:auto;height:auto');
+    expect(img('![Foto|50%](a.png)').getAttribute('style')).toBe('width:50%');
+  });
+  it('no size or an unreadable one: as written, no style', () => {
+    expect(img('![Ja|Nein](a.png)').hasAttribute('style')).toBe(false);
+    expect(img('![Ja|Nein](a.png)').getAttribute('alt')).toBe('Ja|Nein');
+    expect(img('![Foto|150%](a.png)').getAttribute('alt')).toBe('Foto|150%');
+    expect(img('![Foto|150%](a.png)').hasAttribute('style')).toBe(false);
+  });
+  it('raw HTML cannot borrow the style marker', () => {
+    for (const raw of ['<img src="a.png" data-mlc-style style="position:fixed">', '<span DATA-MLC-STYLE="1" style="position:fixed">x</span>']) {
+      const d = doc(html(raw, { rawHtml: 'sanitize' }));
+      expect(d.querySelector('[style]')).toBeNull();
+    }
+  });
+  it('an image alone in its paragraph is marked, one in running text is not', () => {
+    const d = doc(html('![A](a.png)\n\nText ![B](b.png) mehr\n'));
+    expect(d.querySelectorAll('p.mlc-md-image').length).toBe(1);
+    expect(d.querySelector('p.mlc-md-image img')!.getAttribute('alt')).toBe('A');
+  });
+});

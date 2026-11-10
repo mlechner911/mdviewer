@@ -40,6 +40,17 @@ describe('<MlcMarkdown>', () => {
     done();
   });
 
+  it('centres images alone in their paragraph only when asked', async () => {
+    const a = setup({ source: '![A](a.png)' });
+    await tick();
+    expect(a.target.querySelector('.mlc-md-center-images')).toBeNull();
+    a.done();
+    const b = setup({ source: '![A](a.png)', centerImages: true });
+    await tick();
+    expect(b.target.querySelector('.mlc-md.mlc-md-center-images p.mlc-md-image img')).not.toBeNull();
+    b.done();
+  });
+
   it('title not twice: with an H1 in the document the header leaves it out', async () => {
     const { target, done } = setup({ source: '---\ndoc_id: SOP-QM-001\ntitle: Kühlkette\n---\n# {{title}}\n\nText' });
     await tick();

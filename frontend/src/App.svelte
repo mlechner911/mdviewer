@@ -741,6 +741,8 @@
   let pdfWatermark = $state('');
   // Placeholders instead of images in the PDF preview (setting).
   let pdfNoImages = $state(false);
+  // View › Center Images (setting; the menu item switches it).
+  let centerImages = $state(false);
   async function changeNoImages(v: boolean) {
     await backend.setPDFPreviewNoImages(v);
     pdfNoImages = v;
@@ -806,6 +808,7 @@
     'menu-settings': () => { if (settingsSections.length) showSettings = true; },
     'app-close-requested': () => void closeRequested(),
     'set-theme': (theme: string) => appTheme.set(theme as any),
+    'center-images': (v: boolean) => (centerImages = !!v),
     // A module learned or dropped a schema: check the open document again.
     'schemas-changed': () => debouncedUpdate(markdown, currentPreviewTheme.chromaStyle),
   };
@@ -817,6 +820,7 @@
       backend.mlcdocVersion().then((v) => (mlcdocVersion = v));
       backend.getPDFWatermark().then((w) => (pdfWatermark = w));
       backend.getPDFPreviewNoImages().then((v) => (pdfNoImages = v));
+      backend.getCenterImages().then((v) => (centerImages = v));
       const wailsReady = checkWailsReady();
       if (wailsReady || import.meta.env.DEV) {
         if (wailsReady) {
@@ -1437,6 +1441,7 @@
         source={markdown}
         theme={currentPreviewTheme} 
         fontSize={fontSize} 
+        {centerImages}
         currentFilePath={imagePathOf(tabs[activeTabIndex])}
         {imagesRevision}
         analysis={mlcAnalysis}

@@ -96,12 +96,20 @@ func ImageAlt(text string, size ImageSize) string {
 	return text + "|" + size.String()
 }
 
-// checkImageSizes reports image sizes that cannot be read.
-func checkImageSizes(md string, add func(int, int, Severity, string, string)) {
+// imageSizeDiagnostics reports image sizes that cannot be read, in every
+// Markdown document (not only those of the extension). With pdf it also
+// notes that mlcdoc does not apply a size yet (I-MD2PD-20261028-01).
+func imageSizeDiagnostics(md string, pdf bool) []Diagnostic {
+	var ds []Diagnostic
 	for _, m := range imageMatches(md) {
-		if _, _, err := SplitImageAlt(md[m[2]:m[3]]); err != nil {
-			line, col := position(md, m[0])
-			add(line, col, Warning, "image-size", err.Error()+"; das Bild wird in seiner eigenen Größe gezeigt.")
+		_, size, err := SplitImageAlt(md[m[2]:m[3]])
+		line, col := position(md, m[0])
+		switch {
+		case err != nil:
+			ds = append(ds, Diagnostic{line, col, Warning, "image-size", err.Error() + "; das Bild wird in seiner eigenen Größe gezeigt."})
+		case pdf && !size.IsZero():
+			ds = append(ds, Diagnostic{line, col, Info, "image-size-pdf", fmt.Sprintf("Bildgröße `%s` gilt in der Vorschau; im PDF erscheint das Bild noch in seiner eigenen Größe.", size)})
 		}
 	}
+	return ds
 }

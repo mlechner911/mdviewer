@@ -25,6 +25,7 @@
     source = '',
     theme,
     fontSize = 100,
+    centerImages = false,
     currentFilePath = null,
     imagesRevision = 0,
     analysis = null,
@@ -36,6 +37,8 @@
     source: string;
     theme: Theme;
     fontSize?: number;
+    /** View › Center Images: images alone in their paragraph are centred. */
+    centerImages?: boolean;
     currentFilePath?: string | null;
     /** Raised when a folder or domain was allowed: images are checked again. */
     imagesRevision?: number;
@@ -150,6 +153,7 @@
       theme={theme.id}
       frontMatter={mlcDoc ? 'hide' : 'box'}
       debounce={150}
+      {centerImages}
       rawHtml="sanitize"
       {highlight}
       {resolveUrl}

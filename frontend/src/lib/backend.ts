@@ -39,6 +39,7 @@ import {
   GetPDFWatermark,
   SetPDFWatermark,
   GetPDFPreviewNoImages,
+  GetCenterImages,
   SetPDFPreviewNoImages,
   SetUnsavedChanges,
   CloseApp,
@@ -361,6 +362,12 @@ export async function openTemplatesFolder(): Promise<void> {
 export async function templatesFolder(): Promise<string> {
   if (!isWailsReady()) return '';
   try { return (await TemplatesFolder()) ?? ''; } catch { return ''; }
+}
+
+/** View › Center Images: images alone in their paragraph are centred. */
+export async function getCenterImages(): Promise<boolean> {
+  if (!isWailsReady()) return false;
+  try { return !!(await GetCenterImages()); } catch { return false; }
 }
 
 /** Placeholders instead of images in the PDF preview (export and print keep them). */

@@ -16,6 +16,7 @@
     frontMatter = 'hide',
     docHeader = true,
     watermark = '',
+    centerImages = false,
     debounce = 0,
     breaks = false,
     rawHtml = 'drop',
@@ -43,6 +44,8 @@
     docHeader?: boolean;
     /** Watermark text across the document (set by the host, e.g. by the version's status); empty for none. */
     watermark?: string;
+    /** Centre images that stand alone in their paragraph (a setting of the host). */
+    centerImages?: boolean;
     /** Wait this long (ms) after the last change of source before rendering. */
     debounce?: number;
     breaks?: boolean;
@@ -246,7 +249,7 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div bind:this={root} class="mlc-md {className}" data-theme={theme} lang={locale} onclick={onClick}>
+<div bind:this={root} class="mlc-md {className}" class:mlc-md-center-images={centerImages} data-theme={theme} lang={locale} onclick={onClick}>
   {#if watermarkUrl}
     <div class="mlc-md-watermark" aria-hidden="true" data-text={watermark.trim().slice(0, 60)} style="background-image: {watermarkUrl}"></div>
   {/if}

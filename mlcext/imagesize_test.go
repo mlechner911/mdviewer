@@ -77,3 +77,23 @@ func TestImageSizeVectors(t *testing.T) {
 		t.Errorf("testdata/imagesize.json is out of date; regenerate with -update and check the diff")
 	}
 }
+
+func TestImageSizeInPlainMarkdownAndPDF(t *testing.T) {
+	md := "# Notiz\n\n![Foto|200](a.png)\n\n![Logo|20 0](b.png)\n"
+	if Detect(md) {
+		t.Fatal("plain Markdown expected")
+	}
+	codesOf := func(a Analysis) []string {
+		var out []string
+		for _, d := range a.Diagnostics {
+			out = append(out, d.Code)
+		}
+		return out
+	}
+	if got := codesOf(AnalyzeWith(md, Options{})); len(got) != 1 || got[0] != "image-size" {
+		t.Errorf("without PDF: %v", got)
+	}
+	if got := codesOf(AnalyzeWith(md, Options{PDF: true})); len(got) != 2 || got[0] != "image-size-pdf" || got[1] != "image-size" {
+		t.Errorf("with PDF: %v", got)
+	}
+}

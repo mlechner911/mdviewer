@@ -4,6 +4,7 @@ package main
 // (UpdateMenu) and the entries that hand actions to the frontend.
 
 import (
+	"log"
 	"path/filepath"
 	"runtime"
 
@@ -149,6 +150,13 @@ func (a *App) UpdateMenu(t map[string]string) {
 	apprMenu.Add(t["menuThemeDark"]).OnClick(func(*application.Context) { emit("set-theme", "dark") })
 	apprMenu.Add(t["menuThemeLight"]).OnClick(func(*application.Context) { emit("set-theme", "light") })
 	apprMenu.Add(t["menuThemeAuto"]).OnClick(func(*application.Context) { emit("set-theme", "auto") })
+	viewMenu.AddSeparator()
+	viewMenu.AddCheckbox(label(t, "menuCenterImages", "Center Images"), a.config.GetCenterImages()).
+		OnClick(func(ctx *application.Context) {
+			if err := a.SetCenterImages(ctx.ClickedMenuItem().Checked()); err != nil {
+				log.Printf("center images: %v", err)
+			}
+		})
 
 	// Edit Menu: role items perform the native clipboard/undo actions on every platform.
 	editMenu := appMenu.AddSubmenu(label(t, "menuEdit", "Edit"))

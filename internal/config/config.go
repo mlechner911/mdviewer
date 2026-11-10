@@ -25,6 +25,9 @@ type AppConfig struct {
 	// PDFPreviewNoImages shows placeholders instead of images in the PDF
 	// preview (faster with many images); export and print keep them.
 	PDFPreviewNoImages bool `json:"pdf_preview_no_images,omitempty"`
+	// CenterImages centres images that stand alone in their paragraph, in
+	// the preview and the HTML export (and in the PDF once mlcdoc can).
+	CenterImages bool `json:"center_images,omitempty"`
 	// LegacySensorMonitorURL is the Sensor Monitor address of MarkSafe 1.8.
 	// MarkSafe no longer uses it, but keeps it when saving: the optional
 	// module (MarkSafePlus, same config folder) takes it over once into its
@@ -141,6 +144,21 @@ func (m *ConfigManager) GetPDFPreviewNoImages() bool {
 func (m *ConfigManager) SetPDFPreviewNoImages(v bool) error {
 	m.mu.Lock()
 	m.config.PDFPreviewNoImages = v
+	m.mu.Unlock()
+	return m.Save()
+}
+
+// GetCenterImages: centre images that stand alone in their paragraph.
+func (m *ConfigManager) GetCenterImages() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.config.CenterImages
+}
+
+// SetCenterImages stores the image alignment setting.
+func (m *ConfigManager) SetCenterImages(v bool) error {
+	m.mu.Lock()
+	m.config.CenterImages = v
 	m.mu.Unlock()
 	return m.Save()
 }

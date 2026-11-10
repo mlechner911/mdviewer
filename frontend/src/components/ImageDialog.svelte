@@ -10,6 +10,7 @@
   import type { EffectiveTheme_t } from '../lib/constants';
   import * as backend from '../lib/backend';
   import { formatBytes } from '../lib/editor/dataUri';
+  import { imageAlt, parseImageSize } from 'mlc-markdown';
 
   const LARGE = 5 * 1024 * 1024;
 
@@ -33,6 +34,8 @@
 
   let choice = $state<backend.MLCImageChoice | null>(null);
   let alt = $state('');
+  /** Size after "|" in the alt text: "200", "200x100" or "50%"; empty = own size. */
+  let sizeText = $state('');
   let embed = $state(true);
   let error = $state('');
   let firstInput = $state<HTMLInputElement>();
@@ -40,7 +43,8 @@
   const pasted = $derived(!!dataUri);
   const canReference = $derived(!!choice?.reference);
   const size = $derived(pasted ? Math.floor(((dataUri ?? '').length * 3) / 4) : (choice?.size ?? 0));
-  const ready = $derived(pasted || !!choice);
+  const parsedSize = $derived(sizeText.trim() ? parseImageSize(sizeText) : {});
+  const ready = $derived((pasted || !!choice) && parsedSize !== null);
 
   async function use(p: string) {
     error = '';
@@ -66,7 +70,7 @@
   async function apply() {
     if (!ready) return;
     try {
-      const text = await backend.imageMarkdown({ path: choice?.path ?? '', dataUri: dataUri ?? '', alt: alt.trim(), embed: pasted || embed }, docPath ?? '');
+      const text = await backend.imageMarkdown({ path: choice?.path ?? '', dataUri: dataUri ?? '', alt: imageAlt(alt.trim(), parsedSize ?? {}), embed: pasted || embed }, docPath ?? '');
       onApply(text);
     } catch (err) {
       error = String(err).replace(/^\w*Error:\s*/, '');
@@ -107,6 +111,12 @@
 
         <label for="img-alt" class="opacity-80">{$t('imageAlt')}</label>
         <input id="img-alt" bind:this={firstInput} bind:value={alt} autocomplete="off" class="px-2 py-1 rounded border {inputClass}" />
+
+        <label for="img-size" class="opacity-80">{$t('imageSize')}</label>
+        <div class="flex items-center gap-2">
+          <input id="img-size" bind:value={sizeText} autocomplete="off" placeholder="200 · 200x100 · 50%" aria-invalid={parsedSize === null} class="w-36 px-2 py-1 rounded border {inputClass}" class:border-red-500={parsedSize === null} />
+          <span class="text-xs opacity-60">{parsedSize === null ? $t('imageSizeInvalid') : $t('imageSizeHint')}</span>
+        </div>
 
         {#if !pasted && choice}
           <span class="opacity-80">{$t('imageHow')}</span>

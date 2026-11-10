@@ -11,6 +11,7 @@
 // become field HTML (escaped, built here) → linkify on text nodes.
 
 import createDOMPurify from 'dompurify';
+import { splitImageAlt, type ImageSize } from './imagesize.js';
 import { Marked, type Token, type Tokens } from 'marked';
 import markedFootnote from 'marked-footnote';
 import { headingSlug, scanFields, type Field } from './fields.js';
@@ -142,6 +143,9 @@ export function createRenderer(opts: RenderOptions = {}) {
   // URLs in embedded HTML take the same way as Markdown links and images
   // (the host's checks: whitelist, local resources); srcset is removed.
   const RAW_URL_RE = /(\s)((?:xlink:)?href|src|poster)(\s*=\s*)("[^"]*"|'[^']*'|[^\s"'>]+)/gi;
+  // data-mlc-style keeps a style through the sanitizer: only this renderer
+  // may set it, never embedded HTML.
+  const dropStyleMarker = (html: string) => html.replace(/\sdata-mlc-style(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?/gi, '');
   const resolveRawUrls = (html: string) =>
     !opts.resolveUrl
       ? html
@@ -223,7 +227,7 @@ export function createRenderer(opts: RenderOptions = {}) {
         if (PAGE_BREAK_RE.test(t)) return `<div class="mlc-md-page-break"><span>${escapeHtml(labels.pageBreak)}</span></div>\n`;
         const a = ANCHOR_RE.exec(t);
         if (a) return `<a id="${escapeHtml(a[1])}"></a>`;
-        if (opts.rawHtml === 'sanitize') return resolveRawUrls(text); // DOMPurify cleans it
+        if (opts.rawHtml === 'sanitize') return resolveRawUrls(dropStyleMarker(text)); // DOMPurify cleans it
         if (t === '</a>' && !block) return '';
         return ''; // other raw HTML is not shown (comments, scripts, styling)
       },
@@ -241,7 +245,11 @@ export function createRenderer(opts: RenderOptions = {}) {
       },
       image({ href, title, text }: Tokens.Image) {
         const url = opts.resolveUrl ? opts.resolveUrl(href, 'image') : href;
-        return `<img src="${escapeHtml(url)}" alt="${escapeHtml(text)}"${title ? ` title="${escapeHtml(title)}"` : ''}>`;
+        // Size after "|" in the alt text (![Foto|200](a.png)); unreadable: alt text as written.
+        const alt = splitImageAlt(text);
+        const style = alt.error ? '' : imageStyle(alt.size);
+        const altText = alt.error ? text : alt.text;
+        return `<img src="${escapeHtml(url)}" alt="${escapeHtml(altText)}"${title ? ` title="${escapeHtml(title)}"` : ''}${style ? ` data-mlc-style style="${style}"` : ''}>`;
       },
     },
   });
@@ -293,6 +301,8 @@ export function createRenderer(opts: RenderOptions = {}) {
   }
 
   function substitute(html: string, items: Placeholder[]): string {
+    // An image alone in its paragraph: centred when the host asks for it (.mlc-md-image).
+    html = html.replace(/<p( data-line="\d+")?>(<img [^>]*>)<\/p>/g, '<p class="mlc-md-image"$1>$2</p>');
     // A fill tip alone in its paragraph becomes a block; elsewhere it stays inline.
     html = html.replace(/<p( data-line="\d+")?>(\d+)\s*<\/p>/g, (m, dl: string | undefined, i: string) => {
       const it = items[Number(i)];
@@ -373,4 +383,16 @@ function plain(text: string): string {
 /** One-off rendering; for repeated calls keep a createRenderer(). */
 export function renderMarkdown(md: string, opts: RenderOptions = {}): Rendered {
   return createRenderer(opts).render(md);
+}
+
+/**
+ * CSS for an image size: px as CSS pixels, never wider than the column; a box
+ * (200x100) shrinks the image to fit inside, keeping its aspect ratio (no
+ * empty space around it); percent of the column's width.
+ */
+function imageStyle(s: ImageSize): string {
+  if (s.percent) return `width:${s.percent}%`;
+  if (s.width && s.height) return `max-width:min(${s.width}px,100%);max-height:${s.height}px;width:auto;height:auto`;
+  if (s.width) return `width:${s.width}px;max-width:100%`;
+  return '';
 }

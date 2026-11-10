@@ -170,6 +170,20 @@ func (a *App) pdfRequest(md, docPath string, watermark ...string) mlcdoc.Request
 	}
 }
 
+// GetCenterImages: images alone in their paragraph are centred (setting).
+func (a *App) GetCenterImages() bool {
+	return a.config.GetCenterImages()
+}
+
+// SetCenterImages stores the setting and tells the frontend.
+func (a *App) SetCenterImages(v bool) error {
+	if err := a.config.SetCenterImages(v); err != nil {
+		return err
+	}
+	emit("center-images", v)
+	return nil
+}
+
 // GetPDFPreviewNoImages: the PDF preview shows placeholders for images.
 func (a *App) GetPDFPreviewNoImages() bool {
 	return a.config.GetPDFPreviewNoImages()
