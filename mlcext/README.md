@@ -39,6 +39,7 @@ if mlcext.Detect(md) {
 | `LoadTemplates`, `TemplateInfo.Render`, `SuggestRefNo` | Templates as data: schema (`*.json`, see `mlc-template.schema.json`) + Markdown body; built-in starting set, overridable from a folder |
 | `FormSchema`, `FormLayout` | Fields of a form for an input mask: label, section, group, for a check box the question before the first box of its line (`Question`); the layout adds the text in between |
 | `SignatureFlow`, `IsSignatureFlowNode` | The signing flow from `signatures:` in the front matter (who signs, after whom, what must be filled in, four eyes); `Check` validates it. mlcdoc's printed signature lines under the same key stay mlcdoc's |
+| `ImageSize`, `ParseImageSize`, `SplitImageAlt`, `ImageAlt` | Image size after `\|` in the alt text (`200`, `200x100`, `50%`); `Check` warns about one it cannot read (`image-size`, in every document) and with `Options.PDF` notes that mlcdoc does not apply it yet (`image-size-pdf`) |
 | `StoredText` | The text as it is rendered: signature removed, variables replaced, upload front matter removed |
 | `mlcdoc.New`, `Client.RenderPDF`, `Client.RenderPages` | PDF and page images from the external `mlcdoc` binary (subpackage `mlcext/mlcdoc`): version check, front matter preparation (`mlcdoc.Prepare`), typed `RenderError` with line |
 
@@ -46,8 +47,8 @@ Severity: **error** means mlcdoc cannot render the document or a host such as
 the Sensor Monitor rejects it; **warning** means it is accepted but probably not intended;
 **info** marks intended behavior, such as a field filled from an event.
 
-Shared test cases: `testdata/fields.json` (form fields) and `testdata/meta.json`
-(variables, signature, rendered text) are run by the TypeScript renderer
+Shared test cases: `testdata/fields.json` (form fields), `testdata/meta.json`
+(variables, signature, rendered text) and `testdata/imagesize.json` are run by the TypeScript renderer
 (`packages/mlc-markdown`) as well; regenerate with `go test -run
 'TestFieldVectors|TestMetaVectors' -update` after a deliberate change.
 

@@ -39,10 +39,38 @@ of them come from GitHub, Pandoc or the KaTeX and Mermaid projects.
 | Front matter | leading `---` YAML block `---` | Jekyll, Hugo, Obsidian … |
 | Heading ids | `## Title {#anchor}` | Pandoc, kramdown, PHP Markdown Extra |
 | Emoji | `:smile:` | GitHub |
+| Image size | `![Photo\|200](a.png)`, `\|200x100`, `\|50%` | Obsidian (wiki links there; here in the plain Markdown form) |
 
 Automatic heading anchors follow GitHub: lower case, space becomes `-`, letters
 (umlauts included), digits, `-` and `_` are kept, and duplicates get `-1`,
 `-2` and so on. `## Größe & Übersicht` gives `#größe--übersicht`.
+
+### Image size
+
+The size of an image follows its alt text after the last `|`:
+
+| Written | Meaning |
+| --- | --- |
+| `![Photo\|200](a.png)` | 200 px wide, never wider than the text column |
+| `![Photo\|200x100](a.png)` | fitted into 200 × 100 px; the aspect ratio stays, a small image is not enlarged |
+| `![Photo\|50%](a.png)` | half the width of the text column (1 to 100 %) |
+
+Px are CSS pixels (0.75 pt in the PDF). Text after `|` that does not start
+with a digit is no size and stays alt text (`![A|B](a.png)`). A size that
+cannot be read (`|0`, `|150%`, `|20x`) is a warning (`image-size`, in every
+document); the image then shows in its own size. Other Markdown tools show
+`Photo|200` as alt text; the image shows everywhere.
+
+- **MarkSafe:** the preview and the HTML export apply the size. The image
+  dialog (🖼, or ✎ Image / double-click / right-click on an image) writes
+  it. **View › Center Images** centres images that stand alone in their
+  paragraph.
+- **PDF:** mlcdoc does not apply a size yet (mlcmd2pdf
+  I-MD2PD-20261028-01) and prints the image in its own size; the editor
+  notes this where a PDF can be made (`image-size-pdf`, info).
+- **API:** `mlcext.ParseImageSize`, `SplitImageAlt`, `ImageAlt`; in
+  TypeScript `parseImageSize`, `splitImageAlt`, `imageAlt`, `imageSpans`
+  from `mlc-markdown` (same test vectors, `mlcext/testdata/imagesize.json`).
 
 ### HTML in Markdown
 
@@ -337,7 +365,9 @@ The format is defined in
     show placeholders for all images (switch "Bilder" in its bar); export
     and print always embed them. Raw HTML `<img>` is not set by mlcdoc; use
     `![Text](bild.png)`. WebP works only as a file reference: mlcdoc skips
-    an embedded WebP `data:` URL, so MarkSafe never embeds WebP.
+    an embedded WebP `data:` URL, so MarkSafe never embeds WebP. A size in
+    the alt text (`![Text|200](bild.png)`) is not applied yet (see
+    [Image size](#image-size)).
   - **Table column widths** follow mlcmd2pdf: a separator row up to 72
     characters sizes the columns by content; a longer one makes the table
     full width with shares in proportion to the dashes. The check warns
