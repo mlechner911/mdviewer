@@ -4,6 +4,8 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.13.0] – 2026-11-10
+
 ### Added
 - **Image size** in the alt text, as in Obsidian: `![Photo|200](a.png)` (width in px), `|200x100` (fitted into the box) or `|50%` (of the text width). The preview applies it, the image dialog has a size field, and the editor warns about a size it cannot read. The PDF does not apply it yet; the editor says so.
 - **Editing an image:** with the cursor in an image, ✎ Image (or a double-click on its syntax, or the context menu) opens the image dialog with its text and size; the file stays unless another one is chosen.
