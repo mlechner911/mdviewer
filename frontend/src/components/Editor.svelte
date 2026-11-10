@@ -14,6 +14,8 @@
   import { editorPhrases } from '../lib/editor/phrases';
   import { dataUriFolding } from '../lib/editor/dataUri';
   import { tableHint, tableAtCursor } from '../lib/editor/tableHint';
+  import { imageHint, imageAt } from '../lib/editor/imageHint';
+  import type { ImageSpan } from 'mlc-markdown';
   import { locale, t as tr } from '../i18n';
 
   // --- Svelte 5 Runes: Props ---
@@ -28,6 +30,7 @@
     tableFit,
     oncursortable,
     oneditfield,
+    oneditimage,
     onpasteimage
   }: {
     value: string;
@@ -45,12 +48,17 @@
     oncursortable?: (line: number) => void;
     /** Open the field dialog for the form field at line, col (MLC extension). */
     oneditfield?: (line: number, col: number) => void;
+    /** Open the image dialog for an image ![alt](target) (offsets in the document). */
+    oneditimage?: (img: ImageSpan) => void;
     /** A picture was pasted (data: URL); text on the clipboard goes first. */
     onpasteimage?: (dataUri: string) => void;
   } = $props();
 
   // Right-click on a form field: edit it in the field dialog.
   let fieldMenu = $state<{ x: number; y: number; line: number; col: number } | null>(null);
+
+  // Right-click on an image: edit it in the image dialog.
+  let imageMenu = $state<{ x: number; y: number; image: ImageSpan } | null>(null);
 
   // Right-click in a table: column widths for the PDF.
   let tableMenu = $state<{ x: number; y: number; line: number } | null>(null);
@@ -271,6 +279,13 @@
     editorView.focus();
   }
 
+  /** replaceOffsets replaces from..to (offsets in the document) with text. */
+  export function replaceOffsets(from: number, to: number, text: string) {
+    if (!editorView) return;
+    editorView.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
+    editorView.focus();
+  }
+
   /** insertText puts text at the cursor (replacing a selection). */
   export function insertText(text: string) {
     if (!editorView) return;
@@ -344,6 +359,12 @@
               fieldMenu = { x: e.clientX, y: e.clientY, line: field.line, col: field.col };
               return true;
             }
+            const image = oneditimage ? imageAt(view.state, pos) : null;
+            if (image) {
+              e.preventDefault();
+              imageMenu = { x: e.clientX, y: e.clientY, image };
+              return true;
+            }
             if (!tableFit) return false;
             const line = view.state.doc.lineAt(pos);
             if (!line.text.includes('|')) return false;
@@ -394,6 +415,9 @@
             onCursorTable: (line) => oncursortable?.(line),
           })]
         : []),
+      ...(oneditimage
+        ? [imageHint({ label: '✎ ' + $tr('imageHintLabel'), title: $tr('imageHintTitle'), onEdit: (img) => oneditimage?.(img) })]
+        : []),
       editorPhrases(loc),
       dataUriFolding({ image: $tr('dataUriImage'), expandHint: $tr('dataUriExpand'), collapseHint: $tr('dataUriCollapse'), locale: loc }),
     ];
@@ -443,6 +467,14 @@
   <div class="fixed inset-0 z-[90]" onclick={() => (fieldMenu = null)} oncontextmenu={(e) => { e.preventDefault(); fieldMenu = null; }}></div>
   <div class="table-menu fixed z-[91] py-1 rounded border shadow-lg text-xs {theme === 'light' ? 'tm-light' : ''}" style="left: {fieldMenu.x}px; top: {fieldMenu.y}px">
     <button class="w-full text-left px-3 py-1" onclick={() => { const m = fieldMenu; fieldMenu = null; if (m) oneditfield?.(m.line, m.col); }}>{$tr('fieldEdit')}</button>
+  </div>
+{/if}
+
+{#if imageMenu}
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div class="fixed inset-0 z-[90]" onclick={() => (imageMenu = null)} oncontextmenu={(e) => { e.preventDefault(); imageMenu = null; }}></div>
+  <div class="table-menu fixed z-[91] py-1 rounded border shadow-lg text-xs {theme === 'light' ? 'tm-light' : ''}" style="left: {imageMenu.x}px; top: {imageMenu.y}px">
+    <button class="w-full text-left px-3 py-1" onclick={() => { const m = imageMenu; imageMenu = null; if (m) oneditimage?.(m.image); }}>{$tr('imageEdit')}</button>
   </div>
 {/if}
 

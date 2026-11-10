@@ -11,5 +11,5 @@ export { labelsFor, LABELS } from './labels.js';
 export type { Labels, Locale } from './labels.js';
 export { enhance } from './enhance.js';
 export type { EnhanceOptions } from './enhance.js';
-export { splitImageAlt, parseImageSize, formatImageSize, imageAlt } from './imagesize.js';
-export type { ImageSize } from './imagesize.js';
+export { splitImageAlt, parseImageSize, formatImageSize, imageAlt, imageSpans } from './imagesize.js';
+export type { ImageSize, ImageSpan } from './imagesize.js';

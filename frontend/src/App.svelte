@@ -13,6 +13,7 @@
   import Preview from './components/Preview.svelte';
   import BrowseView from './shared/browse/BrowseView.svelte';
   import mlcMarkdownCSS from '../../packages/mlc-markdown/styles/mlc-markdown.css?raw';
+  import type { ImageSpan } from 'mlc-markdown';
   import { propertyOptions } from '../../packages/mlcext-editor/src/index';
   import { formatBytes } from './lib/editor/dataUri';
   import { createWailsClient, toBrowseRel } from './lib/wailsBrowseClient';
@@ -171,15 +172,35 @@
 
   // Image dialog: a file chosen there or dropped, or a picture from the
   // clipboard. Several dropped files come one after the other.
-  let imageDialog = $state<{ path: string | null; dataUri: string | null } | null>(null);
+  // An image of the document: existing (its text) replaces from..to.
+  let imageDialog = $state<{
+    path: string | null;
+    dataUri: string | null;
+    existing?: { text: string; alt: string; target: string; altFrom: number; altTo: number; from: number; to: number };
+  } | null>(null);
   let imageQueue: string[] = [];
   function nextImage() {
     const path = imageQueue.shift();
     imageDialog = path ? { path, dataUri: null } : null;
   }
   function applyImage(text: string) {
+    const e = imageDialog?.existing;
+    if (e) {
+      imageDialog = null;
+      editorComponent?.replaceOffsets(e.from, e.to, text);
+      return;
+    }
     editorComponent?.insertText(text);
     nextImage();
+  }
+  function editImage(img: ImageSpan) {
+    const text = markdown.slice(img.from, img.to);
+    if (!text.startsWith('![')) return;
+    imageDialog = {
+      path: null,
+      dataUri: null,
+      existing: { text, alt: img.alt, target: img.target, altFrom: img.altFrom - img.from, altTo: img.altTo - img.from, from: img.from, to: img.to },
+    };
   }
 
   // Offers to embed the images of a tab. False when the user cancels saving.
@@ -1041,6 +1062,7 @@
   <ImageDialog
     path={imageDialog.path}
     dataUri={imageDialog.dataUri}
+    existing={imageDialog.existing ?? null}
     docPath={imagePathOf(tabs[activeTabIndex])}
     preferEmbed={!!tabs[activeTabIndex]?.form}
     theme={$effectiveAppTheme}
@@ -1309,6 +1331,7 @@
           tableFit={backend.mlcFitTable}
           oncursortable={(l: number) => (cursorTable = l)}
           oneditfield={editField}
+          oneditimage={editImage}
           onpasteimage={(dataUri: string) => (imageDialog = { path: null, dataUri })}
         />
       </div>

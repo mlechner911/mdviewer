@@ -56,3 +56,35 @@ export function imageAlt(text: string, size: ImageSize): string {
   const s = formatImageSize(size);
   return s ? `${text}|${s}` : text;
 }
+
+/** An inline image in a text: offsets of the whole image and of its alt text. */
+export interface ImageSpan {
+  from: number;
+  to: number;
+  altFrom: number;
+  altTo: number;
+  alt: string;
+  /** The target as written, without <…>. */
+  target: string;
+}
+
+// Same as mlcext's reImage: alt, target (plain or <with spaces>), title.
+const RE_IMAGE = /!\[([^\]\n]*)\]\(\s*(<[^>\n]+>|[^)\s]+)(\s+"[^"\n]*")?\s*\)/g;
+
+/** The inline images ![alt](target "title") of text, in order. */
+export function imageSpans(text: string): ImageSpan[] {
+  const out: ImageSpan[] = [];
+  for (const m of text.matchAll(RE_IMAGE)) {
+    const from = m.index;
+    const t = m[2];
+    out.push({
+      from,
+      to: from + m[0].length,
+      altFrom: from + 2,
+      altTo: from + 2 + m[1].length,
+      alt: m[1],
+      target: t.startsWith('<') ? t.slice(1, -1) : t,
+    });
+  }
+  return out;
+}

@@ -3,6 +3,8 @@
    * Insert an image: a file (chosen or dropped) or a picture from the
    * clipboard, as a reference or embedded in the document. A reference works
    * only inside the document's folder: the PDF reads nothing outside it.
+   * With existing, an image in the document is edited: without another file
+   * only its alt text (text and size) changes.
    */
   import { onMount } from 'svelte';
   import { t, locale } from '../i18n';
@@ -10,15 +12,17 @@
   import type { EffectiveTheme_t } from '../lib/constants';
   import * as backend from '../lib/backend';
   import { formatBytes } from '../lib/editor/dataUri';
-  import { imageAlt, parseImageSize } from 'mlc-markdown';
+  import { formatImageSize, imageAlt, parseImageSize, splitImageAlt } from 'mlc-markdown';
 
   const LARGE = 5 * 1024 * 1024;
 
-  let { path = null, dataUri = null, docPath = null, preferEmbed = false, theme = 'dark', onApply, onClose }: {
+  let { path = null, dataUri = null, existing = null, docPath = null, preferEmbed = false, theme = 'dark', onApply, onClose }: {
     /** A dropped file; null starts with the file choice. */
     path?: string | null;
     /** A picture from the clipboard. */
     dataUri?: string | null;
+    /** An image of the document, ![alt](target): its text and where the alt text lies in it. */
+    existing?: { text: string; alt: string; target: string; altFrom: number; altTo: number } | null;
     /** The document's file: references start from its folder. */
     docPath?: string | null;
     /** A form being filled in: the record should stay complete on its own. */
@@ -41,10 +45,13 @@
   let firstInput = $state<HTMLInputElement>();
 
   const pasted = $derived(!!dataUri);
+  /** Editing an image and keeping its file. */
+  const keep = $derived(!!existing && !pasted && !choice);
+  const embedded = $derived(!!existing?.target.startsWith('data:'));
   const canReference = $derived(!!choice?.reference);
-  const size = $derived(pasted ? Math.floor(((dataUri ?? '').length * 3) / 4) : (choice?.size ?? 0));
+  const size = $derived(pasted ? Math.floor(((dataUri ?? '').length * 3) / 4) : keep && embedded ? Math.floor(((existing?.target ?? '').length * 3) / 4) : (choice?.size ?? 0));
   const parsedSize = $derived(sizeText.trim() ? parseImageSize(sizeText) : {});
-  const ready = $derived((pasted || !!choice) && parsedSize !== null);
+  const ready = $derived((pasted || !!choice || keep) && parsedSize !== null);
 
   async function use(p: string) {
     error = '';
@@ -69,8 +76,13 @@
   }
   async function apply() {
     if (!ready) return;
+    const newAlt = imageAlt(alt.trim(), parsedSize ?? {});
+    if (keep && existing) {
+      onApply(existing.text.slice(0, existing.altFrom) + newAlt + existing.text.slice(existing.altTo));
+      return;
+    }
     try {
-      const text = await backend.imageMarkdown({ path: choice?.path ?? '', dataUri: dataUri ?? '', alt: imageAlt(alt.trim(), parsedSize ?? {}), embed: pasted || embed }, docPath ?? '');
+      const text = await backend.imageMarkdown({ path: choice?.path ?? '', dataUri: dataUri ?? '', alt: newAlt, embed: pasted || embed }, docPath ?? '');
       onApply(text);
     } catch (err) {
       error = String(err).replace(/^\w*Error:\s*/, '');
@@ -78,7 +90,11 @@
   }
 
   onMount(() => {
-    if (path) void use(path);
+    if (existing) {
+      const a = splitImageAlt(existing.alt);
+      alt = a.text;
+      sizeText = a.error ? existing.alt.slice(existing.alt.lastIndexOf('|') + 1).trim() : formatImageSize(a.size);
+    } else if (path) void use(path);
     else if (!dataUri) void pick();
     firstInput?.focus();
   });
@@ -89,19 +105,27 @@
   class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
   role="dialog"
   aria-modal="true"
-  aria-label={$t('imageInsert')}
+  aria-label={existing ? $t('imageEditTitle') : $t('imageInsert')}
   tabindex="-1"
   onkeydown={(e) => { if (e.key === 'Escape') onClose(); }}
 >
   <div class="max-w-lg w-full rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <form class="p-6 text-sm" onsubmit={(e) => { e.preventDefault(); void apply(); }}>
-      <h3 class="text-lg font-bold mb-4">{$t('imageInsert')}</h3>
+      <h3 class="text-lg font-bold mb-4">{existing ? $t('imageEditTitle') : $t('imageInsert')}</h3>
       <div class="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-2 items-center">
         <span class="opacity-80">{$t('imageFile')}</span>
         <div class="flex items-center gap-2 min-w-0">
           {#if pasted}
             <img src={dataUri} alt="" class="max-h-16 max-w-32 rounded border border-black/20" />
             <span class="opacity-80">{$t('imagePasted')}</span>
+          {:else if keep && existing}
+            {#if embedded}
+              <img src={existing.target} alt="" class="max-h-16 max-w-32 rounded border border-black/20" />
+              <span class="opacity-80">{$t('imageEmbedded')}</span>
+            {:else}
+              <code class="truncate opacity-80 text-xs" title={existing.target}>{existing.target}</code>
+            {/if}
+            <button type="button" onclick={pick} class="px-3 py-1 rounded shrink-0 {buttonClass}">{$t('imageChooseOther')}</button>
           {:else}
             <button type="button" onclick={pick} class="px-3 py-1 rounded shrink-0 {buttonClass}">{$t('imageChoose')}</button>
             <span class="truncate opacity-80" title={choice?.path ?? ''}>{choice?.name ?? ''}</span>
@@ -137,7 +161,7 @@
       {#if error}<p class="mt-3 text-xs text-red-500" role="alert">{error}</p>{/if}
       <div class="flex justify-end gap-2 mt-5">
         <button type="button" onclick={onClose} class="px-4 py-2 rounded font-medium transition-colors {buttonClass}">{$t('cancel')}</button>
-        <button type="submit" disabled={!ready} class="px-4 py-2 rounded font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50">{$t('fieldApplyInsert')}</button>
+        <button type="submit" disabled={!ready} class="px-4 py-2 rounded font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50">{existing ? $t('fieldApplyEdit') : $t('fieldApplyInsert')}</button>
       </div>
     </form>
   </div>
