@@ -279,7 +279,9 @@ func sectionAbove(ls []string, line int) string {
 }
 
 // lineAbove is the nearest non-empty line above (a field alone on its line,
-// e.g. a multi-line text area under its question).
+// e.g. a multi-line text area under its question). Of a line with fields
+// only the text before its first field counts ("Maßnahme 03: [@#ca] CA
+// [@#pa] PA" gives "Maßnahme 03"), as the Question of its check boxes.
 func lineAbove(ls []string, line int) string {
 	i := lineAboveAt(ls, line)
 	if i < 0 {
@@ -287,6 +289,9 @@ func lineAbove(ls []string, line int) string {
 	}
 	if h, ok := atxHeading(ls[i]); ok {
 		return plainText(h)
+	}
+	if fields, _ := ExtractFields(ls[i]); len(fields) > 0 {
+		return labelText(ls[i][:fields[0].Offset])
 	}
 	return labelText(ls[i])
 }

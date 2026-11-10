@@ -3,6 +3,7 @@ package mlcext
 import (
 	"os"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -173,5 +174,31 @@ func TestFormSchemaGroupParentWithFields(t *testing.T) {
 	}
 	if g := got["z_name"].Group; g != "Zeuge" {
 		t.Errorf("z_name: group %q", g)
+	}
+}
+
+// B-MARKS-20261110-01: a field alone under a line with fields is labelled
+// with the text before that line's first field, not its field syntax.
+func TestFormSchemaLabelLineAboveWithFields(t *testing.T) {
+	md := "**Maßnahme 03:** [@#art_03_ca] Korrektur (CA)  [@#art_03_pa] Vorbeugung (PA)\n\n" +
+		"[@#massnahme_03 ______________________________\n______________________________]\n\n" +
+		"[@#k1] Ja [@#k2] Nein\n\n[@#ohne ____]\n\n" +
+		"**Zeuge**\n\n[@#z_text ____]\n"
+	got := map[string]FormField{}
+	for _, f := range FormSchema(md) {
+		got[f.Name] = f
+	}
+	for name, want := range map[string]string{"massnahme_03": "Maßnahme 03", "ohne": "", "z_text": "Zeuge", "art_03_ca": "Korrektur (CA)"} {
+		if g := got[name].Label; g != want {
+			t.Errorf("%s: label %q, want %q", name, g, want)
+		}
+	}
+	if q := got["art_03_ca"].Question; q != "Maßnahme 03" {
+		t.Errorf("art_03_ca: question %q", q)
+	}
+	for _, b := range FormLayout(md) {
+		if strings.Contains(b.Text, "[@") {
+			t.Errorf("layout text with field syntax: %q", b.Text)
+		}
 	}
 }
