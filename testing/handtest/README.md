@@ -98,6 +98,11 @@ für Feld-Schemas öffnen** zeigt.
 | G2 | 🖼 in der Werkzeugleiste: Datei, Bild aus der Zwischenablage, gezogene Datei | Wird als Verweis oder eingebettet eingefügt; eingebettet zeigt der Editor `🖼 name ‹Größe›`, Klick zeigt die Daten, ▲ oder Esc kürzt wieder |
 | G3 | Ein Bild von außerhalb des Dokumentordners einfügen (z. B. `fremd/aussen.jpg` aus einem Dokument eine Ebene höher, oder ein Bild vom Desktop) und „Verweis“ wählen | Meldung: liegt außerhalb des Dokumentordners, kann nur eingebettet werden; eine WebP-Datei lässt sich gar nicht einbetten |
 | G4 | **Datei › Bilder einbetten…**, danach Speichern unter | Bilder stehen im Dokument; ein signiertes Dokument wird nicht verändert |
+| G5 | `bildgroesse.md` in der Vorschau | 120 px breit; in 300 × 80 eingepasst, nicht verzerrt; halbe Textbreite; eigene Größe. Bei `\|0` warnt der Editor, das Bild erscheint in eigener Größe. `A\|B` bleibt Alt-Text |
+| G6 | **Ansicht › Bilder zentrieren** ein und aus, App neu starten, HTML-Export | Bilder allein im Absatz stehen mittig; die Einstellung bleibt nach dem Neustart; der HTML-Export zeigt sie ebenso |
+| G7 | 🖼 einfügen mit Größe `200`, dann `abc` und `150%` | `![…\|200](…)`; bei ungültiger Größe rotes Feld und „Einfügen“ gesperrt |
+| G8 | Cursor in ein Bild: „✎ Bild“, Doppelklick auf `](foto.jpg)`, Rechtsklick › Bild bearbeiten… | Dialog mit Text und Größe vorbelegt; Übernehmen ändert nur `[…]`, Pfad und `"Titel bleibt"` bleiben. „Anderes Bild…“ tauscht die Datei. Bei einem eingebetteten Bild zeigt der Dialog eine kleine Vorschau |
+| G9 | PDF-Vorschau von `bildgroesse.md` | Bilder noch in eigener Größe (mlcdoc kennt die Größe noch nicht); der Editor weist darauf hin, es gibt keinen Fehler |
 
 ### HTML und PDF (`html/`)
 
