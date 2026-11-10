@@ -22,6 +22,11 @@ jobs:
             artifact-name: 'macos-arm64'
 
     runs-on: ${{ matrix.os }}
+    # mlcdoc (PDF preview/export) comes from the local dropzone, which the
+    # runners cannot reach: these builds ship without it. The full builds
+    # are on mlcgo.eu.
+    env:
+      NO_MLCDOC: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -104,6 +109,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          body: |
+            These builds come without mlcdoc: PDF preview and PDF export are not available.
+            The full builds with PDF support are at https://mlcgo.eu/products/marksafe/.
           files: |
             artifacts/**/*.exe
             artifacts/**/*.zip
