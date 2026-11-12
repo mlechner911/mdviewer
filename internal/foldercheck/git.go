@@ -67,6 +67,7 @@ func git(ctx context.Context, dir string, args ...string) (string, error) {
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_EDITOR=true")
 	cmd.WaitDelay = waitDelay
+	hideConsole(cmd)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {

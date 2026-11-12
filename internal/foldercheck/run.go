@@ -80,6 +80,7 @@ func Run(ctx context.Context, check *Check) *Result {
 	cmd := exec.CommandContext(ctx, prog, check.Command[1:]...)
 	cmd.Dir = check.Cwd
 	cmd.WaitDelay = waitDelay
+	hideConsole(cmd)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 
