@@ -54,7 +54,10 @@ import {
   MLCFormRefOf,
   SaveFilledForm,
   LoadFormValues,
-  MLCIsFormRecord
+  MLCIsFormRecord,
+  GetFolderCheck,
+  TrustFolderCheck,
+  RunFolderCheck
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -482,4 +485,27 @@ export async function mlcFormatField(spec: MLCFieldSpec): Promise<{ text: string
 export async function mlcFieldAt(md: string, line: number, col: number): Promise<MLCFieldEdit | null> {
   if (!isWailsReady()) return null;
   try { const e = (await MLCFieldAt(md, line, col)) as MLCFieldEdit; return e?.ok ? e : null; } catch { return null; }
+}
+
+// ---------- Folder check (.marksafe.yaml, plan P-MARKS-20261112-01) ----------
+
+export type { FolderCheckInfo } from '../../bindings/marksafe/models';
+export type { Result as FolderCheckResult, Finding as FolderFinding, Spec as FolderCheckSpec } from '../../bindings/marksafe/internal/foldercheck/models';
+import type { FolderCheckInfo } from '../../bindings/marksafe/models';
+import type { Result as FolderCheckResult } from '../../bindings/marksafe/internal/foldercheck/models';
+
+/** The .marksafe.yaml that applies to path; throws when it is invalid. */
+export async function getFolderCheck(path: string): Promise<FolderCheckInfo | null> {
+  if (!isWailsReady()) return null;
+  return await GetFolderCheck(path);
+}
+
+/** Allow the check with this hash for the folder of path. */
+export async function trustFolderCheck(path: string, hash: string): Promise<void> {
+  await TrustFolderCheck(path, hash);
+}
+
+/** Run the folder check for path (only when allowed). */
+export async function runFolderCheck(path: string): Promise<FolderCheckResult | null> {
+  return await RunFolderCheck(path);
 }

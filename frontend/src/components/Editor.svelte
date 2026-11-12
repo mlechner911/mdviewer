@@ -10,7 +10,7 @@
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
   import { tags as t } from '@lezer/highlight';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import { mlcExtension, fieldHint, fieldAt, toPos, type MlcSource, type MlcAnalysis } from '../../../packages/mlcext-editor/src/index';
+  import { mlcExtension, refreshAnalysis, fieldHint, fieldAt, toPos, type MlcSource, type MlcAnalysis, type MlcDiagnostic } from '../../../packages/mlcext-editor/src/index';
   import { editorPhrases } from '../lib/editor/phrases';
   import { dataUriFolding } from '../lib/editor/dataUri';
   import { tableHint, tableAtCursor } from '../lib/editor/tableHint';
@@ -31,7 +31,9 @@
     oncursortable,
     oneditfield,
     oneditimage,
-    onpasteimage
+    onpasteimage,
+    extraDiagnostics,
+    diagnosticsRevision = 0
   }: {
     value: string;
     theme: EffectiveTheme_t;
@@ -52,7 +54,16 @@
     oneditimage?: (img: ImageSpan) => void;
     /** A picture was pasted (data: URL); text on the clipboard goes first. */
     onpasteimage?: (dataUri: string) => void;
+    /** Findings from outside the extension (folder check), shown inline. */
+    extraDiagnostics?: (md: string) => MlcDiagnostic[];
+    /** Bump to show changed extraDiagnostics at once. */
+    diagnosticsRevision?: number;
   } = $props();
+
+  $effect(() => {
+    if (diagnosticsRevision === 0) return;
+    untrack(() => editorView?.dispatch({ effects: refreshAnalysis.of(null) }));
+  });
 
   // Right-click on a form field: edit it in the field dialog.
   let fieldMenu = $state<{ x: number; y: number; line: number; col: number } | null>(null);
@@ -373,7 +384,7 @@
             return true;
           },
         }),
-        ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a), locale: () => $locale })] : []),
+        ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a), locale: () => $locale, extraDiagnostics: (md) => extraDiagnostics?.(md) ?? [] })] : []),
         ...(mlcSource && oneditfield
           ? [fieldHint({ label: '✎ ' + $tr('fieldHintLabel'), title: $tr('fieldHintTitle'), onEdit: (l, c) => oneditfield?.(l, c) })]
           : []),

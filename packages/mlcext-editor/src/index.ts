@@ -28,6 +28,8 @@ export interface MlcDiagnostic {
   severity: Severity;
   code: string;
   message: string;
+  /** Who reported it (tooltip); default the MLC extension. */
+  source?: string;
 }
 
 export interface MlcFieldSpan {
@@ -92,7 +94,15 @@ export interface MlcOptions {
   onAnalysis?: (analysis: MlcAnalysis) => void;
   /** Language of schema descriptions, read each time they are shown. */
   locale?: () => string;
+  /**
+   * Findings from elsewhere (e.g. a folder check after saving), shown with
+   * the extension's own; read on every analysis. Not passed to onAnalysis.
+   */
+  extraDiagnostics?: (markdown: string) => MlcDiagnostic[];
 }
+
+/** Dispatch to analyse again now, e.g. when extraDiagnostics changed. */
+export const refreshAnalysis = StateEffect.define<null>();
 
 // ---------- Positions ----------
 
@@ -217,7 +227,7 @@ function toCMDiagnostics(doc: Text, a: MlcAnalysis, source: MlcSource | undefine
       from,
       to: Math.max(to, from),
       severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
-      source: 'MLC-Erweiterung',
+      source: d.source ?? 'MLC-Erweiterung',
       message: d.message,
       actions,
     };
@@ -234,7 +244,8 @@ function analyzer(source: MlcSource, opt: MlcOptions) {
         this.schedule(0);
       }
       update(u: ViewUpdate) {
-        if (u.docChanged || (u.selectionSet && this.heldBack)) this.schedule(opt.debounce ?? 300);
+        if (u.transactions.some((tr) => tr.effects.some((e) => e.is(refreshAnalysis)))) this.schedule(0);
+        else if (u.docChanged || (u.selectionSet && this.heldBack)) this.schedule(opt.debounce ?? 300);
       }
       schedule(delay: number) {
         clearTimeout(this.timer);
@@ -249,7 +260,9 @@ function analyzer(source: MlcSource, opt: MlcOptions) {
         const { doc, selection } = this.view.state;
         const cursor = selection.main.head;
         this.heldBack = !!a.detected && (a.diagnostics ?? []).some((d) => isBeingTyped(doc, d, cursor));
-        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(doc, a, source, cursor)));
+        const extra = opt.extraDiagnostics?.(text) ?? [];
+        const shown = extra.length ? { ...a, diagnostics: [...(a.diagnostics ?? []), ...extra] } : a;
+        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(doc, shown, source, cursor)));
         this.view.dispatch({ effects: setAnalysis.of(a) });
         opt.onAnalysis?.(a);
       }

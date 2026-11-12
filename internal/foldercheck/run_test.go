@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -111,5 +112,16 @@ func TestRunProgramNotFound(t *testing.T) {
 func TestInterpretExit1WithoutFindings(t *testing.T) {
 	if r := interpret(1, `{"ok":false,"findings":[]}`, ""); !r.Failed {
 		t.Errorf("exit 1 without findings must fail closed: %+v", r)
+	}
+}
+
+func TestResolve(t *testing.T) {
+	r := &Result{Findings: []Finding{{File: "common/a.md"}, {File: ""}}}
+	r.Resolve(filepath.Join("base", "seeds"))
+	if want := filepath.Join("base", "seeds", "common", "a.md"); r.Findings[0].Path != want {
+		t.Errorf("path = %q, want %q", r.Findings[0].Path, want)
+	}
+	if r.Findings[1].Path != "" {
+		t.Errorf("a finding without file has no path: %q", r.Findings[1].Path)
 	}
 }

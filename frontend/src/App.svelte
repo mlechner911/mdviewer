@@ -29,6 +29,8 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import FieldDialog from './components/FieldDialog.svelte';
   import ImageDialog from './components/ImageDialog.svelte';
+  import FolderCheckPanel from './components/FolderCheckPanel.svelte';
+  import { folderCheck, counts as folderCounts } from './lib/folderCheck.svelte';
   // Optional Sensor Monitor module: the real one in the Sensor Monitor
   // variant, null in the standard build (vite.config.ts).
   import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts, license as sensorMonitorLicense, productName } from '$sensormonitor';
@@ -575,6 +577,31 @@
 
   let isSaving = false;
 
+  // Folder check (.marksafe.yaml): status bar entry and list of findings.
+  let showFolderCheck = $state(false);
+  const folderRun = $derived(folderCheck.runFor(activeTab?.path));
+  const folderStatus = $derived.by(() => {
+    const run = folderRun;
+    if (!run) return [];
+    const open = () => (showFolderCheck = true);
+    if (run.running) return [{ text: $t('folderCheckRunning'), onclick: open }];
+    if (run.refused) return [{ text: $t('folderCheckRefused'), tone: 'warn' as const, onclick: open }];
+    if (run.error) return [{ text: $t('folderCheckBadConfig'), tone: 'error' as const, title: run.error, onclick: open }];
+    if (run.result?.failed) return [{ text: $t('folderCheckFailed'), tone: 'error' as const, title: run.result.stderr, onclick: open }];
+    if (run.result?.error) return [{ text: run.result.error, tone: 'warn' as const, onclick: open }];
+    const c = folderCounts(run.result?.findings);
+    if (!c.errors && !c.warnings) return [{ text: $t('folderCheckOk'), tone: 'ok' as const, onclick: open }];
+    return [{ text: $t('folderCheckFindings', c.errors, c.warnings), tone: c.errors ? ('error' as const) : ('warn' as const), onclick: open }];
+  });
+
+  // A finding in the list: open its file and go to the line.
+  async function openFinding(path: string, line: number) {
+    showFolderCheck = false;
+    await showPath(path);
+    await tick();
+    if (line > 0) editorComponent?.scrollToLine(Math.max(1, line - 3));
+  }
+
   // A yes/no question as a promise (ConfirmModal below).
   type ConfirmAnswer = 'confirm' | 'alt' | 'cancel';
   let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; cancelLabel?: string; altLabel?: string; resolve: (a: ConfirmAnswer) => void } | null>(null);
@@ -670,6 +697,7 @@
         tabs[activeTabIndex].isDirty = false;
         showToast($t('fileSaved'), 2000, 'info');
         updateNativeMenu(get(locale));
+        void folderCheck.afterSave(savedPath, askConfirm, $t);
       }
     } catch (err) {
       console.error("Failed to save file:", err);
@@ -707,6 +735,7 @@
         await backend.addPathToWhitelist(parentDir);
         showToast($t('fileSaved'), 2000, 'info');
         updateNativeMenu(get(locale));
+        void folderCheck.afterSave(savedPath, askConfirm, $t);
       }
     } catch (err) {
       console.error("Failed to save file as:", err);
@@ -1110,6 +1139,16 @@
   onCancel={() => (showTemplateModal = false)}
 />
 
+{#if showFolderCheck && folderRun}
+  <FolderCheckPanel
+    run={folderRun}
+    theme={$effectiveAppTheme}
+    onOpen={openFinding}
+    onRerun={() => activeTab?.path && void folderCheck.rerun(activeTab.path, askConfirm, $t)}
+    onClose={() => (showFolderCheck = false)}
+  />
+{/if}
+
 {#if confirmAsk}
   <ConfirmModal
     title={confirmAsk.title}
@@ -1333,6 +1372,8 @@
           oneditfield={editField}
           oneditimage={editImage}
           onpasteimage={(dataUri: string) => (imageDialog = { path: null, dataUri })}
+          extraDiagnostics={() => folderCheck.inline(tabs[activeTabIndex]?.path, !!tabs[activeTabIndex]?.isDirty, $t)}
+          diagnosticsRevision={folderCheck.revision}
         />
       </div>
       {/if}
@@ -1477,7 +1518,7 @@
     </div>
   </div>
 
-  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} extraItems={moduleStatus} />
+  <StatusBar {wordCount} {charCount} {readingTime} activeTab={tabs[activeTabIndex]} diagnostics={mlcAnalysis?.diagnostics ?? []} extraItems={[...folderStatus, ...moduleStatus]} />
 
   {#if $dropMessage}
     <div class="drop-toast {$toastType === 'error' ? 'error' : ''}">{$dropMessage}</div>

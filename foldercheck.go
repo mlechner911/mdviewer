@@ -62,7 +62,9 @@ func (a *App) RunFolderCheck(path string) (*foldercheck.Result, error) {
 	if !a.config.IsFolderCheckTrusted(spec.Dir, spec.Hash) {
 		return nil, errFolderCheckNotTrusted
 	}
-	return foldercheck.Run(context.Background(), spec.Check), nil
+	res := foldercheck.Run(context.Background(), spec.Check)
+	res.Resolve(spec.Dir)
+	return res, nil
 }
 
 // findFolderCheck looks for .marksafe.yaml above path, bounded by the

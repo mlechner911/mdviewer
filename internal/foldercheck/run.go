@@ -23,6 +23,8 @@ type Finding struct {
 	Severity string `json:"severity"`
 	Code     string `json:"code,omitempty"`
 	Message  string `json:"message"`
+	// Path is the absolute path of File, filled in by Resolve.
+	Path string `json:"path,omitempty"`
 }
 
 // Result of one check run.
@@ -34,6 +36,16 @@ type Result struct {
 	// result. Stderr holds the end of its error output.
 	Failed bool   `json:"failed,omitempty"`
 	Stderr string `json:"stderr,omitempty"`
+}
+
+// Resolve fills in the absolute Path of every finding, relative to dir
+// (the folder of the .marksafe.yaml).
+func (r *Result) Resolve(dir string) {
+	for i := range r.Findings {
+		if f := r.Findings[i].File; f != "" {
+			r.Findings[i].Path = filepath.Join(dir, filepath.FromSlash(f))
+		}
+	}
 }
 
 // HasErrors reports whether the result blocks a commit (fail closed).
