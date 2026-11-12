@@ -14,7 +14,7 @@
     !define INFO_PRODUCTNAME "MarkSafe"
 !endif
 !ifndef INFO_PRODUCTVERSION
-    !define INFO_PRODUCTVERSION "1.13.0"
+    !define INFO_PRODUCTVERSION "1.14.0"
 !endif
 !ifndef INFO_COPYRIGHT
     !define INFO_COPYRIGHT "Copyright © 2026 Michael Lechner"
