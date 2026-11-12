@@ -434,6 +434,7 @@ tasks:
       - task: version:check
       - task: bindings
       - cd frontend && npm run check
+      - cd frontend && npm test
       # $props<T>() is not valid in Svelte 5 ($props() takes no type
       # argument); svelte-check lets it pass, the VS Code extension does not.
       - "! git grep -n '\\$props<' -- '*.svelte'"
