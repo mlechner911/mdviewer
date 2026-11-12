@@ -14,12 +14,12 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.6
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	github.com/yuin/goldmark-meta v1.1.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/ebitengine/purego v0.11.1 // indirect
 	golang.org/x/term v0.46.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (

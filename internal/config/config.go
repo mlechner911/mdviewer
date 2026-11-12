@@ -33,6 +33,9 @@ type AppConfig struct {
 	// module (MarkSafePlus, same config folder) takes it over once into its
 	// own settings, also after a standard build ran first.
 	LegacySensorMonitorURL string `json:"sensor_monitor_url,omitempty"`
+	// TrustedFolderChecks maps a folder with a .marksafe.yaml to the hash of
+	// the check the user allowed to run there; a changed file asks again.
+	TrustedFolderChecks map[string]string `json:"trusted_folder_checks,omitempty"`
 }
 
 // ConfigManager handles concurrent-safe access to the AppConfig.
