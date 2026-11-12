@@ -112,6 +112,39 @@ für Feld-Schemas öffnen** zeigt.
 | H2 | PDF-Vorschau und Export | A1–A4 fett und kursiv, B2/B3 durchgestrichen, B8 als Code; andere Inline-Tags nur mit Text; `<div>`, `<details>` usw. fehlen; der Editor markiert sie, der Export sagt es |
 | H3 | Drucken | Druckdialog, Ausdruck wie die PDF-Vorschau |
 
+### Ordner-Prüfung und Commit (`ordnerpruefung/`)
+
+Beschreibung: `docs/FOLDER-CHECK.md`. Der Ordner hat eine `.marksafe.yaml`, die
+nach jedem Speichern `bin/pruefen` startet (Zeitlimit 10 s). Das Prüfprogramm
+reagiert auf Zeilen, die mit `FEHLER`, `WARNUNG`, `ABSTURZ`, `LANGSAM` oder
+`KEIN-VORLAGENORDNER` beginnen, und vergleicht die Version von `sop.md` und
+`sop.en.md`.
+
+Vorher den Ordner `ordnerpruefung` an einen eigenen Platz kopieren (z. B. auf
+den Desktop) und dort `einrichten.cmd` ausführen (macOS: `einrichten.sh`).
+Das braucht Git und legt ein Repository mit eigener Test-Identität an. Danach
+`sop.md` in MarkSafe öffnen. Den Stand prüft `git log --stat` im Ordner.
+
+| # | Schritt | Erwartet |
+|---|---|---|
+| O1 | `sop.md` ändern, speichern | Dialog „Ordner-Prüfung erlauben?“ mit Befehl `bin/pruefen .` und Arbeitsordner |
+| O2 | „Jetzt nicht“; noch einmal ändern und speichern | Statusleiste „Ordner-Prüfung nicht erlaubt“ und „Gespeichert, nicht committet“; kein zweiter Dialog |
+| O3 | Klick auf „Ordner-Prüfung nicht erlaubt“ › „Erneut prüfen“ › „Erlauben“ | Prüfung läuft; „keine Probleme“; der Commit-Dialog öffnet sich mit `SOP-DEMO-001 v1: ` |
+| O4 | Nachricht ergänzen, „Committen“ (oder Strg+Enter) | Meldung „Committet“; `git log --stat`: neuer Commit nur mit `sop.md`, Autor „Handtest“ |
+| O5 | MarkSafe neu starten, `sop.md` ändern, speichern | Kein Erlaubnis-Dialog mehr; Prüfung und Commit-Dialog wie in O3 |
+| O6 | Zeile `FEHLER hier` und Zeile `WARNUNG da` schreiben, speichern | Im Editor rot und gelb an den Zeilen, Quelle „Ordner-Prüfung“; Statusleiste „1 Fehler, 1 Warnung(en)“ und „Gespeichert, nicht committet“; kein Commit-Dialog |
+| O7 | Weitertippen, ohne zu speichern | Die Markierungen der Ordner-Prüfung verschwinden aus dem Text (die der MLC-Erweiterung bleiben) |
+| O8 | Klick auf die Statusleiste | Liste unter `sop.md` mit beiden Befunden und Zeile; Klick springt zur Zeile |
+| O9 | `FEHLER`-Zeile löschen, speichern | Nur die Warnung; Commit-Dialog öffnet sich; „Später“ › Statusleiste „Gespeichert, nicht committet“; Klick darauf öffnet den Commit-Dialog wieder |
+| O10 | In `sop.md` `version: 2` setzen, speichern | Fehler ohne Zeile unter `sop.en.md` („Übersetzung hat Version 1 …“); Klick öffnet `sop.en.md`; `sop.en.md` auf 2 setzen und speichern › keine Probleme, Commit-Dialog für `sop.en.md`. Danach im Tab `sop.md` auf „Gespeichert, nicht committet“ klicken › Commit von `sop.md` geht ebenfalls |
+| O11 | Zeile `ABSTURZ` schreiben, speichern | „Ordner-Prüfung fehlgeschlagen“; die Liste zeigt „exit code 3“ und „panic: Absturz zum Test“; kein Commit |
+| O12 | Zeile `LANGSAM` statt `ABSTURZ`, speichern | Nach etwa 10 s „fehlgeschlagen“ mit „timeout after 10s“; MarkSafe bleibt bedienbar |
+| O13 | Zeile `KEIN-VORLAGENORDNER`, speichern | Gelbe Meldung „Das ist kein Vorlagen-Ordner (Testfall).“; kein Commit |
+| O14 | Testzeilen entfernen; in `.marksafe.yaml` den Befehl auf `["bin/pruefen", ".", "-x"]` ändern; `sop.md` speichern | Erlaubnis-Dialog erscheint erneut |
+| O15 | In `.marksafe.yaml` `version: 9` setzen, `sop.md` speichern | „.marksafe.yaml ist ungültig“, Tooltip nennt die Version; kein Befehl läuft. Danach zurück auf `version: 1` |
+| O16 | Im Ordner `git config --unset user.name`, ändern, speichern, committen | Commit-Dialog meldet: Git kennt dich nicht …; danach `git config user.name Handtest` |
+| O17 | Ein Dokument außerhalb von `ordnerpruefung` speichern | Keine Ordner-Prüfung in der Statusleiste, kein Dialog |
+
 ### Neu in dieser Version
 
 Den Abschnitt der Version im `CHANGELOG.md` durchgehen und jede Zeile einmal

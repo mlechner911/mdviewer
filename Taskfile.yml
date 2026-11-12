@@ -210,6 +210,9 @@ tasks:
       - rm -rf "{{.OUT}}/handtest" && mkdir -p "{{.OUT}}/handtest"
       - cp -r testing/handtest/dokumente/. "{{.OUT}}/handtest/"
       - cp testing/handtest/README.md "{{.OUT}}/handtest/HANDTEST.md"
+      # Check program of the folder check test (section O), for Windows and macOS.
+      - GOOS=windows GOARCH=amd64 go build -o "{{.OUT}}/handtest/ordnerpruefung/bin/pruefen.exe" ./testing/handtest/fakecheck
+      - GOOS=darwin GOARCH=arm64 go build -o "{{.OUT}}/handtest/ordnerpruefung/bin/pruefen" ./testing/handtest/fakecheck
       - |
         {{if .SENSOR_TAG}}
         mkdir -p "{{.OUT}}/handtest/plus"

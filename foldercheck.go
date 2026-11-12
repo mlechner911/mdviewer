@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"time"
 
 	"marksafe/internal/config"
 	"marksafe/internal/foldercheck"
@@ -67,10 +68,11 @@ func (a *App) RunFolderCheck(path string) (*foldercheck.Result, error) {
 		return nil, err
 	}
 	// The content as checked: a commit must match it (foldercommit.go).
+	started := time.Now()
 	sum, sumErr := fileSum(abs)
 	res := foldercheck.Run(context.Background(), spec.Check)
 	res.Resolve(spec.Dir)
-	a.folderRuns.set(spec.Dir, cleanRun{hash: spec.Hash, file: abs, sum: sum, clean: sumErr == nil && !res.HasErrors()})
+	a.folderRuns.set(spec.Dir, cleanRun{hash: spec.Hash, file: abs, sum: sum, started: started, clean: sumErr == nil && !res.HasErrors()})
 	return res, nil
 }
 

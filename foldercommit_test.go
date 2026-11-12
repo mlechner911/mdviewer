@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The test binary doubles as the check program: with MARKSAFE_FAKE_CHECK
@@ -117,5 +118,33 @@ func TestCommitSuggestion(t *testing.T) {
 		if got := (&App{}).CommitSuggestion(p); got != tt.want {
 			t.Errorf("CommitSuggestion = %q, want %q", got, tt.want)
 		}
+	}
+}
+
+func TestCommitOtherFileOfCleanFolder(t *testing.T) {
+	a, doc := commitApp(t)
+	other := filepath.Join(filepath.Dir(doc), "sop.en.md")
+	writeFile(t, other, "# translation\n")
+	backdate(t, other)
+
+	t.Setenv("MARKSAFE_FAKE_CHECK", `{"ok":true,"findings":[]}`)
+	if _, err := a.RunFolderCheck(doc); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.CommitFolderFile(other, "translation"); err != nil {
+		t.Fatalf("a file unchanged since the clean check may be committed: %v", err)
+	}
+	writeFile(t, other, "# translation changed\n")
+	if err := a.CommitFolderFile(other, "x"); !errors.Is(err, errCommitNotChecked) {
+		t.Fatalf("a file changed after the check must not be committed: %v", err)
+	}
+}
+
+// backdate sets the modification time a minute back, clear of the run start.
+func backdate(t *testing.T, path string) {
+	t.Helper()
+	old := time.Now().Add(-time.Minute)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
 	}
 }

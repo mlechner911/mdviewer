@@ -161,9 +161,11 @@ func resolveProgram(name, cwd string) (string, error) {
 	if !filepath.IsAbs(p) {
 		p = filepath.Join(cwd, p)
 	}
+	// On Windows "bin/check" means bin/check.exe first: a file without an
+	// extension next to it (a macOS or Linux build) cannot run there.
 	candidates := []string{p}
 	if runtime.GOOS == "windows" && filepath.Ext(p) == "" {
-		candidates = append(candidates, p+".exe")
+		candidates = []string{p + ".exe", p}
 	}
 	for _, c := range candidates {
 		if st, err := os.Stat(c); err == nil && !st.IsDir() {

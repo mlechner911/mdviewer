@@ -4,6 +4,10 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- **Folder check on save:** a `.marksafe.yaml` in a folder names a check command. After each save MarkSafe runs it, once the user allowed that exact command, and shows its findings in the editor, in the status bar and as a list for the whole folder. See [docs/FOLDER-CHECK.md](./docs/FOLDER-CHECK.md).
+- **Commit on save:** with `commit: true`, a clean check offers to commit only the saved file with a prefilled message; MarkSafe never pushes, and refuses the commit after errors or changes since the check.
+
 ## [1.13.0] – 2026-11-10
 
 ### Added

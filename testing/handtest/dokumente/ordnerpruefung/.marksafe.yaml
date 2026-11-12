@@ -1,0 +1,6 @@
+# Handtest Ordner-Prüfung (HANDTEST.md, Abschnitt O)
+version: 1
+check:
+  command: ["bin/pruefen", "."]
+  timeout: 10s
+commit: true

@@ -11,19 +11,35 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/mlechner911/mdviewer/mlcext"
 
 	"marksafe/internal/foldercheck"
 )
 
-// cleanRun remembers the last check per folder: for which file and content
-// it ran, and whether it allows a commit.
+// cleanRun remembers the last check per folder: when it started, the file
+// whose save started it and that file's content, and whether it was clean.
+// The check covers the whole folder, so any file unchanged since the start
+// may be committed after a clean run.
 type cleanRun struct {
-	hash  string
-	file  string
-	sum   [32]byte
-	clean bool
+	hash    string
+	file    string
+	sum     [32]byte
+	started time.Time
+	clean   bool
+}
+
+// unchangedSince reports whether abs is as the run checked it: the same
+// content for the file that started the run, else not modified after the
+// run started.
+func (r cleanRun) unchangedSince(abs string) bool {
+	if abs == r.file {
+		sum, err := fileSum(abs)
+		return err == nil && sum == r.sum
+	}
+	st, err := os.Stat(abs)
+	return err == nil && !st.ModTime().After(r.started)
 }
 
 type folderRunLog struct {
@@ -93,12 +109,8 @@ func (a *App) CommitFolderFile(path, message string) error {
 	if err != nil {
 		return err
 	}
-	sum, err := fileSum(abs)
-	if err != nil {
-		return err
-	}
 	run, ok := a.folderRuns.get(spec.Dir)
-	if !ok || !run.clean || run.hash != spec.Hash || run.file != abs || run.sum != sum {
+	if !ok || !run.clean || run.hash != spec.Hash || !run.unchangedSince(abs) {
 		return errCommitNotChecked
 	}
 	return foldercheck.CommitFile(context.Background(), abs, message)

@@ -72,11 +72,11 @@ class FolderCheck {
       return;
     }
     const dir = spec.dir;
+    if (spec.commit && saved) this.uncommitted[path] = true;
     if (!trusted && !(await this.allow(path, spec, ask, tr))) {
-      this.set(path, dir, { dir, running: false, refused: true });
+      this.set(path, dir, { dir, running: false, refused: true, commit: spec.commit });
       return;
     }
-    if (spec.commit && saved) this.uncommitted[path] = true;
     await this.run(path, dir, spec.commit);
   }
 
@@ -97,7 +97,8 @@ class FolderCheck {
       .map((f) => ({
         line: f.line ?? 1,
         col: f.col || 1,
-        severity: f.severity,
+        // Anything but a warning counts as an error, as in the backend.
+        severity: f.severity === 'warning' ? 'warning' : 'error',
         code: f.code ?? '',
         message: f.message,
         source: tr('folderCheckTitle'),
