@@ -57,7 +57,9 @@ import {
   MLCIsFormRecord,
   GetFolderCheck,
   TrustFolderCheck,
-  RunFolderCheck
+  RunFolderCheck,
+  CommitSuggestion,
+  CommitFolderFile
 } from '../../bindings/marksafe/app'
 import type {
   Analysis as MLCAnalysis,
@@ -508,4 +510,14 @@ export async function trustFolderCheck(path: string, hash: string): Promise<void
 /** Run the folder check for path (only when allowed). */
 export async function runFolderCheck(path: string): Promise<FolderCheckResult | null> {
   return await RunFolderCheck(path);
+}
+
+/** Prefilled commit message ("<doc_id> v<version>: "). */
+export async function commitSuggestion(path: string): Promise<string> {
+  try { return await CommitSuggestion(path); } catch { return ''; }
+}
+
+/** Commit only path (after a clean folder check); throws with the reason. */
+export async function commitFolderFile(path: string, message: string): Promise<void> {
+  await CommitFolderFile(path, message);
 }

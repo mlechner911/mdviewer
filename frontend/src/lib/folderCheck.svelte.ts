@@ -17,6 +17,14 @@ export interface FolderRun {
   /** .marksafe.yaml is invalid or the backend refused. */
   error?: string;
   result?: FolderCheckResult;
+  /** The folder commits on save (commit: true). */
+  commit?: boolean;
+}
+
+/** The commit dialog: which file, the prefilled message. */
+export interface CommitRequest {
+  path: string;
+  message: string;
 }
 
 /** Asks a yes/no question (App's ConfirmModal). */
@@ -30,6 +38,10 @@ class FolderCheck {
   dirOf = $state<Record<string, string>>({});
   /** Bumped when findings change; the editor then shows them at once. */
   revision = $state(0);
+  /** Saved but not committed yet (commit folders only). */
+  uncommitted = $state<Record<string, boolean>>({});
+  /** Open commit dialog, if any. */
+  commitRequest = $state<CommitRequest | null>(null);
   /** dir|hash the user declined this session: not asked on every save. */
   private declined = new Set<string>();
   private seq = new Map<string, number>();
@@ -40,8 +52,11 @@ class FolderCheck {
     return dir ? this.runs[dir] : undefined;
   }
 
-  /** After saving path: find, ask for permission if needed, run. */
-  async afterSave(path: string, ask: Ask, tr: Tr): Promise<void> {
+  /**
+   * After saving path: find, ask for permission if needed, run. saved is
+   * false for "check again": that alone leaves nothing new to commit.
+   */
+  async afterSave(path: string, ask: Ask, tr: Tr, saved = true): Promise<void> {
     let spec: FolderCheckSpec | null | undefined;
     let trusted = false;
     try {
@@ -61,7 +76,8 @@ class FolderCheck {
       this.set(path, dir, { dir, running: false, refused: true });
       return;
     }
-    await this.run(path, dir);
+    if (spec.commit && saved) this.uncommitted[path] = true;
+    await this.run(path, dir, spec.commit);
   }
 
   /** Check again (list dialog); asks again if the user declined before. */
@@ -69,7 +85,7 @@ class FolderCheck {
     const dir = this.dirOf[path];
     if (!dir) return;
     for (const key of [...this.declined]) if (key.startsWith(dir + '|')) this.declined.delete(key);
-    await this.afterSave(path, ask, tr);
+    await this.afterSave(path, ask, tr, false);
   }
 
   /** Findings for the editor: only for a tab whose text is as saved. */
@@ -111,21 +127,48 @@ class FolderCheck {
     }
   }
 
-  private async run(path: string, dir: string): Promise<void> {
+  private async run(path: string, dir: string, commit: boolean): Promise<void> {
     const n = (this.seq.get(dir) ?? 0) + 1;
     this.seq.set(dir, n);
     // Old findings point at lines of the old text: drop them while running.
-    this.set(path, dir, { dir, running: true });
+    this.set(path, dir, { dir, running: true, commit });
     let next: FolderRun;
     try {
       const result = await backend.runFolderCheck(path);
-      next = { dir, running: false, result: result ?? undefined };
+      next = { dir, running: false, result: result ?? undefined, commit };
     } catch (err) {
-      next = { dir, running: false, error: String(err) };
+      next = { dir, running: false, error: String(err), commit };
     }
     // A newer save started another run: its result wins.
     if (this.seq.get(dir) !== n) return;
     this.set(path, dir, next);
+    if (commit && isClean(next)) await this.requestCommit(path);
+  }
+
+  /** Opens the commit dialog for path, if its last check was clean. */
+  async requestCommit(path: string): Promise<void> {
+    const run = this.runFor(path);
+    if (!run?.commit || !isClean(run) || !this.uncommitted[path]) return;
+    const message = await backend.commitSuggestion(path);
+    this.commitRequest = { path, message };
+  }
+
+  /** Commits; returns an error text for the dialog, or null when done. */
+  async commit(path: string, message: string, tr: Tr): Promise<string | null> {
+    try {
+      await backend.commitFolderFile(path, message);
+    } catch (err) {
+      const text = String(err);
+      if (!text.includes('no changes to commit')) return commitError(text, tr);
+    }
+    delete this.uncommitted[path];
+    this.commitRequest = null;
+    return null;
+  }
+
+  /** The dialog was closed without committing: stays "not committed". */
+  cancelCommit() {
+    this.commitRequest = null;
   }
 
   private set(path: string, dir: string, run: FolderRun) {
@@ -135,6 +178,27 @@ class FolderCheck {
     for (const f of run.result?.findings ?? []) if (f.path) this.dirOf[f.path] = dir;
     this.revision++;
   }
+}
+
+/** A finished run without errors (warnings are fine): may commit. */
+export function isClean(run: FolderRun): boolean {
+  if (run.running || run.refused || run.error || !run.result) return false;
+  if (run.result.failed || run.result.error) return false;
+  return counts(run.result.findings).errors === 0;
+}
+
+// Backend errors (foldercheck/git.go, foldercommit.go) in the user's words.
+const COMMIT_ERRORS: [string, string][] = [
+  ['git is not installed', 'commitNoGit'],
+  ['not in a git repository', 'commitNoRepo'],
+  ['user.name or user.email', 'commitNoIdentity'],
+  ['changed since the last check', 'commitNotChecked'],
+  ['commit message is empty', 'commitEmpty'],
+];
+
+function commitError(text: string, tr: Tr): string {
+  const hit = COMMIT_ERRORS.find(([needle]) => text.includes(needle));
+  return hit ? tr(hit[1]) : text;
 }
 
 function quote(arg: string): string {

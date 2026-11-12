@@ -46,6 +46,8 @@ type App struct {
 	closing     closeState
 	// extensions built in with a build tag (extensions.go)
 	extensions []extension
+	// last folder check per folder, for the commit (foldercommit.go)
+	folderRuns folderRunLog
 }
 
 // emit broadcasts an event to the frontend (v2: runtime.EventsEmit).

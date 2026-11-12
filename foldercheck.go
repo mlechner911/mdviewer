@@ -62,8 +62,15 @@ func (a *App) RunFolderCheck(path string) (*foldercheck.Result, error) {
 	if !a.config.IsFolderCheckTrusted(spec.Dir, spec.Hash) {
 		return nil, errFolderCheckNotTrusted
 	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	// The content as checked: a commit must match it (foldercommit.go).
+	sum, sumErr := fileSum(abs)
 	res := foldercheck.Run(context.Background(), spec.Check)
 	res.Resolve(spec.Dir)
+	a.folderRuns.set(spec.Dir, cleanRun{hash: spec.Hash, file: abs, sum: sum, clean: sumErr == nil && !res.HasErrors()})
 	return res, nil
 }
 

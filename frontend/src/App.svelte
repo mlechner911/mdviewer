@@ -30,7 +30,8 @@
   import FieldDialog from './components/FieldDialog.svelte';
   import ImageDialog from './components/ImageDialog.svelte';
   import FolderCheckPanel from './components/FolderCheckPanel.svelte';
-  import { folderCheck, counts as folderCounts } from './lib/folderCheck.svelte';
+  import CommitDialog from './components/CommitDialog.svelte';
+  import { folderCheck, counts as folderCounts, isClean as folderClean } from './lib/folderCheck.svelte';
   // Optional Sensor Monitor module: the real one in the Sensor Monitor
   // variant, null in the standard build (vite.config.ts).
   import { Extension as SensorMonitor, SettingsSection as SensorMonitorSettings, texts as sensorMonitorTexts, license as sensorMonitorLicense, productName } from '$sensormonitor';
@@ -580,7 +581,21 @@
   // Folder check (.marksafe.yaml): status bar entry and list of findings.
   let showFolderCheck = $state(false);
   const folderRun = $derived(folderCheck.runFor(activeTab?.path));
-  const folderStatus = $derived.by(() => {
+  const folderStatus = $derived.by(() => [...folderCheckStatus(), ...commitStatus()]);
+  type StatusItem = { text: string; tone?: 'ok' | 'warn' | 'error'; title?: string; onclick?: () => void };
+  function commitStatus(): StatusItem[] {
+    const path = activeTab?.path;
+    const run = folderRun;
+    if (!path || !run?.commit || !folderCheck.uncommitted[path]) return [];
+    const clean = folderClean(run);
+    return [{
+      text: $t('commitPending'),
+      tone: 'warn' as const,
+      title: clean ? $t('commitNow') : $t('commitBlocked'),
+      onclick: () => (clean ? void folderCheck.requestCommit(path) : (showFolderCheck = true)),
+    }];
+  }
+  function folderCheckStatus(): StatusItem[] {
     const run = folderRun;
     if (!run) return [];
     const open = () => (showFolderCheck = true);
@@ -592,7 +607,7 @@
     const c = folderCounts(run.result?.findings);
     if (!c.errors && !c.warnings) return [{ text: $t('folderCheckOk'), tone: 'ok' as const, onclick: open }];
     return [{ text: $t('folderCheckFindings', c.errors, c.warnings), tone: c.errors ? ('error' as const) : ('warn' as const), onclick: open }];
-  });
+  }
 
   // A finding in the list: open its file and go to the line.
   async function openFinding(path: string, line: number) {
@@ -1146,6 +1161,21 @@
     onOpen={openFinding}
     onRerun={() => activeTab?.path && void folderCheck.rerun(activeTab.path, askConfirm, $t)}
     onClose={() => (showFolderCheck = false)}
+  />
+{/if}
+
+{#if folderCheck.commitRequest}
+  {@const req = folderCheck.commitRequest}
+  <CommitDialog
+    path={req.path}
+    message={req.message}
+    theme={$effectiveAppTheme}
+    onCommit={async (msg: string) => {
+      const err = await folderCheck.commit(req.path, msg, $t);
+      if (!err) showToast($t('commitDone'), 2500, 'info');
+      return err;
+    }}
+    onCancel={() => folderCheck.cancelCommit()}
   />
 {/if}
 
