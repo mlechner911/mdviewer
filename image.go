@@ -17,7 +17,7 @@ import (
 const maxImageBytes = 50 << 20
 
 // pastedImage: the image types the PDF reads as a data: URL.
-var pastedImage = regexp.MustCompile(`^data:image/(png|jpeg|gif);base64,`)
+var pastedImage = regexp.MustCompile(`^data:image/(png|jpeg|gif|webp);base64,`)
 
 // ImageChoice is an image file for the image dialog.
 type ImageChoice struct {
@@ -27,7 +27,8 @@ type ImageChoice struct {
 	// Reference: inside the document's folder, so a reference also works in
 	// the PDF, which reads nothing outside it. Otherwise the image is embedded.
 	Reference string `json:"reference"`
-	// Embeddable: false for WebP, which the PDF reads only from a file.
+	// Embeddable: every supported image can be embedded (WebP since
+	// mlcdoc 0.27.0 is the minimum); kept for the image dialog.
 	Embeddable bool `json:"embeddable"`
 }
 
@@ -75,11 +76,8 @@ func (a *App) InspectImage(path, docPath string) (*ImageChoice, error) {
 	}
 	embeddable := mlcext.ImageDataURI(data, path) != ""
 	reference := referenceTo(path, docPath)
-	if !embeddable && !mlcext.IsWebP(data) {
+	if !embeddable {
 		return nil, fmt.Errorf("%s ist kein unterstütztes Bild (PNG, JPEG, GIF, WebP, SVG).", filepath.Base(path))
-	}
-	if !embeddable && reference == "" {
-		return nil, fmt.Errorf("%s: WebP kann nicht eingebettet werden. Bitte in den Dokumentordner legen oder als PNG oder JPEG speichern.", filepath.Base(path))
 	}
 	return &ImageChoice{Path: path, Name: filepath.Base(path), Size: int64(len(data)), Reference: reference, Embeddable: embeddable}, nil
 }
@@ -88,7 +86,7 @@ func (a *App) InspectImage(path, docPath string) (*ImageChoice, error) {
 func (a *App) ImageMarkdown(spec ImageSpec, docPath string) (string, error) {
 	if spec.DataURI != "" {
 		if !pastedImage.MatchString(spec.DataURI) {
-			return "", errors.New("Die Zwischenablage enthält kein unterstütztes Bild (PNG, JPEG, GIF).")
+			return "", errors.New("Die Zwischenablage enthält kein unterstütztes Bild (PNG, JPEG, GIF, WebP).")
 		}
 		return mlcext.FormatImage(spec.Alt, spec.DataURI, ""), nil
 	}

@@ -61,11 +61,11 @@ func TestInspectWebP(t *testing.T) {
 		t.Fatal(err)
 	}
 	c, err := (&App{}).InspectImage(webp, filepath.Join(dir, "doc.md"))
-	if err != nil || c.Embeddable || c.Reference != "a.webp" {
+	if err != nil || !c.Embeddable || c.Reference != "a.webp" {
 		t.Errorf("inside the folder: %+v, %v", c, err)
 	}
-	if _, err := (&App{}).InspectImage(webp, filepath.Join(t.TempDir(), "doc.md")); err == nil {
-		t.Error("outside the folder it can be neither referenced nor embedded")
+	if c, err := (&App{}).InspectImage(webp, filepath.Join(t.TempDir(), "doc.md")); err != nil || !c.Embeddable || c.Reference != "" {
+		t.Errorf("outside the folder it is embedded: %+v, %v", c, err)
 	}
 }
 

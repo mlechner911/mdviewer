@@ -61,8 +61,8 @@ func TestImageDataURI(t *testing.T) {
 	if !IsWebP(webp) {
 		t.Error("WebP not recognized")
 	}
-	if got := ImageDataURI(webp, "a.webp"); got != "" {
-		t.Errorf("WebP must stay a reference, the PDF would skip it: %q", got)
+	if got := ImageDataURI(webp, "a.webp"); !strings.HasPrefix(got, "data:image/webp;base64,") {
+		t.Errorf("WebP is embedded (mlcmd2pdf 3.29.1): %q", got)
 	}
 }
 

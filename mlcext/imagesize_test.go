@@ -93,7 +93,7 @@ func TestImageSizeInPlainMarkdownAndPDF(t *testing.T) {
 	if got := codesOf(AnalyzeWith(md, Options{})); len(got) != 1 || got[0] != "image-size" {
 		t.Errorf("without PDF: %v", got)
 	}
-	if got := codesOf(AnalyzeWith(md, Options{PDF: true})); len(got) != 2 || got[0] != "image-size-pdf" || got[1] != "image-size" {
+	if got := codesOf(AnalyzeWith(md, Options{PDF: true})); len(got) != 1 || got[0] != "image-size" {
 		t.Errorf("with PDF: %v", got)
 	}
 }

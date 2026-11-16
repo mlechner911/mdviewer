@@ -149,7 +149,7 @@
               <input type="radio" name="img-how" checked={!embed} disabled={!canReference} onchange={() => (embed = false)} />
               {$t('imageReference')}{#if choice.reference}<code class="opacity-70 text-xs truncate">{choice.reference}</code>{/if}
             </label>
-            <label class="flex items-center gap-2" class:opacity-50={!choice.embeddable} title={choice.embeddable ? '' : $t('imageWebpHint')}>
+            <label class="flex items-center gap-2" class:opacity-50={!choice.embeddable}>
               <input type="radio" name="img-how" checked={embed} disabled={!choice.embeddable} onchange={() => (embed = true)} />
               {$t('imageEmbed')}
             </label>

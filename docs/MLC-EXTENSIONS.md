@@ -65,9 +65,7 @@ document); the image then shows in its own size. Other Markdown tools show
   dialog (🖼, or ✎ Image / double-click / right-click on an image) writes
   it. **View › Center Images** centres images that stand alone in their
   paragraph.
-- **PDF:** mlcdoc does not apply a size yet (mlcmd2pdf
-  I-MD2PD-20261028-01) and prints the image in its own size; the editor
-  notes this where a PDF can be made (`image-size-pdf`, info).
+- **PDF:** mlcdoc applies the size too (since mlcmd2pdf 3.34.0).
 - **API:** `mlcext.ParseImageSize`, `SplitImageAlt`, `ImageAlt`; in
   TypeScript `parseImageSize`, `splitImageAlt`, `imageAlt`, `imageSpans`
   from `mlc-markdown` (same test vectors, `mlcext/testdata/imagesize.json`).
@@ -369,10 +367,10 @@ The format is defined in
     mlcdoc's placeholder "Abbildung nicht verfügbar". The PDF preview can
     show placeholders for all images (switch "Bilder" in its bar); export
     and print always embed them. Raw HTML `<img>` is not set by mlcdoc; use
-    `![Text](bild.png)`. WebP works only as a file reference: mlcdoc skips
-    an embedded WebP `data:` URL, so MarkSafe never embeds WebP. A size in
-    the alt text (`![Text|200](bild.png)`) is not applied yet (see
-    [Image size](#image-size)).
+    `![Text](bild.png)`. WebP works as a file and embedded as a `data:` URL
+    (mlcmd2pdf 3.29.1). A size in the alt text (`![Text|200](bild.png)`)
+    applies (see [Image size](#image-size)). Formulas (`$…$`, `$$…$$`) are
+    typeset (mlcmd2pdf 3.36.0).
   - **Table column widths** follow mlcmd2pdf: a separator row up to 72
     characters sizes the columns by content; a longer one makes the table
     full width with shares in proportion to the dashes. The check warns

@@ -10,11 +10,10 @@
   import { t } from '../i18n';
   import * as backend from '../lib/backend';
 
-  let { markdown, path = null, version = '', hasMath = false, watermark = '', onwatermark, noImages = false, onnoimages }: {
+  let { markdown, path = null, version = '', watermark = '', onwatermark, noImages = false, onnoimages }: {
     markdown: string;
     path?: string | null;
     version?: string;
-    hasMath?: boolean;
     /** The watermark setting; the field below changes it (preview, export, print). */
     watermark?: string;
     onwatermark?: (text: string) => void;
@@ -86,9 +85,6 @@
       <strong>{$t('pdfPreviewFailed')}</strong>
       <div class="font-mono">{error}</div>
     </div>
-  {/if}
-  {#if hasMath}
-    <div class="pdf-msg pdf-warning">{$t('pdfMathAsText')}</div>
   {/if}
   {#if ignored.length}
     <div class="pdf-msg pdf-info">{$t('pdfIgnoredKeys', ignored.join(', '))}</div>

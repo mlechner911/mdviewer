@@ -113,11 +113,11 @@ func EmbedImages(md string, load func(target string) ([]byte, bool)) (out string
 
 // ImageDataURI is data as a data: URL, "" when it cannot be embedded. name
 // decides only for SVG, which is text and has no signature of its own. WebP
-// stays out: mlcdoc reads it from a file, but skips it as a data: URL.
+// is embedded too (mlcdoc reads it as a data: URL since mlcmd2pdf 3.29.1).
 func ImageDataURI(data []byte, name string) string {
 	mime := http.DetectContentType(data)
 	switch mime {
-	case "image/png", "image/jpeg", "image/gif":
+	case "image/png", "image/jpeg", "image/gif", "image/webp":
 	default:
 		if !strings.HasSuffix(strings.ToLower(ImageFileName(name)), ".svg") || !strings.Contains(string(data), "<svg") {
 			return ""
@@ -127,7 +127,7 @@ func ImageDataURI(data []byte, name string) string {
 	return "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(data)
 }
 
-// IsWebP reports a WebP image: usable as a reference, not embeddable.
+// IsWebP reports a WebP image.
 func IsWebP(data []byte) bool { return http.DetectContentType(data) == "image/webp" }
 
 // ImageFileName is the file name of an image target: never the folders, they

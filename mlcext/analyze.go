@@ -98,7 +98,7 @@ func AnalyzeWith(md string, opt Options) Analysis {
 			a.Diagnostics = append(a.Diagnostics, htmlDiagnostics(md)...)
 		}
 		// Image sizes are plain Markdown too: checked in every document.
-		a.Diagnostics = append(a.Diagnostics, imageSizeDiagnostics(md, opt.PDF)...)
+		a.Diagnostics = append(a.Diagnostics, imageSizeDiagnostics(md)...)
 		return a
 	}
 	a.Detected = true

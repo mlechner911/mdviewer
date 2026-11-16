@@ -531,7 +531,6 @@
   // PDF via mlcdoc (shipped with MarkSafe) for every document.
   const canPdfPreview = $derived(!!mlcdocVersion);
   // Formulas are not typeset by mlcdoc yet; they appear as plain text.
-  let hasMath = $state(false);
 
   function showPdfError(res: { error: string; errorLine?: number }) {
     showToast($t('pdfExportFailed') + ' ' + (res.errorLine ? `${$t('line')} ${res.errorLine}: ` : '') + res.error, 6000, 'error');
@@ -548,7 +547,6 @@
     if (!res.path) return; // cancelled
     const notes = [
       ...(res.ignored.length ? [$t('pdfIgnoredKeys', res.ignored.join(', '))] : []),
-      ...(hasMath ? [$t('pdfMathAsText')] : []),
       ...res.warnings,
     ];
     showToast($t('pdfExported', res.path) + (notes.length ? ' · ' + notes.join(' · ') : ''), notes.length ? 7000 : 3000, 'info');
@@ -1511,7 +1509,7 @@
         {/if}
       </div>
       {#if showPdfPreview}
-        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={imagePathOf(tabs[activeTabIndex])} version={mlcdocVersion} {hasMath} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
+        <PdfPreview markdown={tabs[activeTabIndex]?.content ?? ''} path={imagePathOf(tabs[activeTabIndex])} version={mlcdocVersion} watermark={pdfWatermark} onwatermark={changeWatermark} noImages={pdfNoImages} onnoimages={changeNoImages} />
       {/if}
       {#if filling && !showPdfPreview}
         <FormFillPanel
@@ -1542,7 +1540,6 @@
         onsecurity_request={handleSecurityRequest}
         onopen_file={handleOpenExternalMD}
         onscrollline={handlePreviewScroll}
-        onrendered={(el: HTMLElement) => (hasMath = !!el.querySelector('.mlc-md-math'))}
       />
       </div>
     </div>

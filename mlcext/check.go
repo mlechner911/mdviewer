@@ -127,7 +127,7 @@ func Check(md string, opt Options) []Diagnostic {
 	checkComments(md, add)
 	checkGlyphs(md, fields, add)
 	checkTables(md, add)
-	ds = append(ds, imageSizeDiagnostics(md, opt.PDF)...)
+	ds = append(ds, imageSizeDiagnostics(md)...)
 	if opt.PDF {
 		ds = append(ds, htmlDiagnostics(md)...)
 	}
