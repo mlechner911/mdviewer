@@ -62,11 +62,6 @@ func NewRenderer() *Renderer {
 	}
 }
 
-// GetKatexCSS returns the embedded KaTeX CSS.
-func (r *Renderer) GetKatexCSS() string {
-	return katexCSS
-}
-
 // GitHubAlertTransformer handles GitHub-flavored Alerts: > [!NOTE]
 type GitHubAlertTransformer struct{}
 

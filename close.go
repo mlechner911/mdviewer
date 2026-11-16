@@ -11,7 +11,7 @@ import (
 )
 
 type closeState struct {
-	unsaved atomic.Bool
+	unsaved atomic.Bool // cbm-ignore: zombie-state — written through Store in SetUnsavedChanges
 	allowed atomic.Bool // CloseApp was called: close without asking
 }
 

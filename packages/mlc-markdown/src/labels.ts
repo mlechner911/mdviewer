@@ -6,9 +6,9 @@ export type Locale = 'de' | 'en' | 'es' | 'fr';
 export interface Labels {
   note: string;
   tip: string;
-  important: string;
+  important: string; // cbm-ignore: zombie-state — read as labels[kind] for "> [!IMPORTANT]"
   warning: string;
-  caution: string;
+  caution: string; // cbm-ignore: zombie-state — read as labels[kind] for "> [!CAUTION]"
   fillTip: string;
   pageBreak: string;
   prefill: string;

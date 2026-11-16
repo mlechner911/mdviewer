@@ -24,7 +24,7 @@ type Header struct {
 	Version string
 	// ValidFrom is the raw "Gültig ab" value. Validity is set by the
 	// approval in the Sensor Monitor; the check reports it as an error.
-	ValidFrom string
+	ValidFrom string // cbm-ignore: zombie-state — published API of mlcext, read by its users
 	// Kind from the RefNo prefix: sop | va | form | info, empty if unknown.
 	Kind string
 

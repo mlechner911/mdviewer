@@ -150,11 +150,19 @@ type Pages struct {
 	Ignored  []string
 }
 
+// prepareRequest is the Markdown mlcdoc gets for req (see Prepare), the image
+// files to write next to it, notes on HTML the PDF leaves out, and the front
+// matter keys Prepare removed.
+func prepareRequest(req Request) (md string, files map[string][]byte, notes, ignored []string) {
+	md, ignored = Prepare(req.Markdown)
+	md, notes = mlcext.PDFHTML(md)
+	md, files = imageFiles(md, req)
+	return md, files, notes, ignored
+}
+
 // RenderPDF renders req to a PDF.
 func (c *Client) RenderPDF(ctx context.Context, req Request) (*Document, error) {
-	md, ignored := Prepare(req.Markdown)
-	md, notes := mlcext.PDFHTML(md)
-	md, files := imageFiles(md, req)
+	md, files, notes, ignored := prepareRequest(req)
 	var doc *Document
 	err := c.run(ctx, md, req.BaseDir, req.Layout, files, []map[string]any{
 		{"tool": "md_to_pdf", "args": mdToPDFArgs(req.Layout)},
@@ -174,9 +182,7 @@ func (c *Client) RenderPages(ctx context.Context, req Request, dpi int) (*Pages,
 	if dpi <= 0 {
 		dpi = 110
 	}
-	md, ignored := Prepare(req.Markdown)
-	md, notes := mlcext.PDFHTML(md)
-	md, files := imageFiles(md, req)
+	md, files, notes, ignored := prepareRequest(req)
 	var pages *Pages
 	err := c.run(ctx, md, req.BaseDir, req.Layout, files, []map[string]any{
 		{"tool": "md_to_pdf", "args": mdToPDFArgs(req.Layout)},

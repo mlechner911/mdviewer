@@ -42,7 +42,7 @@ export interface Rendered {
   /** Raw front matter (without the --- lines), "" when there is none. */
   frontMatter: string;
   /** Number of lines the front matter occupied (data-line is relative to the file). */
-  frontMatterLines: number;
+  frontMatterLines: number; // cbm-ignore: zombie-state — published API: hosts map data-line to file lines
   /** Id, version and title (front matter first, legacy header lines as a fallback). */
   meta: DocMeta;
   /** The Sensor Monitor's signature, null when unsigned (shown, not verified). */

@@ -201,27 +201,6 @@
   ]);
 
   /**
-   * getScrollPercentage calculates scroll progress (0 - 1).
-   */
-  export function getScrollPercentage(): number {
-    if (!editorView) return 0;
-    const { scrollTop, scrollHeight, clientHeight } = editorView.scrollDOM;
-    if (scrollHeight <= clientHeight) return 0;
-    return scrollTop / (scrollHeight - clientHeight);
-  }
-
-  /**
-   * setScrollPercentage updates editor scroll position.
-   */
-  export function setScrollPercentage(percentage: number) {
-    if (!editorView) return;
-    const { scrollHeight, clientHeight } = editorView.scrollDOM;
-    scrollLock = true;
-    editorView.scrollDOM.scrollTop = percentage * (scrollHeight - clientHeight);
-    setTimeout(() => { scrollLock = false; }, 50);
-  }
-
-  /**
    * getTopLine returns the first (1-based) source line visible at the top.
    */
   export function getTopLine(): number {

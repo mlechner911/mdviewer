@@ -48,7 +48,6 @@ import {
   ImageMarkdown,
   PlanEmbedImages,
   EmbedImages,
-  MLCFormSchema,
   MLCFormLayout,
   MLCFillForm,
   MLCFormRefOf,
@@ -405,12 +404,6 @@ export async function closeApp(): Promise<void> {
 }
 
 // --- Filling in a form (mlcext.FormSchema / FillFields, P-SENS-20261028-01) ---
-
-/** The fields of md for the input mask. */
-export async function mlcFormSchema(md: string): Promise<MLCFormField[]> {
-  if (!isWailsReady()) return [];
-  try { return ((await MLCFormSchema(md)) ?? []).filter((f): f is MLCFormField => !!f); } catch (err) { console.error('mlcFormSchema failed:', err); return []; }
-}
 
 /** Pick an image file; "" when cancelled. */
 export async function chooseImage(docPath: string): Promise<string> {

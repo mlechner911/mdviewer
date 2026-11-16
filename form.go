@@ -20,11 +20,6 @@ import (
 // Markdown, and saving writes a new file with the record's "meta:" block.
 // The form itself is never overwritten.
 
-// MLCFormSchema describes the fields of md for the input mask.
-func (a *App) MLCFormSchema(md string) []mlcext.FormField {
-	return mlcext.FormSchema(md)
-}
-
 // MLCFormLayout is the form for the input mask: its fields with the text in
 // between.
 func (a *App) MLCFormLayout(md string) []mlcext.FormBlock {
@@ -70,7 +65,7 @@ func (a *App) SaveFilledForm(md string, form mlcext.FormRef, filledBy, path stri
 		}
 		dlg := application.Get().Dialog.SaveFile().
 			SetMessage("Ausgefülltes Formblatt speichern").
-			SetFilename(name + "_" + now.Format("2006-01-02") + ".md").
+			SetFilename(name+"_"+now.Format("2006-01-02")+".md").
 			AddFilter("Markdown Files (*.md)", "*.md")
 		if dir := a.documentRoot(); dir != "" {
 			dlg.SetDirectory(dir)

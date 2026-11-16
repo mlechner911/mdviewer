@@ -71,18 +71,6 @@ func (r *Root) Resolve(requestedPath string) (string, error) {
 	return absRequested, nil
 }
 
-// IsWithinRoot reports whether absPath lies inside the root directory.
-func (r *Root) IsWithinRoot(absPath string) bool {
-	rel, err := filepath.Rel(r.Dir, absPath)
-	if err != nil {
-		return false
-	}
-	if runtime.GOOS == "windows" {
-		rel = strings.ToLower(rel)
-	}
-	return !strings.HasPrefix(rel, "..")
-}
-
 // ReadDoc reads a root-relative document and returns content + abs path.
 func (r *Root) ReadDoc(relPath string) (content, absPath string, err error) {
 	absPath, err = r.Resolve(relPath)

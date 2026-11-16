@@ -4,7 +4,7 @@ export interface TocEntry {
   path: string;
   title: string;
   children: TocEntry[] | null;
-  isDir: boolean;
+  isDir: boolean; // cbm-ignore: zombie-state — set by the server (JSON from mdbrowse.TocEntry)
 }
 
 export interface BrowseDoc {
@@ -35,7 +35,7 @@ export interface BrowseHit {
   path: string;
   title: string;
   score: number;
-  snippet: string;
+  snippet: string; // cbm-ignore: zombie-state — set by the server (JSON from mdbrowse search)
 }
 
 /** A document of the MLC Markdown Extension (non-standard) in the root. */

@@ -159,12 +159,3 @@ graph LR
 Vos documents restent sur votre ordinateur. Les images et liens externes ne se chargent qu'avec votre accord. MarkSafe ne suit pas votre utilisation et n'envoie rien dans un cloud.
 `,
 };
-
-/**
- * Detect browser locale fallback to 'en'. Called once at app start.
- */
-export const c_getLocaleInitial = (): string => {
-	if (typeof navigator === 'undefined') return 'en';
-	const lang = navigator.language.split('-')[0].toLowerCase();
-	return ['en', 'de', 'es', 'fr'].includes(lang) ? lang : 'en';
-};

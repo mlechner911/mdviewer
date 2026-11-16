@@ -134,20 +134,6 @@ func FormatTitle(title string) string {
 	return strings.Join(words, " ")
 }
 
-// formatSlug creates a URL-safe slug from a title.
-func formatSlug(title string) string {
-	slug := strings.ToLower(strings.TrimSpace(title))
-	slug = regexp.MustCompile(`[^a-z0-9\s-]`).ReplaceAllString(slug, "")
-	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
-	slug = regexp.MustCompile(`-+`).ReplaceAllString(slug, "-")
-	return strings.Trim(slug, "-")
-}
-
-// SanitizeFilename creates a safe filename from a title.
-func SanitizeFilename(title string) string {
-	return formatSlug(title) + ".md"
-}
-
 // RelativePath returns a path relative to root.
 func RelativePath(root, fullPath string) (string, error) {
 	rel, err := filepath.Rel(root, fullPath)

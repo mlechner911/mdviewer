@@ -29,7 +29,7 @@ export interface Field {
   col: number;
   /** UTF-16 offsets: start of "[@", end after "]" and after a tooltip comment. */
   start: number;
-  markerEnd: number;
+  markerEnd: number; // cbm-ignore: zombie-state — published API of mlc-markdown, for users of Field
   end: number;
 }
 

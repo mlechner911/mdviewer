@@ -150,24 +150,34 @@ func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(entries)
 }
 
+// statQueryPath reads ?path=, resolves it inside the root and stats it. On
+// failure it has answered the request (400 missing, 403 escape, 404 absent).
+func (s *Server) statQueryPath(w http.ResponseWriter, r *http.Request) (rel, abs string, info os.FileInfo, ok bool) {
+	rel = r.URL.Query().Get("path")
+	if rel == "" {
+		http.Error(w, "Missing path parameter", http.StatusBadRequest)
+		return "", "", nil, false
+	}
+	abs, err := s.root.Resolve(rel)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
+		return "", "", nil, false
+	}
+	if info, err = os.Stat(abs); err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return "", "", nil, false
+	}
+	return rel, abs, info, true
+}
+
 // handleRender converts markdown to HTML via the shared mdbrowse pipeline
 // (frontmatter stripped, pasted-markdown repaired, links validated).
 func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Query().Get("path")
-	if path == "" {
-		http.Error(w, "Missing path parameter", http.StatusBadRequest)
+	path, _, info, ok := s.statQueryPath(w, r)
+	if !ok {
 		return
 	}
-	absPath, err := s.root.Resolve(path)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
-		return
-	}
-	info, err := os.Stat(absPath)
-	if err != nil {
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
+	var err error
 	// File metadata for the document info panel (size, last modified).
 	// Directories report zeros; the client only shows meta for files.
 	var fsize int64
@@ -225,18 +235,11 @@ func (s *Server) handleMarkdown(w http.ResponseWriter, r *http.Request) {
 // handleRaw serves any file within the root with its proper content type
 // (images, PDFs, …). Missing files → 404, escapes → 403 via Resolve.
 func (s *Server) handleRaw(w http.ResponseWriter, r *http.Request) {
-	relPath := r.URL.Query().Get("path")
-	if relPath == "" {
-		http.Error(w, "Missing path parameter", http.StatusBadRequest)
+	_, absPath, info, ok := s.statQueryPath(w, r)
+	if !ok {
 		return
 	}
-	absPath, err := s.root.Resolve(relPath)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Security violation: %v", err), http.StatusForbidden)
-		return
-	}
-	info, err := os.Stat(absPath)
-	if err != nil || info.IsDir() {
+	if info.IsDir() {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
