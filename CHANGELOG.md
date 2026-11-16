@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Fixed
+- Fields in a table row with a multi-line field get their column header and row as label in the form schema.
+
 ## [1.14.0] – 2026-11-12
 
 ### Added

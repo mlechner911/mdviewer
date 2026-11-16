@@ -2,7 +2,6 @@ package mlcext
 
 import (
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -66,9 +65,8 @@ func FormSchema(md string) []FormField {
 		if k := strings.IndexByte(md[f.End:], '\n'); k >= 0 {
 			lineEnd = f.End + k
 		}
-		line := md[lineStart:lineEnd]
-		if strings.HasPrefix(strings.TrimSpace(line), "|") {
-			ff.Label = tableLabel(srcLines, f.Line, md[lineStart:f.Offset])
+		if label := tableLabel(md, fields, i); label != "" {
+			ff.Label = label
 		} else {
 			from, to := lineStart, lineEnd
 			if i > 0 && fields[i-1].End > from {
@@ -137,12 +135,11 @@ func FormLayout(md string) []FormBlock {
 		for l := f.Line; l <= endLine; l++ {
 			mark(l - 1)
 		}
-		if isTableLine(ls[f.Line-1]) {
-			for k := f.Line - 2; k >= 0 && isTableLine(ls[k]); k-- {
-				mark(k)
-			}
-			for k := f.Line; k < len(ls) && isTableLine(ls[k]); k++ {
-				mark(k)
+		if rows, _ := tableRows(md, fields, f.Offset); rows != nil {
+			first, _ := position(md, rows[0].start)
+			last, _ := position(md, rows[len(rows)-1].end)
+			for l := first; l <= last; l++ {
+				mark(l - 1)
 			}
 			continue
 		}
@@ -344,44 +341,3 @@ func groupAboveAt(ls []string, line int) int {
 }
 
 func indentOf(s string) int { return len(s) - len(strings.TrimLeft(s, " \t")) }
-
-// tableLabel: column header of the field's cell plus the row — the first
-// cell's text when it has no field, else the row number.
-func tableLabel(ls []string, line int, before string) string {
-	col := strings.Count(strings.TrimLeft(before, " \t"), "|") - strings.Count(before, `\|`) - 1
-	top := line - 1
-	for top > 0 && strings.HasPrefix(strings.TrimSpace(ls[top-1]), "|") {
-		top--
-	}
-	header := tableCells(ls[top])
-	label := ""
-	if col >= 0 && col < len(header) {
-		label = labelText(header[col])
-	}
-	row := tableCells(ls[line-1])
-	key := ""
-	if col != 0 && len(row) > 0 && !strings.Contains(row[0], "[@") {
-		key = labelText(row[0])
-	}
-	if key == "" {
-		key = strconv.Itoa(line - 1 - top - 1) // header and separator line
-	}
-	if label == "" {
-		return key
-	}
-	return label + " (" + key + ")"
-}
-
-func tableCells(row string) []string {
-	row = strings.TrimSpace(row)
-	row = strings.TrimSuffix(strings.TrimPrefix(row, "|"), "|")
-	var cells []string
-	for {
-		k := unescaped(row, '|')
-		if k < 0 {
-			return append(cells, row)
-		}
-		cells = append(cells, row[:k])
-		row = row[k+1:]
-	}
-}

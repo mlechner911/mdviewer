@@ -202,3 +202,37 @@ func TestFormSchemaLabelLineAboveWithFields(t *testing.T) {
 		}
 	}
 }
+
+// A multi-line field in a cell keeps the table row going (B-MARKS-20261116-01).
+func TestFormSchemaTableWithMultilineFields(t *testing.T) {
+	md := "| Nr. | Kühlgerät | jetzt | Lage | Maßnahme |\n| :--- | :--- | :--- | :--- | :--- |\n" +
+		"| 1 | [@#kg_1 ____\n____] | [@#wert_1 ___] | [@#lage_1 ____\n____] | [@#m_1 ____\n____] |\n" +
+		"| 2 | [@#kg_2 ____\n____] | [@#wert_2 ___] | [@#lage_2 ____\n____] | [@#m_2 ____\n____] |\n"
+	want := []string{
+		"kg_1=Kühlgerät (1)", "wert_1=jetzt (1)", "lage_1=Lage (1)", "m_1=Maßnahme (1)",
+		"kg_2=Kühlgerät (2)", "wert_2=jetzt (2)", "lage_2=Lage (2)", "m_2=Maßnahme (2)",
+	}
+	got := []string{}
+	for _, f := range FormSchema(md) {
+		got = append(got, f.Name+"="+f.Label)
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("got  %q\nwant %q", got, want)
+	}
+	layout := layoutString("Vor.\n\n" + md + "\nNach.")
+	wantLayout := append([]string{"Vor."}, "#kg_1=Kühlgerät (1)")
+	if !slices.Equal(layout[:2], wantLayout) || layout[len(layout)-1] != "Nach." || len(layout) != 10 {
+		t.Errorf("layout %q", layout)
+	}
+}
+
+func TestTableLabelRowKeyAndPipeInField(t *testing.T) {
+	md := "| Gerät | Wert |\n|---|---|\n| Kühlraum | [@#a ___\n___] |\n| Theke | [@#b ja\\|nein ___] |\n"
+	got := []string{}
+	for _, f := range FormSchema(md) {
+		got = append(got, f.Name+"="+f.Label)
+	}
+	if want := []string{"a=Wert (Kühlraum)", "b=Wert (Theke)"}; !slices.Equal(got, want) {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
