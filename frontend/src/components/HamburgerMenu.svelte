@@ -64,77 +64,34 @@ function closeMenu() {
 	menuVisible.set(false);
 }
 
+// One table instead of a switch: a missing `break` once made "reset zoom"
+// open the browse view as well.
 function handleMenuEvent(action: string) {
-	const backend = { openURL: async (url: string) => window.open(url, '_blank') };
-	
-	switch(action) {
-		case 'file-new':
-			onFileNew?.();
-			break;
-		case 'file-new-template':
-			onFileNewTemplate?.();
-			break;
-		case 'file-open-local':
-			onFileOpenLocal?.();
-			break;
-		case 'file-open-recent':
-			onFileOpenRecent?.();
-			break;
-		case 'file-save':
-			onFileSave?.();
-			break;
-		case 'file-save-as':
-			onFileSaveAs?.();
-			break;
-		case 'edit-copy-markdown':
-			onEditCopyAsMarkdown?.();
-			break;
-		case 'edit-copy-html':
-			onEditCopyAsHtml?.();
-			break;
-		case 'edit-copy-rtf':
-			onEditCopyAsRTF?.();
-			break;
-		case 'edit-copy-image':
-			onEditCopyImage?.();
-			break;
-		case 'edit-copy-image-text':
-			onEditCopyImageText?.();
-			break;
-		case 'format-toggle':
-			onFormatToggle?.();
-			break;
-		case 'format-word-count':
-			onFormatWordCount?.();
-			break;
-		case 'view-zoom-in':
-			onViewZoomIn?.();
-			break;
-		case 'view-zoom-out':
-			onViewZoomOut?.();
-			break;
-		case 'view-reset-zoom':
-			onViewResetZoom?.();
-		case 'view-browse':
-			onViewBrowse?.();
-			break;
-		case 'help-about':
-			onHelpAbout?.();
-			break;
-		case 'help-show-shortcuts':
-			onHelpShowShortcuts?.();
-			break;
-		case 'settings':
-			onOpenSettings?.();
-			break;
-		case 'about-wails':
-			onAboutWails?.();
-			break;
-		case 'product-page':
-			onOpenProductPage?.();
-			break;
-	}
-	
+	const handlers: Record<string, (() => void) | undefined> = {
+		'file-new': onFileNew,
+		'file-new-template': onFileNewTemplate,
+		'file-open-local': onFileOpenLocal,
+		'file-open-recent': onFileOpenRecent,
+		'file-save': onFileSave,
+		'file-save-as': onFileSaveAs,
+		'edit-copy-markdown': onEditCopyAsMarkdown,
+		'edit-copy-html': onEditCopyAsHtml,
+		'edit-copy-rtf': onEditCopyAsRTF,
+		'edit-copy-image': onEditCopyImage,
+		'edit-copy-image-text': onEditCopyImageText,
+		'format-toggle': onFormatToggle,
+		'format-word-count': onFormatWordCount,
+		'view-zoom-in': onViewZoomIn,
+		'view-zoom-out': onViewZoomOut,
+		'view-reset-zoom': onViewResetZoom,
+		'view-browse': onViewBrowse,
+		'help-about': onHelpAbout,
+		'help-show-shortcuts': onHelpShowShortcuts,
+		'settings': onOpenSettings,
+		'about-wails': onAboutWails,
+		'product-page': onOpenProductPage,
+	};
+	handlers[action]?.();
 	closeMenu();
 }
 

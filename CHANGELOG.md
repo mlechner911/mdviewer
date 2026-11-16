@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Fixed
+- Reset Zoom in the hamburger menu no longer also opens the browse view.
+
 ## [1.15.0] – 2026-11-16
 
 ### Changed
