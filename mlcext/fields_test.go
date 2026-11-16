@@ -126,19 +126,22 @@ func TestTaskListBoxesStayUntouched(t *testing.T) {
 
 func TestRejectsMalformedFieldsWithTheirLine(t *testing.T) {
 	for src, code := range map[string]string{
-		"ok\n[@____":                         "field-unclosed",
-		"[@___\n\n___]":                      "field-blank-line",
-		"[@Ja|Nein]":                         "field-choice",
-		"[@#A.b ___]":                        "field-name",
-		"[@#a..b ___]":                       "field-name",
-		"[@#.a ___]":                         "field-name",
-		"[@#a. ___]":                         "field-name",
-		"[@#a-b.c ___]":                      "field-name",
-		"[@#a.1b ___]":                       "field-name",
-		"[@#a] [@#a.b]":                      "field-name-prefix",
-		"[@#a.b.c] [@#a.b]":                  "field-name-prefix",
-		"[@# ___]":                           "field-name",
-		"[@#x] [@#x]":                        "field-duplicate",
+		"ok\n[@____":               "field-unclosed",
+		"[@___\n\n___]":            "field-blank-line",
+		"[@Ja|Nein]":               "field-choice",
+		"[@#A.b ___]":              "field-name",
+		"[@#a..b ___]":             "field-name",
+		"[@#.a ___]":               "field-name",
+		"[@#a. ___]":               "field-name",
+		"[@#a-b.c ___]":            "field-name",
+		"[@#a.1b ___]":             "field-name",
+		"[@#a] [@#a.b]":            "field-name-prefix",
+		"[@#a.b.c] [@#a.b]":        "field-name-prefix",
+		"[@# ___]":                 "field-name",
+		"[@#x] [@#x ___]":          "field-duplicate-conflict",
+		"[@#x HH:MM] [@#x ___]":    "field-duplicate-conflict",
+		"[@#x ___] [@#x ___\n___]": "field-duplicate-conflict",
+		"[@#u Unterschrift: A] [@#u Unterschrift: A]": "field-duplicate-conflict",
 		"## Titel [@]":                       "field-in-heading",
 		"[@" + strings.Repeat("x", 41) + "]": "field-not-a-field",
 	} {
@@ -154,7 +157,7 @@ func TestRejectsMalformedFieldsWithTheirLine(t *testing.T) {
 }
 
 func TestReportsAllErrorsNotOnlyTheFirst(t *testing.T) {
-	_, errs := ExtractFields("[@#x] [@#x]\n\n[@Ja|Nein]\n\n[@___")
+	_, errs := ExtractFields("[@#x] [@#x ___]\n\n[@Ja|Nein]\n\n[@___")
 	if len(errs) != 3 {
 		t.Errorf("want 3 errors, got %v", errs)
 	}
@@ -171,5 +174,40 @@ func TestHeadingSlug(t *testing.T) {
 		if got := HeadingSlug(in); got != want {
 			t.Errorf("HeadingSlug(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// A name used twice is one PDF field with two widgets (mlcdoc 0.24.0) when
+// both are of the same kind and pattern; width and preset may differ.
+func TestDuplicateNameIsOneField(t *testing.T) {
+	md := "A [@#x ____] B [@#x ________]\n\nC [@#k] D [@#k x]\n"
+	fields, errs := ExtractFields(md)
+	if len(errs) != 0 || len(fields) != 4 {
+		t.Fatalf("fields %v, errors %v", fields, errs)
+	}
+	var warn []string
+	for _, d := range Check(md, Options{}) {
+		if d.Code == "field-duplicate" && d.Severity == Warning {
+			warn = append(warn, d.Message)
+		}
+	}
+	if len(warn) != 2 {
+		t.Errorf("want 2 warnings, got %q", warn)
+	}
+	if s := FormSchema(md); len(s) != 2 || s[0].Name != "x" || s[0].Label != "A" || s[1].Name != "k" {
+		t.Errorf("schema %+v", s)
+	}
+	n := 0
+	for _, b := range FormLayout(md) {
+		if b.Field != nil {
+			n++
+		}
+	}
+	if n != 2 {
+		t.Errorf("layout lists %d fields, want 2", n)
+	}
+	out, _ := FillFields(md, map[string]string{"x": "Wert"})
+	if strings.Count(out, "Wert") != 2 {
+		t.Errorf("fill: %q", out)
 	}
 }

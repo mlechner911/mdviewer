@@ -42,8 +42,25 @@ type FormField struct {
 	Line  int    `json:"line"`
 }
 
-// FormSchema describes every field of md in document order.
+// FormSchema describes every field of md in document order. A name used
+// twice is one field (one value, mlcdoc makes one PDF field of it): only its
+// first place is listed.
 func FormSchema(md string) []FormField {
+	all := formSchema(md)
+	seen := map[string]bool{}
+	out := all[:0:0]
+	for _, ff := range all {
+		if !seen[ff.Name] {
+			seen[ff.Name] = true
+			out = append(out, ff)
+		}
+	}
+	return out
+}
+
+// formSchema describes every field of md, a repeated name included, in the
+// order of ExtractFields.
+func formSchema(md string) []FormField {
 	fields, _ := ExtractFields(md)
 	srcLines := strings.Split(md, "\n")
 	out := make([]FormField, 0, len(fields))
@@ -120,7 +137,7 @@ type FormBlock struct {
 func FormLayout(md string) []FormBlock {
 	md = ExpandVariables(RemoveSignature(md))
 	fields, _ := ExtractFields(md)
-	schema := FormSchema(md)
+	schema := formSchema(md)
 	ls := strings.Split(md, "\n")
 	used := make([]bool, len(ls))
 	mark := func(i int) {
@@ -180,13 +197,17 @@ func FormLayout(md string) []FormBlock {
 		text = nil
 	}
 	next := 0
+	shown := map[string]bool{}
 	for n := bodyLine; n < len(ls); n++ {
 		for next < len(fields) && fields[next].Line-1 == n {
 			flush()
 			if t := leading[next]; t != "" {
 				addText(t)
 			}
-			out = append(out, FormBlock{Field: &schema[next]})
+			if !shown[schema[next].Name] {
+				shown[schema[next].Name] = true
+				out = append(out, FormBlock{Field: &schema[next]})
+			}
 			if t := trailing[next]; t != "" {
 				addText(t)
 			}

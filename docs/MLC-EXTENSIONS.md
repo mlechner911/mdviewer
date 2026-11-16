@@ -123,6 +123,11 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
   tags survive (see "HTML in Markdown" above); use HTML sparingly in
   documents meant for PDF.
 - Escape a literal `[@` as `\[@`.
+- A field name may appear twice when both places are the same kind of field
+  with the same pattern (width and preset may differ): mlcdoc 0.24.0 makes one
+  PDF field with two widgets, the input mask shows it once, and filling sets
+  both. The check warns (`field-duplicate`). A different kind or pattern, or
+  a signature field used twice, is an error (`field-duplicate-conflict`).
 - Fields cannot be placed in headings or image captions, and a field cannot
   span a blank line.
 - Validity dates and approval status are **not** written in the document. A

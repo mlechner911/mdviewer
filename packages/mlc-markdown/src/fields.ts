@@ -9,7 +9,7 @@ export type FieldKind = 'check' | 'text' | 'multiline' | 'signature';
 
 export interface Field {
   kind: FieldKind;
-  /** Unique; without "#name" it is "<section>_<n>" after the heading above. */
+  /** Without "#name" "<section>_<n>" after the heading above; a "#name" may repeat (one PDF field). */
   name: string;
   named: boolean;
   /** Preset value, lines joined with "\n". */
@@ -243,8 +243,11 @@ class Scanner {
       f.name = `${this.section}_${this.sectionCount}`;
     }
     if (tooltip) f.tooltip = tooltip;
-    if (this.fields.some((o) => o.name === f.name)) {
-      this.fail('field-duplicate');
+    // A name used twice is one PDF field (mlcdoc 0.24.0) when both fit;
+    // mlcext's Check warns about it.
+    const same = this.fields.find((o) => o.name === f.name);
+    if (same && duplicateConflict(same, f)) {
+      this.fail('field-duplicate-conflict');
       return n;
     }
     if (this.fields.some((o) => o.name.startsWith(`${f.name}.`) || f.name.startsWith(`${o.name}.`))) {
@@ -258,6 +261,12 @@ class Scanner {
     this.fields.push(f);
     return n;
   }
+}
+
+// Same rule as duplicateConflict in mlcext: mlcdoc joins two fields of one
+// name only when kind and pattern match and neither is a signature.
+function duplicateConflict(a: Field, b: Field): boolean {
+  return a.kind === 'signature' || b.kind === 'signature' || a.kind !== b.kind || a.pattern !== b.pattern;
 }
 
 function newField(): Field {

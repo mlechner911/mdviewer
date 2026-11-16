@@ -312,8 +312,12 @@ func (s *scanner) field() int {
 	}
 	for _, other := range s.fields {
 		if other.Name == f.Name {
-			s.fail("field-duplicate", fmt.Sprintf("Feldname `%s` kommt zweimal vor.", f.Name))
-			return n
+			// mlcdoc 0.24.0: one PDF field with two widgets, when both fit.
+			if msg := duplicateConflict(other, f); msg != "" {
+				s.fail("field-duplicate-conflict", msg)
+				return n
+			}
+			continue
 		}
 		if isFieldPrefix(other.Name, f.Name) || isFieldPrefix(f.Name, other.Name) {
 			s.fail("field-name-prefix", fmt.Sprintf("Feldnamen `%s` und `%s`: Ein Name kann nicht zugleich Feld und Ebene eines anderen sein.", other.Name, f.Name))
@@ -324,6 +328,32 @@ func (s *scanner) field() int {
 	f.Offset, f.End = start, markerEnd
 	s.fields = append(s.fields, f)
 	return n
+}
+
+// duplicateConflict is why mlcdoc rejects a second field named like other,
+// "" when both become one PDF field (same kind and pattern, no signature).
+// Check warns about an accepted one (field-duplicate).
+func duplicateConflict(other, f Field) string {
+	switch {
+	case other.Kind == SignatureField || f.Kind == SignatureField:
+		return fmt.Sprintf("Unterschriftsfeld `%s` kommt zweimal vor (Zeile %d): Jede Unterschrift braucht ihren eigenen Namen.", f.Name, other.Line)
+	case other.Kind != f.Kind:
+		return fmt.Sprintf("Feldname `%s` steht für %s (Zeile %d) und %s: Ein doppelter Name braucht dieselbe Feldart.", f.Name, kindArticle[other.Kind], other.Line, kindArticle[f.Kind])
+	case other.Pattern != f.Pattern:
+		return fmt.Sprintf("Feldname `%s` hat das Muster %s (Zeile %d) und hier %s: Ein doppelter Name braucht dasselbe Muster.", f.Name, patternText(other.Pattern), other.Line, patternText(f.Pattern))
+	}
+	return ""
+}
+
+var kindArticle = map[FieldKind]string{
+	CheckBox: "ein Ankreuzfeld", TextField: "ein Textfeld", MultilineField: "ein mehrzeiliges Textfeld", SignatureField: "ein Unterschriftsfeld",
+}
+
+func patternText(p string) string {
+	if p == "" {
+		return "keins"
+	}
+	return "`" + p + "`"
 }
 
 // classify reads kind, size and preset value from the text between "[@"

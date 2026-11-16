@@ -109,7 +109,13 @@ func Check(md string, opt Options) []Diagnostic {
 	for _, e := range errs {
 		add(e.Line, e.Col, Error, e.Code, e.Message)
 	}
+	first := map[string]int{}
 	for _, f := range fields {
+		if l, ok := first[f.Name]; ok {
+			add(f.Line, f.Col, Warning, "field-duplicate", fmt.Sprintf("Feldname `%s` kommt zweimal vor (zuerst Zeile %d): Beide Stellen sind ein Feld und tragen denselben Wert.", f.Name, l))
+			continue
+		}
+		first[f.Name] = f.Line
 		if f.Named && IsPrefillField(f.Name) {
 			add(f.Line, f.Col, Info, "field-prefill", fmt.Sprintf("Feld `%s` wird aus einem Ereignis vorausgefüllt.", f.Name))
 		}

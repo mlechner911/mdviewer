@@ -6,6 +6,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 - The bundled PDF toolkit is mlcdoc 0.29.0 (mlcmd2pdf 3.39.0); mlcdoc 0.27.0 or newer is required.
+- A form field name used twice is a warning, not an error, when both places are the same kind of field with the same pattern.
 
 ### Fixed
 - The PDF keeps the front matter keys `signature-note`, `image-align` and `attachments` instead of dropping them.

@@ -581,13 +581,103 @@
         "tooltip": "",
         "line": 1,
         "col": 1
+      },
+      {
+        "kind": "check",
+        "name": "x",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 7
+      }
+    ],
+    "errors": []
+  },
+  {
+    "markdown": "[@#x] [@#x ___]",
+    "fields": [
+      {
+        "kind": "check",
+        "name": "x",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "",
+        "line": 1,
+        "col": 1
       }
     ],
     "errors": [
       {
-        "code": "field-duplicate",
+        "code": "field-duplicate-conflict",
         "line": 1,
         "col": 7
+      }
+    ]
+  },
+  {
+    "markdown": "[@#x HH:MM] [@#x ___]",
+    "fields": [
+      {
+        "kind": "text",
+        "name": "x",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "",
+        "chars": 5,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "HH:MM",
+        "tooltip": "HH:MM",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": [
+      {
+        "code": "field-duplicate-conflict",
+        "line": 1,
+        "col": 13
+      }
+    ]
+  },
+  {
+    "markdown": "[@#u Unterschrift: A] [@#u Unterschrift: A]",
+    "fields": [
+      {
+        "kind": "signature",
+        "name": "u",
+        "named": true,
+        "value": "",
+        "checked": false,
+        "role": "A",
+        "chars": 0,
+        "rows": 1,
+        "fillPage": false,
+        "pattern": "",
+        "tooltip": "A",
+        "line": 1,
+        "col": 1
+      }
+    ],
+    "errors": [
+      {
+        "code": "field-duplicate-conflict",
+        "line": 1,
+        "col": 23
       }
     ]
   },

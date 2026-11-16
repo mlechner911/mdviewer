@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- A field name used twice is shown as a field in both places when both have
+  the same kind and pattern (mlcdoc 0.24.0); otherwise the second stays text.
+
 ## [0.1.1] - 2026-10-21
 
 ### Fixed
