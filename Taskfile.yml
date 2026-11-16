@@ -459,10 +459,6 @@ tasks:
 
   check:oss:
     desc: "MarkSafe stays open source: build and test the committed HEAD as a public clone would (no submodule, no mlcdoc, no private Go/npm sources)"
-    vars:
-      # Filled only from the public proxy/registry, so a private module can
-      # never be in it; kept between runs for speed.
-      CACHE: '{{.ROOT_DIR}}/build/oss-cache'
     cmds:
       - |
         set -e
@@ -472,7 +468,11 @@ tasks:
         if [ -n "$(ls -A frontend/src/sensormonitor 2>/dev/null)" ]; then
           echo "ERROR - public clone contains the Sensor Monitor module" >&2; exit 1
         fi
-        export GOMODCACHE="{{.CACHE}}/gomod" npm_config_cache="{{.CACHE}}/npm" \
+        # Filled only from the public proxy/registry, so a private module can
+        # never be in it; kept between runs for speed, outside the repo
+        # (go ./... would pick up module sources without a go.mod).
+        cache="$HOME/.cache/marksafe-oss"
+        export GOMODCACHE="$cache/gomod" npm_config_cache="$cache/npm" \
           GOPROXY=https://proxy.golang.org GOPRIVATE= GONOPROXY= GONOSUMDB= GOFLAGS=-mod=readonly \
           GIT_SSH_COMMAND=false GIT_CONFIG_GLOBAL=/dev/null \
           NO_MLCDOC=1 MLCDOC_DIST=/nonexistent DROPZONE=/nonexistent
