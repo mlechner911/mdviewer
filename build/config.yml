@@ -57,3 +57,11 @@ fileAssociations:
     description: Markdown formatted text file
     iconName: icons
     role: Editor
+  # MLC Markdown Extension (fields, callouts, signature; docs/MLC-EXTENSIONS.md):
+  # Markdown that only MarkSafe shows correctly. On macOS its own UTI
+  # eu.mlcgo.mlcmd is declared in Info.plist (UTExportedTypeDeclarations).
+  - ext: mlcmd
+    name: MLC Markdown Document
+    description: Markdown with the MLC Markdown Extension
+    iconName: icons
+    role: Editor

@@ -48,7 +48,7 @@ var ErrNotARecord = errors.New("Die Datei ist kein ausgefülltes Formblatt und w
 
 // SaveFilledForm writes md as a record: the "meta:" block with form, filler
 // and time is set, then the file is saved at path, or after a save dialog
-// suggesting "<doc_id>_<date>.md" when path is empty. An existing file is
+// suggesting "<doc_id>_<date>.mlcmd" when path is empty. An existing file is
 // only replaced when it is a record itself.
 func (a *App) SaveFilledForm(md string, form mlcext.FormRef, filledBy, path string) (*FileResult, error) {
 	now := time.Now()
@@ -65,8 +65,8 @@ func (a *App) SaveFilledForm(md string, form mlcext.FormRef, filledBy, path stri
 		}
 		dlg := application.Get().Dialog.SaveFile().
 			SetMessage("Ausgefülltes Formblatt speichern").
-			SetFilename(name+"_"+now.Format("2006-01-02")+".md").
-			AddFilter("Markdown Files (*.md)", "*.md")
+			SetFilename(name+"_"+now.Format("2006-01-02")+mlcext.SaveExt(rec)).
+			AddFilter(markdownFilter, markdownPattern)
 		if dir := a.documentRoot(); dir != "" {
 			dlg.SetDirectory(dir)
 		}

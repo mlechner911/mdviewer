@@ -40,6 +40,51 @@
 				<key>CFBundleTypeRole</key>
 				<string>Editor</string>
 			</dict>
+			<!-- MLC Markdown Extension (.mlcmd), see build/config.yml -->
+			<dict>
+				<key>CFBundleTypeExtensions</key>
+				<array>
+					<string>mlcmd</string>
+				</array>
+				<key>CFBundleTypeIconFile</key>
+				<string>icons</string>
+				<key>CFBundleTypeName</key>
+				<string>MLC Markdown Document</string>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>LSHandlerRank</key>
+				<string>Owner</string>
+				<key>LSItemContentTypes</key>
+				<array>
+					<string>eu.mlcgo.mlcmd</string>
+				</array>
+			</dict>
+		</array>
+		<key>UTExportedTypeDeclarations</key>
+		<array>
+			<dict>
+				<key>UTTypeIdentifier</key>
+				<string>eu.mlcgo.mlcmd</string>
+				<key>UTTypeDescription</key>
+				<string>MLC Markdown Document</string>
+				<key>UTTypeIconFile</key>
+				<string>icons</string>
+				<key>UTTypeConformsTo</key>
+				<array>
+					<string>public.plain-text</string>
+				</array>
+				<key>UTTypeTagSpecification</key>
+				<dict>
+					<key>public.filename-extension</key>
+					<array>
+						<string>mlcmd</string>
+					</array>
+					<key>public.mime-type</key>
+					<array>
+						<string>text/x-mlcmd</string>
+					</array>
+				</dict>
+			</dict>
 		</array>
 		<key>CFBundleExecutable</key>
 		<string>marksafe</string>

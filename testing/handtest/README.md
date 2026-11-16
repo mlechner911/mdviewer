@@ -56,6 +56,10 @@ Die Dokumente liegen in `handtest/` in der dropzone.
 | I2 | MarkSafe über die letzte Seite starten | Startseite mit dem, was MarkSafe kann, und Logo |
 | I3 | Über… im Hilfe-Menü | Versionsnummer wie in `STAND.txt` |
 | I4 | `test-marksafe.exe` ohne Installation starten | Startet; PDF-Vorschau nur, wenn mlcdoc installiert ist oder neben der exe liegt |
+| I5 | Im Explorer `schema/7-endung.mlcmd` doppelklicken | Öffnet in MarkSafe; Symbol und Dateityp „MLC Markdown Document“ wie bei `.md` |
+| I6 | Datei → Öffnen: Filter „Markdown (*.md, *.mlcmd)“ | Zeigt `.md`- und `.mlcmd`-Dateien |
+| I7 | Neues Dokument mit `[@#a ___]` → Speichern | Vorschlag `document.mlcmd`; ohne Feld `document.md` |
+| I8 | Eine bestehende `.md` mit Feldern ändern und speichern, dann „Speichern unter“ | Name und Endung `.md` bleiben |
 
 ### Bearbeiten
 

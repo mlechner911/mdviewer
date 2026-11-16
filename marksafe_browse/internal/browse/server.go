@@ -1,6 +1,8 @@
 package browse
 
 import (
+	"github.com/mlechner911/mdviewer/mlcext"
+
 	"embed"
 	"encoding/json"
 	"errors"
@@ -196,7 +198,7 @@ func (s *Server) handleRender(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		if !strings.HasSuffix(path, ".md") {
+		if !mlcext.IsMarkdownFile(path) {
 			http.Error(w, "Not a markdown file", http.StatusBadRequest)
 			return
 		}

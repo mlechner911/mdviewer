@@ -170,10 +170,13 @@ tasks:
     dir: build
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
-      - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop" -categories "{{.CATEGORIES}}"
+      - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop" -categories "{{.CATEGORIES}}" -mimetype "{{.MIMETYPES}}"
     vars:
       APP_NAME: '{{.APP_NAME}}'
-      EXEC: '{{.APP_NAME}}'
+      # %f: the file the desktop opens with MarkSafe (main.go reads os.Args[1])
+      EXEC: '{{.APP_NAME}} %f'
+      # text/x-mlcmd (.mlcmd) is declared in build/linux/mlcmd-mime.xml
+      MIMETYPES: 'text/markdown;text/x-markdown;text/x-mlcmd;'
       ICON: '{{.APP_NAME}}'
       CATEGORIES: 'Development;'
       OUTPUTFILE: '{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop'

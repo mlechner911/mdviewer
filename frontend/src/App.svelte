@@ -731,11 +731,13 @@
 
     try {
       isSaving = true;
-      let defaultName = "document.md";
+      // Without an extension the backend adds one: ".mlcmd" for a document
+      // of the MLC Markdown Extension, else ".md".
+      let defaultName = "";
       if (tab.path) {
         defaultName = await backend.getFileTitle(tab.path);
       } else if (tab.title && tab.title !== $t('untitled')) {
-        defaultName = tab.title.endsWith('.md') ? tab.title : `${tab.title}.md`;
+        defaultName = tab.title;
       }
 
       const content = await contentToSave(activeTabIndex);
@@ -829,7 +831,7 @@
     }
     const files: { path: string; content: string }[] = [];
     for (const path of paths ?? []) {
-      if (!/\.(md|markdown|mdown|mkd|mdx)$/i.test(path)) continue;
+      if (!/\.(md|markdown|mdown|mkd|mdx|mlcmd)$/i.test(path)) continue;
       try {
         const content = tabs.some(t => t.path === path) ? '' : await backend.readFile(path);
         if (content !== undefined && content !== null) files.push({ path, content });

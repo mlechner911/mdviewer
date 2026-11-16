@@ -238,6 +238,9 @@ RequestExecutionLevel "${REQUEST_EXECUTION_LEVEL}"
     !insertmacro APP_ASSOCIATE "mdown" "Markdown File" "Markdown formatted text file" "$INSTDIR\icons.ico" "Open with ${INFO_PRODUCTNAME}" "$INSTDIR\${PRODUCT_EXECUTABLE} $\"%1$\""
     File "..\icons.ico"
     
+    !insertmacro APP_ASSOCIATE "mlcmd" "MLC Markdown Document" "Markdown with the MLC Markdown Extension" "$INSTDIR\icons.ico" "Open with ${INFO_PRODUCTNAME}" "$INSTDIR\${PRODUCT_EXECUTABLE} $\"%1$\""
+    File "..\icons.ico"
+    
 !macroend
 
 !macro wails.unassociateFiles
@@ -250,6 +253,9 @@ RequestExecutionLevel "${REQUEST_EXECUTION_LEVEL}"
     Delete "$INSTDIR\icons.ico"
     
     !insertmacro APP_UNASSOCIATE "mdown" "Markdown File"
+    Delete "$INSTDIR\icons.ico"
+    
+    !insertmacro APP_UNASSOCIATE "mlcmd" "MLC Markdown Document"
     Delete "$INSTDIR\icons.ico"
     
 !macroend

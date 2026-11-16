@@ -78,7 +78,7 @@ export function createMdHooks(opt: {
       })();
       return true;
     }
-    if (/\.(md|markdown)(#.*)?$/i.test(href)) {
+    if (/\.(md|markdown|mlcmd)(#.*)?$/i.test(href)) {
       void (async () => {
         const abs = await backend.resolveRelativePath(await baseDir(), href.replace(/#.*$/, ''));
         if (await backend.isPathAllowed(abs)) opt.onopenfile?.({ path: abs });

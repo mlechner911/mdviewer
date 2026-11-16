@@ -30,6 +30,9 @@ contents:
     dst: "/usr/share/icons/hicolor/128x128/apps/marksafe.png"
   - src: "./build/linux/marksafe.desktop"
     dst: "/usr/share/applications/marksafe.desktop"
+  # MIME type text/x-mlcmd for .mlcmd (MLC Markdown Extension)
+  - src: "./build/linux/mlcmd-mime.xml"
+    dst: "/usr/share/mime/packages/marksafe-mlcmd.xml"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 depends:

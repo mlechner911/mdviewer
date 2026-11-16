@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/mlechner911/mdviewer/mlcext"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -39,7 +40,7 @@ func main() {
 			// Embedded frontend plus whitelisted local images (see localresource.go)
 			Handler: app.assetHandler(),
 		},
-		FileAssociations: []string{".md", ".markdown", ".mdown"},
+		FileAssociations: []string{".md", ".markdown", ".mdown", mlcext.ExtMLC},
 		Windows: application.WindowsOptions{
 			WebviewUserDataPath: webviewDataPath(),
 		},

@@ -6,6 +6,8 @@
 package mdbrowse
 
 import (
+	"github.com/mlechner911/mdviewer/mlcext"
+
 	"fmt"
 	"os"
 	"path/filepath"
@@ -111,7 +113,7 @@ func (r *Root) scanDir(dir string) ([]TOCEntry, error) {
 		fullPath := filepath.Join(dir, name)
 		if f.IsDir() {
 			subdirs = append(subdirs, fullPath)
-		} else if strings.HasSuffix(name, ".md") {
+		} else if mlcext.IsMarkdownFile(name) {
 			mdFiles = append(mdFiles, fullPath)
 		}
 	}
@@ -147,7 +149,7 @@ func (r *Root) scanDir(dir string) ([]TOCEntry, error) {
 		}
 		title, err := ExtractTitle(mdPath)
 		if err != nil {
-			title = FormatTitle(strings.TrimSuffix(name, ".md"))
+			title = FormatTitle(mlcext.TrimMarkdownExt(name))
 		}
 		relPath, _ := RelativePath(r.Dir, mdPath)
 
@@ -170,7 +172,7 @@ func (r *Root) FindIndex() (string, bool) {
 	return "", false
 }
 
-// GetMarkdownFiles returns all .md files in the directory tree.
+// GetMarkdownFiles returns all Markdown files (.md, .mlcmd, …) in the directory tree.
 func (r *Root) GetMarkdownFiles() ([]string, error) {
 	var files []string
 	err := filepath.WalkDir(r.Dir, func(path string, d os.DirEntry, err error) error {
@@ -180,7 +182,7 @@ func (r *Root) GetMarkdownFiles() ([]string, error) {
 		if d.IsDir() && strings.HasPrefix(d.Name(), ".") {
 			return filepath.SkipDir
 		}
-		if !d.IsDir() && strings.HasSuffix(d.Name(), ".md") {
+		if !d.IsDir() && mlcext.IsMarkdownFile(d.Name()) {
 			files = append(files, path)
 		}
 		return nil

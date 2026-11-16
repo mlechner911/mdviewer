@@ -1,0 +1,17 @@
+---
+doc_id: TEST-MLCMD-001
+version: "1.0"
+title: Dokument mit der Endung .mlcmd
+---
+
+# Dokument mit der Endung .mlcmd
+
+Diese Datei ist gewöhnliches Markdown mit der MLC-Markdown-Erweiterung, nur
+unter der Endung `.mlcmd`. Ein Doppelklick muss sie in MarkSafe öffnen.
+
+Geprüft von: [@#pruefer ______________]
+
+Datum: [@#datum TT.MM.JJJJ]
+
+> [!NOTE]
+> Der Hinweiskasten erscheint als Kasten, die Felder sind hervorgehoben.

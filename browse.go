@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/mlechner911/mdviewer/mlcext"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"marksafe/internal/mdbrowse"
 )
@@ -63,7 +63,7 @@ func (a *App) BrowseRender(rootDir, relPath, chromaStyle string) (BrowseDoc, err
 	switch {
 	case info.IsDir():
 		title, html, err = root.RenderDir(relPath, chromaStyle)
-	case !strings.HasSuffix(strings.ToLower(relPath), ".md"):
+	case !mlcext.IsMarkdownFile(relPath):
 		return BrowseDoc{}, fmt.Errorf("not a markdown file: %s", relPath)
 	default:
 		title, html, err = root.RenderDoc(relPath, chromaStyle)

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MLC Markdown Extension (.mlcmd): Markdown with form fields, callouts and
+     a signature block (docs/MLC-EXTENSIONS.md). Installed by nfpm.yaml to
+     /usr/share/mime/packages; postinstall runs update-mime-database. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/x-mlcmd">
+    <comment>MLC Markdown document</comment>
+    <comment xml:lang="de">MLC-Markdown-Dokument</comment>
+    <sub-class-of type="text/markdown"/>
+    <glob pattern="*.mlcmd"/>
+  </mime-type>
+</mime-info>

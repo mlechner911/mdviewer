@@ -53,7 +53,7 @@ func RefNosInDir(dir string, maxFiles int) []string {
 			}
 			return nil
 		}
-		if !strings.EqualFold(filepath.Ext(path), ".md") {
+		if !IsMarkdownFile(path) {
 			return nil
 		}
 		if n++; n > maxFiles {

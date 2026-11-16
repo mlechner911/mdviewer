@@ -466,7 +466,7 @@ func (t TemplateInfo) Render(values map[string]any) RenderResult {
 	}
 	res.Content = withFrontMatter(subst(t.body, mlc), t.frontMatterLines(filled, mlc))
 	if t.schema.File != "" {
-		res.FileName = sanitizeFileName(subst(t.schema.File, false))
+		res.FileName = sanitizeFileName(subst(t.schema.File, false), SaveExt(res.Content))
 	}
 	res.Diagnostics = Check(res.Content, Options{RequireHeader: Detect(res.Content)})
 	return res
@@ -669,13 +669,15 @@ func yamlScalar(s string) string {
 
 var badFileChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f]`)
 
-func sanitizeFileName(s string) string {
+// sanitizeFileName makes s a file name; without a Markdown extension of
+// its own it gets ext (also "Messung 05.03.2026": ".2026" is no extension).
+func sanitizeFileName(s, ext string) string {
 	s = strings.TrimSpace(badFileChars.ReplaceAllString(s, "_"))
 	if s == "" {
 		return ""
 	}
-	if !strings.EqualFold(filepath.Ext(s), ".md") {
-		s += ".md" // also "Messung 05.03.2026": ".2026" is no extension
+	if !IsMarkdownFile(s) {
+		s += ext
 	}
 	return s
 }

@@ -112,6 +112,23 @@ them; MarkSafe displays them. Outside MLC tools they have no meaning.
 
 ✅ supported · ⏳ planned (see roadmap below)
 
+### File extension `.mlcmd`
+
+A document of the extension can carry the extension `.mlcmd` instead of `.md`.
+The content is the same UTF-8 Markdown, byte for byte; the name only tells the
+system that a plain Markdown viewer will not show it correctly. A signature
+covers the content, never the file name, so renaming keeps it valid.
+
+- MarkSafe (free and Plus) registers `.mlcmd` on Windows, macOS (UTI
+  `eu.mlcgo.mlcmd`, conforms to `public.plain-text`) and Linux (MIME type
+  `text/x-mlcmd`, a subclass of `text/markdown`).
+- Open, check, edit, browse and the document folder treat `.mlcmd` like `.md`
+  (`mlcext.IsMarkdownFile`).
+- A new document — saved for the first time, created from a template, a
+  filled-in form — gets `.mlcmd` when it uses the extension (`mlcext.Detect`:
+  doc_id, signature, `event_kinds` or a field), else `.md` (`mlcext.SaveExt`).
+  An existing file keeps its extension.
+
 ### Rules
 
 - Raw HTML: the extension itself only defines the two forms above (page

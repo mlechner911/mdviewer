@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- The file extension `.mlcmd` for documents of the MLC Markdown Extension (fields, callouts, signature): MarkSafe registers it on Windows, macOS and Linux, opens, checks and browses it like `.md`, and suggests it when a new document using the extension is saved first. Existing `.md` files keep their name.
+
 ### Fixed
 - Reset Zoom in the hamburger menu no longer also opens the browse view.
 

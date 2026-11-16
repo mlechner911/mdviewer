@@ -174,11 +174,17 @@ func (a *App) GetStyleCSS(style string) string {
 	return css
 }
 
+// File dialog filter for every Markdown extension, ".mlcmd" included.
+const (
+	markdownFilter  = "Markdown (*.md, *.mlcmd)"
+	markdownPattern = "*.md;*.markdown;*.mdown;*.mlcmd"
+)
+
 // OpenFile opens a native file dialog and returns the path and content.
 func (a *App) OpenFile() (*FileResult, error) {
 	path, err := promptPath(application.Get().Dialog.OpenFile().
 		SetTitle("Open Markdown File").
-		AddFilter("Markdown Files (*.md)", "*.md").
+		AddFilter(markdownFilter, markdownPattern).
 		AddFilter("Text Files (*.txt)", "*.txt").
 		AddFilter("All Files (*.*)", "*.*"))
 	if err != nil || path == "" {
@@ -204,7 +210,7 @@ func (a *App) GetFileTitle(path string) string {
 // SaveFile saves content directly to the given path, or prompts if path is empty.
 func (a *App) SaveFile(path string, content string) (string, error) {
 	if path == "" {
-		return a.SaveFileAs("document.md", content)
+		return a.SaveFileAs("", content)
 	}
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -226,21 +232,26 @@ func (a *App) SaveFileAs(defaultFilename string, content string) (string, error)
 		startDir = a.documentRoot()
 	}
 	if defaultFilename == "" {
-		defaultFilename = "document.md"
+		defaultFilename = "document"
 	} else {
 		defaultFilename = filepath.Base(defaultFilename)
 	}
-	if filepath.Ext(defaultFilename) == "" {
-		defaultFilename += ".md"
+	// A name without extension (a new document) gets ".mlcmd" when the
+	// content uses the MLC Markdown Extension, else ".md"; an existing
+	// file keeps its extension.
+	ext := filepath.Ext(defaultFilename)
+	if !mlcext.IsMarkdownFile(defaultFilename) {
+		ext = mlcext.SaveExt(content)
+		defaultFilename += ext
 	}
-	// A document with a doc_id is named after it (INFO-QM-001.md).
-	if name := mlcext.SuggestFileName(content, ".md", false); name != "" {
+	// A document with a doc_id is named after it (INFO-QM-001.mlcmd).
+	if name := mlcext.SuggestFileName(content, ext, false); name != "" {
 		defaultFilename = name
 	}
 	dlg := application.Get().Dialog.SaveFile().
 		SetMessage("Save Markdown File").
 		SetFilename(defaultFilename).
-		AddFilter("Markdown Files (*.md)", "*.md").
+		AddFilter(markdownFilter, markdownPattern).
 		AddFilter("All Files (*.*)", "*.*")
 	if startDir != "" {
 		dlg.SetDirectory(startDir)
