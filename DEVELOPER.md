@@ -88,6 +88,7 @@ Build output goes to `bin/`.
 | Build All | `task build:all` | Build both platforms |
 | Release | `task release` | Build and copy installers to `/mnt/data2tb/dropzone/` |
 | Check | `task check` | Bindings, `svelte-check`, Go tests (core, module, `mlcext`) and the tests of the three npm packages |
+| Open-source check | `task check:oss` | Builds and tests the committed HEAD like a public clone: no submodule, no mlcdoc, Go modules only from proxy.golang.org, no SSH; runs before `task release`. MarkSafe must never need our closed-source parts to compile |
 | PDF tests | `task mlcdoc:test` | `mlcext/mlcdoc` against the bundled mlcdoc; a skipped test fails |
 | Hand test | `task handtest:prepare [SENSOR=1]`, `task handtest:report -- standard\|plus passed\|failed "note"` | Windows 11 test builds and documents to the dropzone, result to the Doc Hub; list in [testing/handtest/README.md](testing/handtest/README.md) |
 

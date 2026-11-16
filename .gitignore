@@ -47,5 +47,6 @@ mlcplan.md
 /.mlcai/
 /mlcprodweb/
 build/mlcdoc/
+build/oss-cache/
 packages/*/dist/
 frontend/.variant
