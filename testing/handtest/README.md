@@ -81,6 +81,9 @@ für Feld-Schemas öffnen** zeigt.
 | S5 | `4-editor.md`: über `patient.visit_time` fahren; unter „Hier tippen:“ `[@#patient.` tippen | Beschreibung aus dem Schema; Vervollständigung bietet die Eigenschaften an; `patient.name` mit `TT.MM.JJJJ` ist eine Warnung |
 | S6 | Formularfeld-Dialog (Werkzeugleiste oder `Strg+Umschalt+F`), Doppelklick auf ein Feld | Feld einfügen und bearbeiten; das Namensfeld bietet die Eigenschaften des Schemas an |
 | S7 | `5-pdf-ebenen.md` als PDF exportieren, in Acrobat öffnen | Felder heißen `patient.name` usw., als Ebenen `patient` › `name`; Ankreuzfeld `kontrolle.erledigt` |
+| S8 | `6-tabelle-doppelt.md` › Ausfüllen | Tabellenfelder heißen „Kühlgerät (1)“, „jetzt (1)“, „Lage (1)“, „Maßnahme (1)“, „Kühlgerät (2)“ …, keins heißt „\|“; in der Maske keine Reste der Tabelle; `pruefer` steht einmal in der Maske |
+| S9 | `6-tabelle-doppelt.md` im Editor | `pruefer` zweimal: gelbe Warnung „kommt zweimal vor“ an der zweiten Stelle; `konflikt` (Ankreuzfeld und Textfeld): roter Fehler „dieselbe Feldart“ |
+| S10 | Die beiden `konflikt`-Zeilen löschen, PDF exportieren, in Acrobat `pruefer` ausfüllen | Der Wert erscheint an beiden Stellen; Tabellenfelder mehrzeilig in ihren Zellen; die Formeln sind gesetzt, nicht als `$…$`-Text, und es gibt keinen Hinweis „Formeln erscheinen im PDF als Text“ |
 
 ### Ausfüllen
 
@@ -94,15 +97,15 @@ für Feld-Schemas öffnen** zeigt.
 
 | # | Schritt | Erwartet |
 |---|---|---|
-| G1 | `formular-mit-bild.md` öffnen | `foto.jpg` in Vorschau und PDF; `grafik.webp` in der Vorschau, im PDF übersprungen |
+| G1 | `formular-mit-bild.md` öffnen | `foto.jpg` und `grafik.webp` in Vorschau und PDF |
 | G2 | 🖼 in der Werkzeugleiste: Datei, Bild aus der Zwischenablage, gezogene Datei | Wird als Verweis oder eingebettet eingefügt; eingebettet zeigt der Editor `🖼 name ‹Größe›`, Klick zeigt die Daten, ▲ oder Esc kürzt wieder |
-| G3 | Ein Bild von außerhalb des Dokumentordners einfügen (z. B. `fremd/aussen.jpg` aus einem Dokument eine Ebene höher, oder ein Bild vom Desktop) und „Verweis“ wählen | Meldung: liegt außerhalb des Dokumentordners, kann nur eingebettet werden; eine WebP-Datei lässt sich gar nicht einbetten |
+| G3 | Ein Bild von außerhalb des Dokumentordners einfügen (z. B. `fremd/aussen.jpg` aus einem Dokument eine Ebene höher, oder ein Bild vom Desktop) und „Verweis“ wählen | Meldung: liegt außerhalb des Dokumentordners, kann nur eingebettet werden; auch eine WebP-Datei lässt sich einbetten und erscheint im PDF |
 | G4 | **Datei › Bilder einbetten…**, danach Speichern unter | Bilder stehen im Dokument; ein signiertes Dokument wird nicht verändert |
 | G5 | `bildgroesse.md` in der Vorschau | 120 px breit; in 300 × 80 eingepasst, nicht verzerrt; halbe Textbreite; eigene Größe. Bei `\|0` warnt der Editor, das Bild erscheint in eigener Größe. `A\|B` bleibt Alt-Text |
 | G6 | **Ansicht › Bilder zentrieren** ein und aus, App neu starten, HTML-Export | Bilder allein im Absatz stehen mittig; die Einstellung bleibt nach dem Neustart; der HTML-Export zeigt sie ebenso |
 | G7 | 🖼 einfügen mit Größe `200`, dann `abc` und `150%` | `![…\|200](…)`; bei ungültiger Größe rotes Feld und „Einfügen“ gesperrt |
 | G8 | Cursor in ein Bild: „✎ Bild“, Doppelklick auf `](foto.jpg)`, Rechtsklick › Bild bearbeiten… | Dialog mit Text und Größe vorbelegt; Übernehmen ändert nur `[…]`, Pfad und `"Titel bleibt"` bleiben. „Anderes Bild…“ tauscht die Datei. Bei einem eingebetteten Bild zeigt der Dialog eine kleine Vorschau |
-| G9 | PDF-Vorschau von `bildgroesse.md` | Bilder noch in eigener Größe (mlcdoc kennt die Größe noch nicht); der Editor weist darauf hin, es gibt keinen Fehler |
+| G9 | PDF-Vorschau von `bildgroesse.md` | Bilder in denselben Größen wie in G5; kein Hinweis „gilt nur in der Vorschau“ |
 
 ### HTML und PDF (`html/`)
 
