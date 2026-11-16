@@ -4,11 +4,17 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+## [1.16.0] – 2026-11-16
+
 ### Added
 - The file extension `.mlcmd` for documents of the MLC Markdown Extension (fields, callouts, signature): MarkSafe registers it on Windows, macOS and Linux, opens, checks and browses it like `.md`, and suggests it when a new document using the extension is saved first. Existing `.md` files keep their name.
 
+### Changed
+- Updated dependencies, closing known vulnerabilities: Go 1.26.11, Vite 8.3, KaTeX 0.19, Mermaid 12 (diagrams keep their previous layout and look).
+
 ### Fixed
 - Reset Zoom in the hamburger menu no longer also opens the browse view.
+- On Linux, opening a Markdown file with MarkSafe from the file manager now opens that file.
 
 ## [1.15.0] – 2026-11-16
 
