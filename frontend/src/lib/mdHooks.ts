@@ -92,7 +92,8 @@ export function createMdHooks(opt: {
 
   async function loadMermaid() {
     const { default: mermaid } = await import('mermaid');
-    mermaid.initialize({ startOnLoad: false, ...opt.mermaid(), fontFamily: 'inherit' } as Parameters<typeof mermaid.initialize>[0]);
+    // Mermaid 12 defaults to ELK + the 'neo' look; keep the familiar dagre/classic rendering.
+    mermaid.initialize({ startOnLoad: false, layout: 'dagre', look: 'classic', ...opt.mermaid(), fontFamily: 'inherit' } as Parameters<typeof mermaid.initialize>[0]);
     return mermaid;
   }
 

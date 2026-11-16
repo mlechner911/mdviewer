@@ -43,8 +43,8 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "jsdom": "^26.0.0",
     "mlc-markdown": "file:../mlc-markdown",
-    "svelte": "^5.0.0",
-    "vitest": "^3.0.0"
+    "svelte": "^5.57.3",
+    "vitest": "^4.1.12"
   },
   "homepage": "https://github.com/mlechner911/mdviewer/blob/main/docs/MLC-EXTENSIONS.md",
   "bugs": {

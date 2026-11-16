@@ -72,6 +72,9 @@
     const dark = theme === 'dark';
     mermaid.initialize({
       startOnLoad: false,
+      // Mermaid 12 defaults to ELK + 'neo'; keep dagre/classic.
+      layout: 'dagre',
+      look: 'classic',
       theme: dark ? 'dark' : 'default',
       themeVariables: dark ? MERMAID_VARS.dark : MERMAID_VARS.light,
       fontFamily: 'inherit',
