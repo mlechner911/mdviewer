@@ -7,6 +7,7 @@
   import { get } from 'svelte/store';
   import { EventsOn, EventsOff, OnFileDrop, OnFileDropOff, BrowserOpenURL } from './lib/wails';
   import * as backend from './lib/backend';
+  import { closeMenus, closeMenusOnEscape } from './lib/menus';
   
   // Components
   import Editor from './components/Editor.svelte';
@@ -1023,6 +1024,10 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (browseParams) return; // browse window has its own shortcuts
+    if (closeMenusOnEscape(e)) {
+      e.preventDefault();
+      return;
+    }
     // Ctrl+P prints through the PDF; the webview's own print dialog stays
     // closed. On macOS the menu handles Cmd+P.
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
@@ -1089,7 +1094,7 @@
 
 </script>
 
-<svelte:window onmousemove={onMouseMove} onmouseup={stopResizing} onkeydown={handleKeydown} />
+<svelte:window onmousemove={onMouseMove} onmouseup={stopResizing} onkeydown={handleKeydown} onpointerdown={(e) => closeMenus(e.target)} />
 
 <AboutModal
   show={showAbout}

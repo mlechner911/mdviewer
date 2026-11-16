@@ -65,6 +65,7 @@ Die Dokumente liegen in `handtest/` in der dropzone.
 | B2 | Öffnen-Dialog abbrechen | Keine Fehlermeldung |
 | B3 | Vorschau, Synchron-Scrollen, Fokus-Ansicht | Vorschau folgt dem Editor |
 | B4 | **H ▾** in der Werkzeugleiste | H1 bis H3 setzen die Überschrift |
+| B4a | **H ▾** öffnen, dann **I** klicken; **H ▾** öffnen, dann **⊞ ▾**; **H ▾** öffnen, Esc; **H ▾** öffnen, in den Text klicken | Das Menü klappt jedes Mal zu (bei ⊞ ▾ öffnet nur dieses); **I** wirkt trotzdem |
 | B5 | Statusleiste | Wörter, Zeichen, Lesezeit, Pfad; bei MLC-Dokumenten die Prüfung |
 
 ### Formularfelder und Schema (`schema/`)

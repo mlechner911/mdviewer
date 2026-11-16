@@ -13,6 +13,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 - The PDF typesets formulas and applies the image size from the alt text, so the editor no longer warns that it does not.
 
 ### Fixed
+- Toolbar menus (headings, tables, symbols, alerts) close on a click elsewhere, when another menu opens, and on Escape.
 - The PDF keeps the front matter keys `signature-note`, `image-align` and `attachments` instead of dropping them.
 - Fields in a table row with a multi-line field get their column header and row as label in the form schema.
 
