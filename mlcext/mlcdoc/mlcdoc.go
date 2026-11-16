@@ -34,8 +34,9 @@ import (
 	"github.com/mlechner911/mdviewer/mlcext"
 )
 
-// MinVersion is the oldest mlcdoc this package works with.
-const MinVersion = "0.16.0"
+// MinVersion is the oldest mlcdoc this package works with: the first that
+// knows every key of Keys. MarkSafe ships the newest mlcdoc.
+const MinVersion = "0.27.0"
 
 var (
 	// ErrNotFound: no mlcdoc binary.

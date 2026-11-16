@@ -183,11 +183,11 @@ func TestTemplatesRenderWithoutWarnings(t *testing.T) { // needs mlcdoc
 }
 
 func TestVersionCheck(t *testing.T) {
-	if compare(semver("mlcdoc 0.15.9 (x)"), semver("mlcdoc "+MinVersion)) >= 0 {
-		t.Errorf("0.15.9 must be older than %s", MinVersion)
+	if compare(semver("mlcdoc 0.26.9 (x)"), semver("mlcdoc "+MinVersion)) >= 0 {
+		t.Errorf("0.26.9 must be older than %s", MinVersion)
 	}
-	if compare(semver("mlcdoc 0.16.0 (mlcmd2pdf 3.26.0)"), semver("mlcdoc "+MinVersion)) != 0 {
-		t.Errorf("0.16.0 must equal MinVersion")
+	if compare(semver("mlcdoc 0.27.0 (mlcmd2pdf 3.36.0)"), semver("mlcdoc "+MinVersion)) != 0 {
+		t.Errorf("0.27.0 must equal MinVersion")
 	}
 	if semver("irgendwas") != nil {
 		t.Errorf("no version must give nil")

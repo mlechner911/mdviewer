@@ -4,7 +4,11 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+- The bundled PDF toolkit is mlcdoc 0.29.0 (mlcmd2pdf 3.39.0); mlcdoc 0.27.0 or newer is required.
+
 ### Fixed
+- The PDF keeps the front matter keys `signature-note`, `image-align` and `attachments` instead of dropping them.
 - Fields in a table row with a multi-line field get their column header and row as label in the form schema.
 
 ## [1.14.0] – 2026-11-12

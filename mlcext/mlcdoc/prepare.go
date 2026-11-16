@@ -9,17 +9,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Keys are the front matter keys mlcdoc 0.16.0 accepts; it rejects any
-// other key. Taken from mlcdoc itself (the "expected one of" list of its
-// error); TestKeysMatchBinary compares it with the installed binary.
+// Keys are the front matter keys mlcdoc accepts (as of 0.29.0; the newest
+// since MinVersion: signature-note 0.26.0, image-align and attachments
+// 0.27.0); it rejects any other key. Taken from mlcdoc itself (the
+// "expected one of" list of its error); TestKeysMatchBinary compares it
+// with the installed binary.
 var Keys = []string{
 	"title", "author", "subject", "keywords", "creator", "label", "header", "footer", "lang",
-	"signatures", "signature", "date", "watermark", "timezone", "pdf-standard", "font",
-	"mono-font", "font-size", "heading-sizes", "code-font-size", "table-font-size",
-	"header-font-size", "page-size", "landscape", "slides", "toc", "bookmarks",
-	"slide-template", "margin", "accent", "code-theme", "table-style", "task-style",
-	"table-header-repeat", "line-numbers", "no-header", "page-break-before", "no-external",
-	"allow-http", "meta",
+	"signatures", "signature", "signature-note", "date", "watermark", "timezone", "image-align",
+	"attachments", "pdf-standard", "font", "mono-font", "font-size", "heading-sizes",
+	"code-font-size", "table-font-size", "header-font-size", "page-size", "landscape", "slides",
+	"toc", "bookmarks", "slide-template", "margin", "accent", "code-theme", "table-style",
+	"task-style", "table-header-repeat", "line-numbers", "no-header", "page-break-before",
+	"no-external", "allow-http", "meta",
 }
 
 // Prepare makes md acceptable for mlcdoc: variables replaced, signature
