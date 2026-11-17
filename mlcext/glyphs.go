@@ -8,10 +8,11 @@ import (
 	"unicode"
 )
 
-// The PDF (mlcdoc) has two fonts: Liberation Sans and DejaVu Sans as a
-// fallback (pdfGlyphRanges, generated from them). Colored emoji are not in
-// them; mlcdoc replaces a few by colored symbols (PDFSubstitutes), every
-// other missing character prints as an empty box.
+// The PDF (mlcdoc) sets text in Liberation Sans with DejaVu Sans, Twemoji
+// Flags (country flags in colour) and Noto Emoji (other emoji as outlines in
+// the text colour) as fallbacks; pdfGlyphRanges is generated from them
+// (scripts/glyphs-gen.py). mlcdoc replaces a few emoji by colored symbols
+// (PDFSubstitutes); every character no font has prints as an empty box.
 
 // PDFSubstitute is an emoji mlcdoc prints as a colored symbol.
 type PDFSubstitute struct {

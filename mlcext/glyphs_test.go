@@ -15,12 +15,14 @@ func TestPDFSymbolsPrint(t *testing.T) {
 			}
 		}
 	}
-	for _, r := range "🧠🔥📌🔒" {
+	for _, r := range "漢字" {
 		if HasPDFGlyph(r) {
 			t.Errorf("%q must count as missing", r)
 		}
 	}
-	for _, r := range "äöüß€✔☐⚠️✅" {
+	// Noto Emoji (mlcmd2pdf 3.32.0) and Twemoji Flags (3.40.0, 🇩🇪 and the
+	// Scottish tag sequence) print.
+	for _, r := range "äöüß€✔☐⚠️✅🧠🔥📌🔒🇩🇪🏴󠁧󠁢󠁳󠁣󠁴󠁿" {
 		if !HasPDFGlyph(r) {
 			t.Errorf("%q must print", r)
 		}
@@ -28,17 +30,17 @@ func TestPDFSymbolsPrint(t *testing.T) {
 }
 
 func TestCheckGlyphs(t *testing.T) {
-	md := "---\ndoc_id: SOP-QM-001\n---\n# 🧠 Analyse\n\n✅ ok ⚠️ Achtung 🧠 nochmal 📌\n"
+	md := "---\ndoc_id: SOP-QM-001\n---\n# 漢 Analyse 🇩🇪\n\n✅ ok ⚠️ Achtung 漢 nochmal 字 🧠\n"
 	var got []string
 	for _, d := range Check(md, Options{}) {
 		if d.Code == "pdf-glyph-missing" {
-			got = append(got, d.Message[:len("„🧠“")])
+			got = append(got, d.Message[:len("„漢“")])
 			if d.Line != 4 && d.Line != 6 {
 				t.Errorf("line %d", d.Line)
 			}
 		}
 	}
-	if len(got) != 2 || got[0] != "„🧠“" || got[1] != "„📌“" {
+	if len(got) != 2 || got[0] != "„漢“" || got[1] != "„字“" {
 		t.Errorf("missing glyphs: %q", got)
 	}
 }

@@ -80,6 +80,8 @@ tasks:
       # Linux: mlcdoc ships next to the binary (and in the deb/rpm, nfpm.yaml).
       - task: mlcdoc:fetch
       - '{{if and (eq .GOOS "linux") (ne .NO_MLCDOC "1")}}cp "{{.MLCDOC_DIR}}/linux/mlcdoc" "{{.BIN_DIR}}/mlcdoc"{{else}}true{{end}}'
+      # Its license texts for the deb/rpm, always those of the pinned version.
+      - '{{if and (eq .GOOS "linux") (ne .NO_MLCDOC "1")}}rm -rf "{{.BIN_DIR}}/mlcdoc-licenses" && mkdir -p "{{.BIN_DIR}}/mlcdoc-licenses" && cp "{{.MLCDOC_DIR}}"/linux/LICENSE* "{{.MLCDOC_DIR}}"/linux/NOTICE* "{{.BIN_DIR}}/mlcdoc-licenses/"{{else}}true{{end}}'
 
   package:
     desc: Package a production build for the host OS (or GOOS=...)

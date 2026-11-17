@@ -22,9 +22,10 @@ contents:
   # MLC PDF toolkit, found next to marksafe (task mlcdoc:fetch / build)
   - src: "./bin/mlcdoc"
     dst: "/usr/local/bin/mlcdoc"
-  - src: "./build/mlcdoc/0.16.0/linux/LICENSE-*"
+  # its license texts, copied there by task build for the pinned MLCDOC_VERSION
+  - src: "./bin/mlcdoc-licenses/LICENSE-*"
     dst: "/usr/share/doc/marksafe/mlcdoc/"
-  - src: "./build/mlcdoc/0.16.0/linux/NOTICE-*"
+  - src: "./bin/mlcdoc-licenses/NOTICE-*"
     dst: "/usr/share/doc/marksafe/mlcdoc/"
   - src: "./build/appicon.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/marksafe.png"
