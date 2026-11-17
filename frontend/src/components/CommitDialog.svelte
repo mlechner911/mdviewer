@@ -55,7 +55,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={$t('commitTitle')}>
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={$t('commitTitle')} data-testid="commit-dialog">
   <div class="max-w-lg w-full rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <div class="p-6">
       <h3 class="text-lg font-bold mb-1">{$t('commitTitle')}</h3>
@@ -64,15 +64,16 @@
       <label class="text-sm font-medium" for="commit-message">{$t('commitMessage')}</label>
       <textarea
         id="commit-message"
+        data-testid="commit-message"
         bind:this={input}
         bind:value={message}
         rows="3"
         class="w-full mt-1 p-2 rounded border text-sm font-mono {inputClass}"
       ></textarea>
-      {#if error}<p class="text-sm text-red-500 mt-2 whitespace-pre-line break-words">{error}</p>{/if}
+      {#if error}<p data-testid="commit-error" class="text-sm text-red-500 mt-2 whitespace-pre-line break-words">{error}</p>{/if}
       <div class="flex justify-end gap-3 mt-4">
-        <button onclick={onCancel} disabled={busy} class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('commitLater')}</button>
-        <button onclick={submit} disabled={busy || !message.trim()} class="px-4 py-2 rounded text-sm font-medium text-white transition-colors bg-blue-600 hover:bg-blue-500 disabled:opacity-50">{$t('commitButton')}</button>
+        <button onclick={onCancel} disabled={busy} data-testid="commit-later" class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('commitLater')}</button>
+        <button onclick={submit} data-testid="commit-submit" disabled={busy || !message.trim()} class="px-4 py-2 rounded text-sm font-medium text-white transition-colors bg-blue-600 hover:bg-blue-500 disabled:opacity-50">{$t('commitButton')}</button>
       </div>
     </div>
   </div>

@@ -56,6 +56,7 @@ Die Dokumente liegen in `handtest/` in der dropzone.
 | I2 | MarkSafe über die letzte Seite starten | Startseite mit dem, was MarkSafe kann, und Logo |
 | I3 | Über… im Hilfe-Menü | Versionsnummer wie in `STAND.txt` |
 | I4 | `test-marksafe.exe` ohne Installation starten | Startet; PDF-Vorschau nur, wenn mlcdoc installiert ist oder neben der exe liegt |
+| I4a | `test-marksafe-uitest.exe` starten | Titel beginnt mit „[UI-TEST]“; `http://127.0.0.1:9333/json/version` im Browser antwortet. `test-marksafe.exe` dagegen: kein „[UI-TEST]“, Port 9333 antwortet nicht (Aufbau: docs/UI-TEST.md) |
 | I5 | Im Explorer `schema/7-endung.mlcmd` doppelklicken | Öffnet in MarkSafe; Symbol und Dateityp „MLC Markdown Document“ wie bei `.md` |
 | I6 | Datei → Öffnen: Filter „Markdown (*.md, *.mlcmd)“ | Zeigt `.md`- und `.mlcmd`-Dateien |
 | I7 | Neues Dokument mit `[@#a ___]` → Speichern | Vorschlag `document.mlcmd`; ohne Feld `document.md` |

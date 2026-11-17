@@ -28,9 +28,13 @@ vars:
   # private submodule frontend/src/sensormonitor.
   SENSOR: '{{.SENSOR | default ""}}'
   SENSOR_TAG: '{{if eq .SENSOR "1"}}sensormonitor{{end}}'
+  # UITEST=1: Windows test build with the WebView2 debugging port for
+  # Playwright (uitest_on.go); only task handtest:prepare uses it, task
+  # release refuses it.
+  UITEST: '{{.UITEST | default ""}}'
   # Build tags of the platform builds (the Windows and macOS tasks read it
   # globally); Linux adds LINUX_TAGS in the build task.
-  EXTRA_TAGS: '{{.SENSOR_TAG}}'
+  EXTRA_TAGS: '{{.SENSOR_TAG}}{{if eq .UITEST "1"}}{{if .SENSOR_TAG}},{{end}}uitest{{end}}'
   # Output names: marksafe-1.9.0-…, of a module build marksafeplus-1.9.0-…
   PACKAGE: '{{if .SENSOR_TAG}}marksafeplus{{else}}marksafe{{end}}'
   VERSION:
@@ -204,6 +208,16 @@ tasks:
         cp "{{.BIN_DIR}}/marksafe.exe" "{{.OUT}}/test-marksafeplus.exe"
         cp "{{.BIN_DIR}}/marksafe-amd64-installer.exe" "{{.OUT}}/test-marksafeplus-setup.exe"
         {{end}}
+      # UI test builds (tag uitest): WebView2 debugging port for Playwright,
+      # port MARKSAFE_CDP_PORT (default 9333), "[UI-TEST]" in the title.
+      # Never hand these out.
+      - |
+        {{if .SENSOR_TAG}}
+        task build:windows SENSOR=1 UITEST=1
+        cp "{{.BIN_DIR}}/marksafe.exe" "{{.OUT}}/test-marksafeplus-uitest.exe"
+        {{end}}
+      - task build:windows UITEST=1
+      - cp "{{.BIN_DIR}}/marksafe.exe" "{{.OUT}}/test-marksafe-uitest.exe"
       - task build:windows
       - cp "{{.BIN_DIR}}/marksafe.exe" "{{.OUT}}/test-marksafe.exe"
       - cp "{{.BIN_DIR}}/marksafe-amd64-installer.exe" "{{.OUT}}/test-marksafe-setup.exe"
@@ -369,9 +383,19 @@ tasks:
     desc: Build all platforms and copy installers to dropzone (SENSOR=1 → files named marksafeplus-…, not for publish:downloads)
     vars:
       N: '{{.PACKAGE}}-{{.VERSION}}'
+    preconditions:
+      - sh: '[ "{{.UITEST}}" != "1" ]'
+        msg: "UITEST=1 is a test build with an open debugging port, never a release"
     cmds:
       - task: check:oss
       - task: build:all
+      # Fail closed: no binary of a release may carry the test build.
+      - |
+        for f in "{{.BIN_DIR}}/marksafe.exe" "{{.BIN_DIR}}/marksafe"; do
+          if strings "$f" | grep -qE 'remote-debugging-port|\[UI-TEST\]'; then
+            echo "ERROR - $f is a UI test build (debugging port)" >&2; exit 1
+          fi
+        done
       - mkdir -p {{.DROPZONE}}
       - cp {{.BIN_DIR}}/marksafe-amd64-installer.exe {{.DROPZONE}}/{{.N}}-windows-setup.exe
       - cp {{.BIN_DIR}}/marksafe.exe {{.DROPZONE}}/{{.N}}-windows.exe

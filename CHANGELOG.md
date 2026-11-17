@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+- UI test build for automated tests with Playwright (`task handtest:prepare`, never in a release): opens the WebView2 debugging port and marks every window title with "[UI-TEST]"; the folder check and commit dialogs carry stable `data-testid` attributes (docs/UI-TEST.md).
+
 ### Changed
 - When the folder check cannot check a folder (exit code 2), its message stands under the heading "Folder check not possible", wraps and can be selected and copied.
 

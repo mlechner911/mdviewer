@@ -86,7 +86,7 @@ func (a *App) SetInitialFile(path string) {
 // SetWindowTitle dynamically updates the native OS application window title.
 func (a *App) SetWindowTitle(title string) {
 	if a.window != nil {
-		a.window.SetTitle(title)
+		a.window.SetTitle(uiTestMark + title)
 	}
 }
 

@@ -28,7 +28,8 @@ export interface CommitRequest {
 }
 
 /** Asks a yes/no question (App's ConfirmModal). */
-export type Ask = (title: string, message: string, confirmLabel: string, cancelLabel: string) => Promise<boolean>;
+/** testId: stable data-testid of the dialog for UI tests (docs/UI-TEST.md). */
+export type Ask = (title: string, message: string, confirmLabel: string, cancelLabel: string, testId?: string) => Promise<boolean>;
 export type Tr = (key: string, ...args: unknown[]) => string;
 
 class FolderCheck {
@@ -114,6 +115,7 @@ class FolderCheck {
       tr('folderCheckTrustBody', spec.dir, cmd, spec.check?.cwd ?? spec.dir),
       tr('folderCheckTrustAllow'),
       tr('folderCheckTrustDeny'),
+      'foldercheck-permission',
     );
     if (!ok) {
       this.declined.add(key);

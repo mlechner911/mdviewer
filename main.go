@@ -43,6 +43,8 @@ func main() {
 		FileAssociations: []string{".md", ".markdown", ".mdown", mlcext.ExtMLC},
 		Windows: application.WindowsOptions{
 			WebviewUserDataPath: webviewDataPath(),
+			// nil except in the uitest test build (uitest_on.go)
+			AdditionalBrowserArgs: uiTestBrowserArgs(),
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
@@ -60,7 +62,7 @@ func main() {
 
 	app.window = wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "main",
-		Title:            productName,
+		Title:            uiTestMark + productName,
 		Width:            1200,
 		Height:           800,
 		BackgroundColour: application.NewRGB(27, 38, 54),

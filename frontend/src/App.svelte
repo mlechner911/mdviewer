@@ -581,7 +581,7 @@
   let showFolderCheck = $state(false);
   const folderRun = $derived(folderCheck.runFor(activeTab?.path));
   const folderStatus = $derived.by(() => [...folderCheckStatus(), ...commitStatus()]);
-  type StatusItem = { text: string; tone?: 'ok' | 'warn' | 'error'; title?: string; onclick?: () => void };
+  type StatusItem = { text: string; tone?: 'ok' | 'warn' | 'error'; title?: string; onclick?: () => void; testId?: string };
   function commitStatus(): StatusItem[] {
     const path = activeTab?.path;
     const run = folderRun;
@@ -592,9 +592,13 @@
       tone: 'warn' as const,
       title: clean ? $t('commitNow') : $t('commitBlocked'),
       onclick: () => (clean ? void folderCheck.requestCommit(path) : (showFolderCheck = true)),
+      testId: 'status-commit',
     }];
   }
   function folderCheckStatus(): StatusItem[] {
+    return folderCheckItems().map((i) => ({ ...i, testId: 'status-foldercheck' }));
+  }
+  function folderCheckItems(): StatusItem[] {
     const run = folderRun;
     if (!run) return [];
     const open = () => (showFolderCheck = true);
@@ -602,7 +606,8 @@
     if (run.refused) return [{ text: $t('folderCheckRefused'), tone: 'warn' as const, onclick: open }];
     if (run.error) return [{ text: $t('folderCheckBadConfig'), tone: 'error' as const, title: run.error, onclick: open }];
     if (run.result?.failed) return [{ text: $t('folderCheckFailed'), tone: 'error' as const, title: run.result.stderr, onclick: open }];
-    if (run.result?.error) return [{ text: run.result.error, tone: 'warn' as const, onclick: open }];
+    // Exit 2: the full message is in the tooltip and in the panel.
+    if (run.result?.error) return [{ text: $t('folderCheckNotPossible'), tone: 'warn' as const, title: run.result.error, onclick: open }];
     const c = folderCounts(run.result?.findings);
     if (!c.errors && !c.warnings) return [{ text: $t('folderCheckOk'), tone: 'ok' as const, onclick: open }];
     return [{ text: $t('folderCheckFindings', c.errors, c.warnings), tone: c.errors ? ('error' as const) : ('warn' as const), onclick: open }];
@@ -618,9 +623,9 @@
 
   // A yes/no question as a promise (ConfirmModal below).
   type ConfirmAnswer = 'confirm' | 'alt' | 'cancel';
-  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; cancelLabel?: string; altLabel?: string; resolve: (a: ConfirmAnswer) => void } | null>(null);
-  function askConfirm(title: string, message: string, confirmLabel: string, cancelLabel?: string): Promise<boolean> {
-    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, cancelLabel, resolve: (a) => resolve(a === 'confirm') }));
+  let confirmAsk = $state<{ title: string; message: string; confirmLabel: string; cancelLabel?: string; altLabel?: string; testId?: string; resolve: (a: ConfirmAnswer) => void } | null>(null);
+  function askConfirm(title: string, message: string, confirmLabel: string, cancelLabel?: string, testId?: string): Promise<boolean> {
+    return new Promise((resolve) => (confirmAsk = { title, message, confirmLabel, cancelLabel, testId, resolve: (a) => resolve(a === 'confirm') }));
   }
   function answerConfirm(a: ConfirmAnswer | boolean) {
     confirmAsk?.resolve(a === true ? 'confirm' : a === false ? 'cancel' : a);
@@ -1191,6 +1196,7 @@
     confirmLabel={confirmAsk.confirmLabel}
     cancelLabel={confirmAsk.cancelLabel ?? $t('cancel')}
     altLabel={confirmAsk.altLabel ?? ''}
+    testId={confirmAsk.testId}
     onAlt={() => answerConfirm('alt')}
     confirmClass={confirmAsk.altLabel ? 'bg-blue-600 hover:bg-blue-500' : undefined}
     theme={$effectiveAppTheme}

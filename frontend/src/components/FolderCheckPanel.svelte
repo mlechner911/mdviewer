@@ -46,7 +46,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={$t('folderCheckTitle')}>
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={$t('folderCheckTitle')} data-testid="foldercheck-panel">
   <div class="max-w-2xl w-full max-h-[80vh] flex flex-col rounded-lg shadow-2xl overflow-hidden border {toolbarClass}">
     <div class="p-4 border-b border-current/10">
       <h3 class="text-lg font-bold">{$t('folderCheckTitle')}</h3>
@@ -54,28 +54,28 @@
     </div>
     <div class="p-4 overflow-auto flex-1 text-sm">
       {#if run.running}
-        <p class="opacity-70">{$t('folderCheckRunning')}</p>
+        <p class="opacity-70" data-testid="foldercheck-running">{$t('folderCheckRunning')}</p>
       {:else if run.refused}
-        <p class="opacity-70">{$t('folderCheckRefused')}</p>
+        <p class="opacity-70" data-testid="foldercheck-refused">{$t('folderCheckRefused')}</p>
       {:else if run.error}
         <p class="text-red-500 whitespace-pre-line">{run.error}</p>
       {:else if run.result?.failed}
-        <p class="text-red-500 font-semibold mb-2">{$t('folderCheckFailed')}</p>
-        <pre class="text-xs whitespace-pre-wrap opacity-80">{run.result.stderr}</pre>
+        <p class="text-red-500 font-semibold mb-2" data-testid="foldercheck-failed">{$t('folderCheckFailed')}</p>
+        <pre data-testid="foldercheck-stderr" class="text-xs whitespace-pre-wrap opacity-80">{run.result.stderr}</pre>
       {:else if run.result?.error}
         <!-- Exit 2: the check's own message is the only guidance for the
              user (e.g. "rebuild the check program"), so it stands out,
              wraps and can be copied. -->
         <p class="font-semibold mb-2 {currentTheme === 'light' ? 'text-amber-700' : 'text-amber-400'}">{$t('folderCheckNotPossible')}</p>
-        <p class="select-text whitespace-pre-line break-words rounded border-l-4 border-amber-500 bg-amber-500/10 px-3 py-2">{run.result.error}</p>
+        <p data-testid="foldercheck-error" class="select-text whitespace-pre-line break-words rounded border-l-4 border-amber-500 bg-amber-500/10 px-3 py-2">{run.result.error}</p>
       {:else if groups.length === 0}
-        <p class="text-green-500">{$t('folderCheckOk')}</p>
+        <p class="text-green-500" data-testid="foldercheck-ok">{$t('folderCheckOk')}</p>
       {:else}
         {#each groups as [file, findings]}
           <h4 class="font-semibold mt-3 first:mt-0 break-all">{file || $t('folderCheckGeneral')}</h4>
-          <ul class="mt-1">
+          <ul class="mt-1" data-testid="foldercheck-findings">
             {#each findings as f}
-              <li>
+              <li data-testid="foldercheck-finding" data-code={f.code} data-severity={f.severity}>
                 <button
                   class="w-full text-left px-2 py-1 rounded hover:bg-current/10 flex gap-2 disabled:cursor-default"
                   disabled={!f.path}
@@ -93,8 +93,8 @@
       {/if}
     </div>
     <div class="p-4 flex justify-end gap-3 border-t border-current/10">
-      <button onclick={onRerun} disabled={run.running} class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('folderCheckRerun')}</button>
-      <button onclick={onClose} class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('close')}</button>
+      <button onclick={onRerun} data-testid="foldercheck-rerun" disabled={run.running} class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('folderCheckRerun')}</button>
+      <button onclick={onClose} data-testid="foldercheck-close" class="px-4 py-2 rounded text-sm font-medium transition-colors {buttonClass}">{$t('close')}</button>
     </div>
   </div>
 </div>

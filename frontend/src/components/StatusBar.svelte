@@ -23,7 +23,7 @@
     activeTab: any;
     diagnostics?: MLCDiagnostic[];
     /** Entries of built-in modules (e.g. the Sensor Monitor's comparison). */
-    extraItems?: { text: string; tone?: 'ok' | 'warn' | 'error'; title?: string; onclick?: () => void }[];
+    extraItems?: { text: string; tone?: 'ok' | 'warn' | 'error'; title?: string; onclick?: () => void; testId?: string }[];
   } = $props();
 
   // --- Svelte 5 Runes: Derived ---
@@ -57,9 +57,9 @@
   {#each extraItems as item}
     {@const tone = item.tone === 'ok' ? 'text-green-500' : item.tone === 'warn' ? 'text-amber-500' : item.tone === 'error' ? 'text-red-500' : ''}
     {#if item.onclick}
-      <button class="{tone} hover:underline" title={item.title} onclick={item.onclick}>{item.text}</button>
+      <button class="{tone} hover:underline" title={item.title} onclick={item.onclick} data-testid={item.testId}>{item.text}</button>
     {:else}
-      <div class={tone} title={item.title}>{item.text}</div>
+      <div class={tone} title={item.title} data-testid={item.testId}>{item.text}</div>
     {/if}
     <div class="h-3 w-px {dividerClass}"></div>
   {/each}
