@@ -1,3 +1,15 @@
+/* Country flags in colour, the same subset of Twemoji that the PDF uses
+   (mlcmd2pdf "Twemoji Flags", CC-BY 4.0, assets/fonts/LICENSE_TWEMOJI).
+   Windows draws flag emoji as two letters; unicode-range limits the font
+   to the flag characters, everything else keeps its font. First in the
+   sans and mono stacks (tailwind.config.js, browse.css). */
+@font-face {
+    font-family: 'Twemoji Flags';
+    src: url('./assets/fonts/TwemojiFlags.woff2') format('woff2');
+    unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0061-E007A, U+E007F;
+    font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -5,6 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- Country flags (🇩🇪 🇪🇺) show in colour in the preview, also on Windows, which otherwise draws two letters; the same Twemoji flags as in the PDF.
 - UI test build for automated tests with Playwright (`task handtest:prepare`, never in a release): opens the WebView2 debugging port and marks every window title with "[UI-TEST]"; the folder check and commit dialogs carry stable `data-testid` attributes (docs/UI-TEST.md).
 
 ### Changed

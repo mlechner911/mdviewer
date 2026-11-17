@@ -120,6 +120,8 @@ für Feld-Schemas öffnen** zeigt.
 | H1 | `html-test.md` in der Vorschau | Wie auf GitHub |
 | H2 | PDF-Vorschau und Export | A1–A4 fett und kursiv, B2/B3 durchgestrichen, B8 als Code; andere Inline-Tags nur mit Text; `<div>`, `<details>` usw. fehlen; der Editor markiert sie, der Export sagt es |
 | H3 | Drucken | Druckdialog, Ausdruck wie die PDF-Vorschau |
+| H4 | `flaggen.md` in der Vorschau (Windows) | Länderflaggen farbig statt zwei Buchstaben, auch im Code; einzelne Buchstaben als blaue Kästchen; ✅ ⚠️ 🔥 wie bisher |
+| H5 | `flaggen.md` als PDF (mit einem mlcdoc, das mlcmd2pdf `044c387` enthält) | Flaggen farbig wie in der Vorschau, andere Emoji einfarbig; Text kopieren ergibt die Flaggen-Zeichen |
 
 ### Ordner-Prüfung und Commit (`ordnerpruefung/`)
 

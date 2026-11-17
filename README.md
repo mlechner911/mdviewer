@@ -63,6 +63,7 @@ MIT License - Copyright (c) 2026 Michael Lechner
 
 Exception:
 
+- **Country flags** in the preview: a subset of Twemoji (Twitter, Inc and other contributors, CC-BY 4.0; font build by Mozilla, Apache 2.0), `frontend/src/assets/fonts/LICENSE_TWEMOJI`.
 - **MLC PDF toolkit `mlcdoc`**, shipped with the installers: Elastic License 2.0 (from mlcdoc 0.21.0) and the licenses of its parts, installed next to it (`licenses/mlcdoc`).
 
 ---
