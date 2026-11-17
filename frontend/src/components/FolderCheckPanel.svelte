@@ -63,7 +63,11 @@
         <p class="text-red-500 font-semibold mb-2">{$t('folderCheckFailed')}</p>
         <pre class="text-xs whitespace-pre-wrap opacity-80">{run.result.stderr}</pre>
       {:else if run.result?.error}
-        <p class="text-amber-500">{run.result.error}</p>
+        <!-- Exit 2: the check's own message is the only guidance for the
+             user (e.g. "rebuild the check program"), so it stands out,
+             wraps and can be copied. -->
+        <p class="font-semibold mb-2 {currentTheme === 'light' ? 'text-amber-700' : 'text-amber-400'}">{$t('folderCheckNotPossible')}</p>
+        <p class="select-text whitespace-pre-line break-words rounded border-l-4 border-amber-500 bg-amber-500/10 px-3 py-2">{run.result.error}</p>
       {:else if groups.length === 0}
         <p class="text-green-500">{$t('folderCheckOk')}</p>
       {:else}

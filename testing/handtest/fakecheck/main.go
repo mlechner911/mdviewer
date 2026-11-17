@@ -103,7 +103,7 @@ func markers(file string, line int, text string) []finding {
 	case strings.HasPrefix(trimmed, "LANGSAM"):
 		time.Sleep(10 * time.Minute)
 	case strings.HasPrefix(trimmed, "KEIN-VORLAGENORDNER"):
-		data, _ := json.Marshal(output{Error: "Das ist kein Vorlagen-Ordner (Testfall)."})
+		data, _ := json.Marshal(output{Error: "Prüfprogramm passt nicht zu den Prüfregeln im Checkout (Testfall) — Prüfprogramm neu bauen (task vorlagen:bin) oder neu holen"})
 		fmt.Println(string(data))
 		os.Exit(2)
 	}

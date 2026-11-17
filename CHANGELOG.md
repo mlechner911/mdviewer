@@ -4,6 +4,9 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+- When the folder check cannot check a folder (exit code 2), its message stands under the heading "Folder check not possible", wraps and can be selected and copied.
+
 ## [1.16.0] – 2026-11-16
 
 ### Added

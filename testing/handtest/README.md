@@ -147,7 +147,7 @@ Das braucht Git und legt ein Repository mit eigener Test-Identität an. Danach
 | O10 | In `sop.md` `version: 2` setzen, speichern | Fehler ohne Zeile unter `sop.en.md` („Übersetzung hat Version 1 …“); Klick öffnet `sop.en.md`; `sop.en.md` auf 2 setzen und speichern › keine Probleme, Commit-Dialog für `sop.en.md`. Danach im Tab `sop.md` auf „Gespeichert, nicht committet“ klicken › Commit von `sop.md` geht ebenfalls |
 | O11 | Zeile `ABSTURZ` schreiben, speichern | „Ordner-Prüfung fehlgeschlagen“; die Liste zeigt „exit code 3“ und „panic: Absturz zum Test“; kein Commit |
 | O12 | Zeile `LANGSAM` statt `ABSTURZ`, speichern | Nach etwa 10 s „fehlgeschlagen“ mit „timeout after 10s“; MarkSafe bleibt bedienbar |
-| O13 | Zeile `KEIN-VORLAGENORDNER`, speichern | Gelbe Meldung „Das ist kein Vorlagen-Ordner (Testfall).“; kein Commit |
+| O13 | Zeile `KEIN-VORLAGENORDNER`, speichern | Überschrift „Ordner-Prüfung nicht möglich“, darunter im gelben Kasten der ganze Text „Prüfprogramm passt nicht zu den Prüfregeln … neu holen“, gut lesbar in hellem und dunklem Theme und mit der Maus markierbar; kein Commit |
 | O14 | Testzeilen entfernen; in `.marksafe.yaml` den Befehl auf `["bin/pruefen", ".", "-x"]` ändern; `sop.md` speichern | Erlaubnis-Dialog erscheint erneut |
 | O15 | In `.marksafe.yaml` `version: 9` setzen, `sop.md` speichern | „.marksafe.yaml ist ungültig“, Tooltip nennt die Version; kein Befehl läuft. Danach zurück auf `version: 1` |
 | O16 | Im Ordner `git config --unset user.name`, ändern, speichern, committen | Commit-Dialog meldet: Git kennt dich nicht …; danach `git config user.name Handtest` |

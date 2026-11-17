@@ -74,11 +74,15 @@ output, logs) are ignored; only the last non-empty line counts.
 | --- | --- | --- |
 | 0 | Checked, no findings (or only warnings) | the findings, if any |
 | 1 | Checked, with findings | the findings |
-| 2 | The folder is not one this check knows | the message from `error` |
+| 2 | The check cannot check this folder: not a folder it knows, or the check program does not fit the rules in the checkout | "Folder check not possible" and the message from `error`, which is the only guidance the user gets, so say what to do |
 | other | The check itself failed | "Folder check failed" with the end of stderr |
 
 A check that times out, cannot be started, prints no JSON, or exits with 1
 but without findings also counts as failed.
+
+Call a built program, not `go run`: `go run` passes every exit code other
+than 0 on as 1, so exit 2 arrives as "exit code 1 without findings" and
+the message from `error` is lost.
 
 ## Where the findings appear
 
