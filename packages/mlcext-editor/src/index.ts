@@ -101,6 +101,52 @@ export interface MlcOptions {
    * the extension's own; read on every analysis. Not passed to onAnalysis.
    */
   extraDiagnostics?: (markdown: string) => MlcDiagnostic[];
+  /**
+   * Completions of the host (placeholders, event kinds, zones, field names
+   * it knows), next to the extension's own. Called with where the cursor
+   * is; may answer asynchronously. See MlcCompletionContext.
+   */
+  completions?: (context: MlcCompletionContext) => MlcCompletionItem[] | null | Promise<MlcCompletionItem[] | null>;
+}
+
+/**
+ * Where completion was asked for. The host's items replace the token that
+ * is being typed:
+ * - `placeholder`: `{{…` in the text; token is `{{` plus what follows, so
+ *   a label is written in full ("{{sensor.name}}").
+ * - `field-name`: after `[@#`; token is the name typed so far.
+ * - `event-kind`: in the front matter list `event_kinds: [`.
+ * - `front-matter-key`: a key at the start of a front matter line; an item
+ *   without `apply` inserts "label: ".
+ * - `front-matter-value`: the value of `key: ` in the front matter (`key`
+ *   names it), e.g. a zone.
+ */
+export type MlcCompletionKind = 'placeholder' | 'field-name' | 'event-kind' | 'front-matter-key' | 'front-matter-value';
+
+export interface MlcCompletionContext {
+  kind: MlcCompletionKind;
+  /** The token typed so far (for a placeholder without the braces). */
+  prefix: string;
+  /** front-matter-value: the key. */
+  key?: string;
+  /** Cursor, 1-based line and column in code points (like diagnostics). */
+  line: number;
+  col: number;
+  /** Asked for explicitly (Ctrl+Space) rather than while typing. */
+  explicit: boolean;
+  /** The latest analysis, if any. */
+  analysis: MlcAnalysis | null;
+}
+
+export interface MlcCompletionItem {
+  label: string;
+  detail?: string;
+  /** Longer description shown next to the list. */
+  info?: string;
+  /** Inserted text; default the label (front matter keys: "label: "). */
+  apply?: string;
+  /** CodeMirror completion type for the icon, default by kind. */
+  type?: string;
 }
 
 /** Dispatch to analyse again now, e.g. when extraDiagnostics changed. */
@@ -148,6 +194,7 @@ function buildDecorations(doc: Text, a: MlcAnalysis): DecorationSet {
     const title =
       `MLC-Erweiterung: ${KIND_LABEL[f.kind] ?? f.kind} „${f.name}“` +
       (f.pattern ? ` (${f.pattern})` : '') +
+      (f.role ? ` – ${f.role}` : '') +
       (f.prefill ? ' – wird aus einem Ereignis vorausgefüllt' : '');
     ranges.push(
       Decoration.mark({
@@ -236,18 +283,87 @@ function toCMDiagnostics(doc: Text, a: MlcAnalysis, source: MlcSource | undefine
   });
 }
 
+// ---------- Findings pushed by the host ----------
+
+interface HostDiagnostic {
+  d: MlcDiagnostic;
+  from: number;
+  to: number;
+}
+
+const setHostDiagnostics = StateEffect.define<MlcDiagnostic[]>();
+
+/** The host's findings, anchored to the text and moved with every edit. */
+const hostDiagnosticsField = StateField.define<HostDiagnostic[]>({
+  create: () => [],
+  update(value, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setHostDiagnostics)) {
+        const doc = tr.state.doc;
+        return e.value.map((d) => {
+          const from = toPos(doc, d.line, d.col);
+          return { d, from, to: Math.max(from, doc.lineAt(from).to) };
+        });
+      }
+    }
+    if (!tr.docChanged || !value.length) return value;
+    return value.map((h) => {
+      const from = tr.changes.mapPos(h.from, 1);
+      return { ...h, from, to: Math.max(from, tr.changes.mapPos(h.to, -1)) };
+    });
+  },
+});
+
+/**
+ * Show findings of the host, e.g. its server's rules, next to those of the
+ * extension. Same form as mlcext diagnostics (1-based line, column in code
+ * points); `source` names the checker in the tooltip. They move with the
+ * text while the author types and replace the previous set on every call;
+ * an empty list removes them. They show without an MlcSource analysis too.
+ */
+export function setMlcDiagnostics(view: EditorView, diagnostics: MlcDiagnostic[]): void {
+  view.dispatch({ effects: setHostDiagnostics.of(diagnostics) });
+}
+
+function hostToCM(state: EditorState): CMDiagnostic[] {
+  const len = state.doc.length;
+  return (state.field(hostDiagnosticsField, false) ?? []).map(({ d, from, to }) => ({
+    from: Math.min(from, len),
+    to: Math.min(Math.max(to, from), len),
+    severity: d.severity === 'error' ? 'error' : d.severity === 'warning' ? 'warning' : 'info',
+    source: d.source ?? 'Host',
+    message: d.message,
+  }));
+}
+
 function analyzer(source: MlcSource, opt: MlcOptions) {
   return ViewPlugin.fromClass(
     class {
       timer: ReturnType<typeof setTimeout> | undefined;
       /** A finding is held back while the cursor is in its field. */
       heldBack = false;
+      /** The extension's findings of the latest analysis, with the extra ones. */
+      own: CMDiagnostic[] = [];
       constructor(readonly view: EditorView) {
         this.schedule(0);
       }
       update(u: ViewUpdate) {
+        if (u.transactions.some((tr) => tr.effects.some((e) => e.is(setHostDiagnostics)))) {
+          // Shown at once, without asking the analysis again.
+          queueMicrotask(() => this.show());
+        }
         if (u.transactions.some((tr) => tr.effects.some((e) => e.is(refreshAnalysis)))) this.schedule(0);
         else if (u.docChanged || (u.selectionSet && this.heldBack)) this.schedule(opt.debounce ?? 300);
+        if (u.docChanged) {
+          this.own = this.own.map((d) => {
+            const from = u.changes.mapPos(d.from, 1);
+            return { ...d, from, to: Math.max(from, u.changes.mapPos(d.to, -1)) };
+          });
+        }
+      }
+      show() {
+        const own = this.own.filter((d) => d.to <= this.view.state.doc.length);
+        this.view.dispatch(setDiagnostics(this.view.state, [...own, ...hostToCM(this.view.state)]));
       }
       schedule(delay: number) {
         clearTimeout(this.timer);
@@ -264,7 +380,8 @@ function analyzer(source: MlcSource, opt: MlcOptions) {
         this.heldBack = !!a.detected && (a.diagnostics ?? []).some((d) => isBeingTyped(doc, d, cursor));
         const extra = opt.extraDiagnostics?.(text) ?? [];
         const shown = extra.length ? { ...a, diagnostics: [...(a.diagnostics ?? []), ...extra] } : a;
-        this.view.dispatch(setDiagnostics(this.view.state, toCMDiagnostics(doc, shown, source, cursor)));
+        this.own = toCMDiagnostics(doc, shown, source, cursor);
+        this.show();
         this.view.dispatch({ effects: setAnalysis.of(a) });
         opt.onAnalysis?.(a);
       }
@@ -355,7 +472,20 @@ function schemaCompletions(context: CompletionContext, a: MlcAnalysis | null, lo
   return { from: typed.from + 3, options, validFor: /^[a-z0-9_.]*$/ };
 }
 
-function mlcCompletions(context: CompletionContext, locale: string): CompletionResult | null {
+/** Where the host may add items: the kind and the token being typed. */
+interface HostSlot {
+  kind: MlcCompletionKind;
+  from: number;
+  prefix: string;
+  key?: string;
+}
+
+interface Asked {
+  result: CompletionResult | null;
+  slot: HostSlot | null;
+}
+
+function mlcCompletions(context: CompletionContext, locale: string): Asked {
   const analysis = currentAnalysis(context.state);
   const lists = analysis?.lists ?? null;
 
@@ -364,47 +494,65 @@ function mlcCompletions(context: CompletionContext, locale: string): CompletionR
     const before = line.text.slice(0, context.pos - line.from);
     if (/^event_kinds\s*:/.test(before)) {
       const word = context.matchBefore(/[A-Z_]*/);
-      if (!word) return null;
+      if (!word) return { result: null, slot: null };
       return {
-        from: word.from,
-        options: (lists?.eventKinds ?? []).map((k) => ({ label: k, type: 'enum', detail: 'Ereignisart' })),
-        validFor: /^[A-Z_]*$/,
+        result: {
+          from: word.from,
+          options: (lists?.eventKinds ?? []).map((k) => ({ label: k, type: 'enum', detail: 'Ereignisart' })),
+          validFor: /^[A-Z_]*$/,
+        },
+        slot: { kind: 'event-kind', from: word.from, prefix: word.text },
       };
+    }
+    const value = /^([A-Za-z_][\w-]*)\s*:\s*/.exec(before);
+    if (value) {
+      const word = context.matchBefore(/[^\s,[\]"']*/);
+      if (!word || (word.from === word.to && !context.explicit)) return { result: null, slot: null };
+      return { result: null, slot: { kind: 'front-matter-value', from: word.from, prefix: word.text, key: value[1] } };
     }
     const key = context.matchBefore(/^[a-z_]*/);
     if (key && (key.from < key.to || context.explicit)) {
       return {
-        from: key.from,
-        options: (lists?.frontMatterKeys ?? []).map((k) => ({
-          label: k,
-          type: 'property',
-          apply: k === 'event_kinds' ? 'event_kinds: [' : `${k}: `,
-        })),
+        result: {
+          from: key.from,
+          options: (lists?.frontMatterKeys ?? []).map((k) => ({
+            label: k,
+            type: 'property',
+            apply: k === 'event_kinds' ? 'event_kinds: [' : `${k}: `,
+          })),
+        },
+        slot: { kind: 'front-matter-key', from: key.from, prefix: key.text },
       };
     }
-    return null;
+    return { result: null, slot: null };
   }
 
-  const variable = context.matchBefore(/\{\{\s*\w*/);
+  const variable = context.matchBefore(/\{\{\s*[\w.]*/);
   if (variable) {
     return {
-      from: variable.from,
-      options: [
-        { label: '{{doc_id}}', detail: 'Kennung aus dem Front Matter' },
-        { label: '{{version}}', detail: 'Version aus dem Front Matter' },
-        { label: '{{title}}', detail: 'Titel aus dem Front Matter' },
-      ].map((o) => ({ ...o, type: 'variable' })),
-      filter: false,
+      result: {
+        from: variable.from,
+        options: [
+          { label: '{{doc_id}}', detail: 'Kennung aus dem Front Matter' },
+          { label: '{{version}}', detail: 'Version aus dem Front Matter' },
+          { label: '{{title}}', detail: 'Titel aus dem Front Matter' },
+        ].map((o) => ({ ...o, type: 'variable' })),
+        filter: false,
+      },
+      slot: { kind: 'placeholder', from: variable.from, prefix: variable.text.slice(2).trim() },
     };
   }
 
+  const named = context.matchBefore(/\[@#[a-z0-9_.]*/);
+  const slot: HostSlot | null = named ? { kind: 'field-name', from: named.from + 3, prefix: named.text.slice(3) } : null;
+
   const property = schemaCompletions(context, analysis, locale);
-  if (property) return property;
+  if (property) return { result: property, slot };
 
   const field = context.matchBefore(/\[@[#\w-]*/);
   const comment = context.matchBefore(/<!--?[-*!]?/);
   const match = field ?? comment;
-  if (!match) return null;
+  if (!match) return { result: null, slot };
   const options: Completion[] = mlcSnippets(lists, analysis?.schema)
     .filter((s) => (field ? s.template.startsWith('[@') : s.template.startsWith('<!--')))
     .map((s) => ({
@@ -417,7 +565,55 @@ function mlcCompletions(context: CompletionContext, locale: string): CompletionR
         snippet(s.template)(view, completion, from, closed ? to + 1 : to);
       },
     }));
-  return { from: match.from, options, filter: false };
+  return { result: { from: match.from, options, filter: false }, slot };
+}
+
+const HOST_TYPE: Record<MlcCompletionKind, string> = {
+  placeholder: 'variable',
+  'field-name': 'property',
+  'event-kind': 'enum',
+  'front-matter-key': 'property',
+  'front-matter-value': 'constant',
+};
+
+/** A host item as a CodeMirror completion; it replaces exactly the slot's token. */
+function hostCompletion(slot: HostSlot, item: MlcCompletionItem): Completion {
+  const insert = item.apply ?? (slot.kind === 'front-matter-key' ? `${item.label}: ` : item.label);
+  return {
+    label: item.label,
+    detail: item.detail,
+    info: item.info,
+    type: item.type ?? HOST_TYPE[slot.kind],
+    apply(view, _completion, _from, to) {
+      view.dispatch({ changes: { from: slot.from, to, insert }, selection: { anchor: slot.from + insert.length } });
+    },
+  };
+}
+
+/** The extension's completions, with the host's items added. */
+async function withHost(context: CompletionContext, asked: Asked, opt: MlcOptions): Promise<CompletionResult | null> {
+  const { result, slot } = asked;
+  if (!slot || !opt.completions) return result;
+  const line = context.state.doc.lineAt(context.pos);
+  let items: MlcCompletionItem[] | null = null;
+  try {
+    items = await opt.completions({
+      kind: slot.kind,
+      prefix: slot.prefix,
+      key: slot.key,
+      line: line.number,
+      col: [...line.text.slice(0, context.pos - line.from)].length + 1,
+      explicit: context.explicit,
+      analysis: currentAnalysis(context.state),
+    });
+  } catch {
+    // A failing host must not take the extension's own list with it.
+  }
+  if (!items?.length) return result;
+  const known = new Set(result?.options.map((o) => o.label));
+  const extra = items.filter((i) => !known.has(i.label)).map((i) => hostCompletion(slot, i));
+  if (!result) return { from: slot.from, options: extra };
+  return { ...result, options: [...result.options, ...extra] };
 }
 
 // ---------- Schema descriptions ----------
@@ -479,10 +675,11 @@ export function mlcExtension(source: MlcSource, opt: MlcOptions = {}): Extension
   const locale = opt.locale ?? (() => 'en');
   // One function for the life of the editor: CodeMirror compares sources by
   // identity, and a new one per call restarts the query for ever (no list).
-  const complete = (context: CompletionContext) => mlcCompletions(context, locale());
+  const complete = (context: CompletionContext) => withHost(context, mlcCompletions(context, locale()), opt);
   return [
     schemaHover(locale),
     mlcField,
+    hostDiagnosticsField,
     analyzer(source, opt),
     lintGutter(),
     EditorState.languageData.of(() => [{ autocomplete: complete }]),
