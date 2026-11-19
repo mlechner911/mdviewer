@@ -5,12 +5,14 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- New package `mlcext-editor-svelte` with the Svelte component `<MlcEditor>`: the Markdown editor with the MLC extension, its themes as CSS variables, scroll sync with `<MlcMarkdown>`, host findings and completions (P-MARKS-20261117-01, phase 2). MarkSafe's editor is built on it and looks and works as before.
 - `mlcext-editor` 0.2.0, for hosts with rules of their own such as the template workshop of the Sensor Monitor: `setMlcDiagnostics(view, list)` shows the host's findings next to the extension's and moves them with the text; the option `completions(context)` adds the host's items (placeholders, field names, event kinds, front matter keys and values such as zones) to the completion list (P-MARKS-20261117-01, phase 1). Signature fields show their role in the tooltip.
 - mlcext v0.21.0: `Analyze` reports the role of a signature field (`role`, "QMB" for `[@#sig_qmb Unterschrift: QMB]`), so editors such as the template workshop of the Sensor Monitor no longer parse the field text themselves (I-MARKS-20261117-03).
 - Country flags (🇩🇪 🇪🇺) show in colour in the preview, also on Windows, which otherwise draws two letters; the same Twemoji flags as in the PDF.
 - UI test build for automated tests with Playwright (`task handtest:prepare`, never in a release): opens the WebView2 debugging port and marks every window title with "[UI-TEST]"; the folder check and commit dialogs carry stable `data-testid` attributes (docs/UI-TEST.md).
 
 ### Changed
+- An empty editor shows its placeholder ("Type markdown here..."); MarkSafe passed it, the editor ignored it.
 - Bundled mlcdoc 0.30.0 (mlcmd2pdf 3.40.0): country flags (🇩🇪 🇪🇺) print in colour in the PDF, as in the preview; all other emoji stay monochrome. Its license texts now include Twemoji (CC-BY 4.0).
 - When the folder check cannot check a folder (exit code 2), its message stands under the heading "Folder check not possible", wraps and can be selected and copied.
 

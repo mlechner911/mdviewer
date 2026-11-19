@@ -9,6 +9,8 @@
     "allowJs": true,
     "checkJs": true,
     "isolatedModules": true,
+    // svelte-check only checks; nothing is written (JS of the packages is an input)
+    "noEmit": true,
     // ../packages/mlcext-editor resolves CodeMirror from this app
     "baseUrl": ".",
     "paths": {
@@ -18,6 +20,10 @@
       // picks the variant (vite.config.ts)
       "$sensormonitor": ["./src/sensormonitor/index.ts", "./src/sensormonitor-off/index.ts"],
       "mlc-markdown-svelte": ["../packages/mlc-markdown-svelte/src/index.d.ts"],
+      "mlcext-editor": ["../packages/mlcext-editor/src/index.ts"],
+      "mlcext-editor-svelte": ["../packages/mlcext-editor-svelte/src/index.d.ts"],
+      "codemirror": ["./node_modules/codemirror"],
+      "@lezer/*": ["./node_modules/@lezer/*"],
       "marked": ["./node_modules/marked"],
       "dompurify": ["./node_modules/dompurify"],
       "marked-footnote": ["./node_modules/marked-footnote"]
@@ -30,7 +36,8 @@
     "src/**/*.svelte",
     "../packages/mlcext-editor/src/**/*.ts",
     "../packages/mlc-markdown/src/**/*.ts",
-    "../packages/mlc-markdown-svelte/src/**/*.svelte"
+    "../packages/mlc-markdown-svelte/src/**/*.svelte",
+    "../packages/mlcext-editor-svelte/src/**/*.svelte"
   ],
   "references": [
     {

@@ -26,8 +26,10 @@ export default defineConfig({
       { find: /^mlc-markdown$/, replacement: fileURLToPath(new URL('../packages/mlc-markdown/src/index.ts', import.meta.url)) },
       { find: /^\$sensormonitor$/, replacement: fileURLToPath(new URL(sensormonitor ? './src/sensormonitor/index.ts' : './src/sensormonitor-off/index.ts', import.meta.url)) },
       { find: /^mlc-markdown-svelte$/, replacement: fileURLToPath(new URL('../packages/mlc-markdown-svelte/src/index.js', import.meta.url)) },
+      { find: /^mlcext-editor$/, replacement: fileURLToPath(new URL('../packages/mlcext-editor/src/index.ts', import.meta.url)) },
+      { find: /^mlcext-editor-svelte$/, replacement: fileURLToPath(new URL('../packages/mlcext-editor-svelte/src/index.js', import.meta.url)) },
     ],
-    dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language', '@codemirror/lint', '@codemirror/autocomplete', 'svelte', 'marked', 'dompurify', 'marked-footnote'],
+    dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language', '@codemirror/lint', '@codemirror/autocomplete', '@codemirror/lang-markdown', '@lezer/highlight', 'codemirror', 'svelte', 'marked', 'dompurify', 'marked-footnote'],
   },
   server: {
     host: '127.0.0.1',

@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * CodeMirror 6 Markdown Editor component for MarkSafe.
-   * Full Dark/Light theme support, syntax highlighting, line numbers, and smooth sync scroll.
+   * MarkSafe's Markdown editor: the shared <MlcEditor> (packages/
+   * mlcext-editor-svelte: CodeMirror, MLC extension, themes, scroll sync)
+   * plus what only MarkSafe has — context menus for fields, images and
+   * tables, the table and image boxes, folded data: URLs, pasted pictures,
+   * CodeMirror texts in the interface language.
    */
-  import { onMount, untrack } from 'svelte';
-  import { basicSetup, EditorView } from 'codemirror';
-  import { EditorState, Compartment } from '@codemirror/state';
-  import { markdown } from '@codemirror/lang-markdown';
-  import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-  import { tags as t } from '@lezer/highlight';
+  import { untrack } from 'svelte';
+  import { EditorView } from '@codemirror/view';
+  import { MlcEditor } from 'mlcext-editor-svelte';
+  import { fieldAt, type MlcSource, type MlcAnalysis, type MlcDiagnostic } from 'mlcext-editor';
   import type { EffectiveTheme_t } from '../lib/constants';
-  import { mlcExtension, refreshAnalysis, fieldHint, fieldAt, toPos, type MlcSource, type MlcAnalysis, type MlcDiagnostic } from '../../../packages/mlcext-editor/src/index';
   import { editorPhrases } from '../lib/editor/phrases';
   import { dataUriFolding } from '../lib/editor/dataUri';
   import { tableHint, tableAtCursor } from '../lib/editor/tableHint';
@@ -18,11 +18,10 @@
   import type { ImageSpan } from 'mlc-markdown';
   import { locale, t as tr } from '../i18n';
 
-  // --- Svelte 5 Runes: Props ---
-  let { 
-    value = $bindable(""), 
+  let {
+    value = $bindable(''),
     theme = 'dark',
-    placeholder = "",
+    placeholder = '',
     onchange,
     onscroll,
     mlcSource,
@@ -33,7 +32,7 @@
     oneditimage,
     onpasteimage,
     extraDiagnostics,
-    diagnosticsRevision = 0
+    diagnosticsRevision = 0,
   }: {
     value: string;
     theme: EffectiveTheme_t;
@@ -60,9 +59,24 @@
     diagnosticsRevision?: number;
   } = $props();
 
+  type EditorApi = {
+    getView(): EditorView | null;
+    focus(): void;
+    getTopLine(): number;
+    scrollToLine(line: number): void;
+    insertText(text: string): void;
+    replaceRange(line: number, col: number, endLine: number, endCol: number, text: string): void;
+    replaceOffsets(from: number, to: number, text: string): void;
+    wrapSelection(prefix: string, suffix?: string): void;
+    prefixSelection(prefix: string): void;
+    refresh(): void;
+  };
+  let editor = $state<EditorApi>();
+  const view = () => editor?.getView() ?? null;
+
   $effect(() => {
     if (diagnosticsRevision === 0) return;
-    untrack(() => editorView?.dispatch({ effects: refreshAnalysis.of(null) }));
+    untrack(() => editor?.refresh());
   });
 
   // Right-click on a form field: edit it in the field dialog.
@@ -76,184 +90,40 @@
   async function fitTable(mode: 'auto' | 'content') {
     const menu = tableMenu;
     tableMenu = null;
-    if (!menu || !editorView || !tableFit) return;
-    const text = editorView.state.doc.toString();
+    const v = view();
+    if (!menu || !v || !tableFit) return;
+    const text = v.state.doc.toString();
     const fixed = await tableFit(text, menu.line, mode);
-    if (fixed == null || !editorView || editorView.state.doc.toString() !== text) return;
-    editorView.dispatch({ changes: { from: 0, to: text.length, insert: fixed } });
-    editorView.focus();
+    if (fixed == null || v.state.doc.toString() !== text) return;
+    v.dispatch({ changes: { from: 0, to: text.length, insert: fixed } });
+    v.focus();
   }
 
-  let containerEl = $state<HTMLDivElement>();
-  let editorView: EditorView | null = null;
-  let isUpdatingFromProp = false;
-  let scrollLock = false;
-
-  const themeCompartment = new Compartment();
-
-  const languageCompartment = new Compartment();
-  const highlightCompartment = new Compartment();
-
-  // Dark Theme Definition
-  const marksafeDarkTheme = EditorView.theme({
-    "&": {
-      color: "#f1f5f9",
-      backgroundColor: "#0f172a",
-      height: "100%",
-      fontSize: "14px",
-      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    },
-    ".cm-content": {
-      caretColor: "#60a5fa",
-      padding: "16px 8px"
-    },
-    "&.cm-focused .cm-cursor": {
-      borderLeftColor: "#60a5fa"
-    },
-    "&.cm-focused .cm-selectionBackground, ::selection": {
-      backgroundColor: "rgba(59, 130, 246, 0.35) !important"
-    },
-    ".cm-gutters": {
-      backgroundColor: "#0f172a",
-      color: "#64748b",
-      borderRight: "1px solid #334155",
-      paddingRight: "8px"
-    },
-    ".cm-activeLineGutter": {
-      backgroundColor: "#1e293b",
-      color: "#94a3b8"
-    },
-    ".cm-activeLine": {
-      backgroundColor: "rgba(255, 255, 255, 0.03)"
-    },
-    ".cm-placeholder": {
-      color: "#64748b"
-    }
-  }, { dark: true });
-
-  const marksafeDarkHighlighting = HighlightStyle.define([
-    { tag: t.heading1, color: "#60a5fa", fontWeight: "bold", fontSize: "1.2em" },
-    { tag: t.heading2, color: "#38bdf8", fontWeight: "bold", fontSize: "1.1em" },
-    { tag: t.heading3, color: "#818cf8", fontWeight: "bold", fontSize: "1.05em" },
-    { tag: [t.heading4, t.heading5, t.heading6], color: "#a78bfa", fontWeight: "bold" },
-    { tag: t.strong, fontWeight: "bold", color: "#f8fafc" },
-    { tag: t.emphasis, fontStyle: "italic", color: "#cbd5e1" },
-    { tag: t.monospace, color: "#f472b6", backgroundColor: "rgba(244, 114, 182, 0.1)", borderRadius: "3px" },
-    { tag: [t.processingInstruction, t.string, t.inserted], color: "#34d399" },
-    { tag: [t.meta, t.comment], color: "#64748b", fontStyle: "italic" },
-    { tag: t.link, color: "#60a5fa", textDecoration: "underline" },
-    { tag: t.url, color: "#93c5fd" },
-    { tag: t.quote, color: "#94a3b8", fontStyle: "italic" },
-    { tag: t.list, color: "#f59e0b" }
-  ]);
-
-  // Light Theme Definition
-  const marksafeLightTheme = EditorView.theme({
-    "&": {
-      color: "#0f172a",
-      backgroundColor: "#ffffff",
-      height: "100%",
-      fontSize: "14px",
-      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    },
-    ".cm-content": {
-      caretColor: "#2563eb",
-      padding: "16px 8px"
-    },
-    "&.cm-focused .cm-cursor": {
-      borderLeftColor: "#2563eb"
-    },
-    "&.cm-focused .cm-selectionBackground, ::selection": {
-      backgroundColor: "rgba(59, 130, 246, 0.2) !important"
-    },
-    ".cm-gutters": {
-      backgroundColor: "#f8fafc",
-      color: "#94a3b8",
-      borderRight: "1px solid #e2e8f0",
-      paddingRight: "8px"
-    },
-    ".cm-activeLineGutter": {
-      backgroundColor: "#e2e8f0",
-      color: "#475569"
-    },
-    ".cm-activeLine": {
-      backgroundColor: "rgba(0, 0, 0, 0.02)"
-    },
-    ".cm-placeholder": {
-      color: "#94a3b8"
-    }
-  }, { dark: false });
-
-  const marksafeLightHighlighting = HighlightStyle.define([
-    { tag: t.heading1, color: "#1d4ed8", fontWeight: "bold", fontSize: "1.2em" },
-    { tag: t.heading2, color: "#0284c7", fontWeight: "bold", fontSize: "1.1em" },
-    { tag: t.heading3, color: "#4f46e5", fontWeight: "bold", fontSize: "1.05em" },
-    { tag: [t.heading4, t.heading5, t.heading6], color: "#7c3aed", fontWeight: "bold" },
-    { tag: t.strong, fontWeight: "bold", color: "#0f172a" },
-    { tag: t.emphasis, fontStyle: "italic", color: "#334155" },
-    { tag: t.monospace, color: "#db2777", backgroundColor: "rgba(219, 39, 119, 0.08)", borderRadius: "3px" },
-    { tag: [t.processingInstruction, t.string, t.inserted], color: "#059669" },
-    { tag: [t.meta, t.comment], color: "#64748b", fontStyle: "italic" },
-    { tag: t.link, color: "#2563eb", textDecoration: "underline" },
-    { tag: t.url, color: "#3b82f6" },
-    { tag: t.quote, color: "#475569", fontStyle: "italic" },
-    { tag: t.list, color: "#d97706" }
-  ]);
-
-  /**
-   * getTopLine returns the first (1-based) source line visible at the top.
-   */
+  /** getTopLine returns the first (1-based) source line visible at the top. */
   export function getTopLine(): number {
-    if (!editorView) return 1;
-    const block = editorView.lineBlockAtHeight(Math.max(0, editorView.scrollDOM.scrollTop - (editorView.documentPadding?.top ?? 0)));
-    return editorView.state.doc.lineAt(block.from).number;
+    return editor?.getTopLine() ?? 1;
   }
 
-  /**
-   * scrollToLine puts the 1-based source line at the top.
-   */
+  /** scrollToLine puts the 1-based source line at the top. */
   export function scrollToLine(line: number) {
-    if (!editorView) return;
-    const n = Math.min(Math.max(1, Math.round(line)), editorView.state.doc.lines);
-    const block = editorView.lineBlockAt(editorView.state.doc.line(n).from);
-    scrollLock = true;
-    editorView.scrollDOM.scrollTop = block.top + (editorView.documentPadding?.top ?? 0);
-    setTimeout(() => { scrollLock = false; }, 50);
+    editor?.scrollToLine(line);
   }
 
-  /**
-   * wrapSelection wraps selected text with prefix/suffix (bold, italic, code).
-   */
+  /** wrapSelection wraps selected text with prefix/suffix (bold, italic, code). */
   export function wrapSelection(prefix: string, suffix: string) {
-    if (!editorView) return;
-    const { from, to } = editorView.state.selection.main;
-    const selectedText = editorView.state.sliceDoc(from, to);
-    const replacement = prefix + selectedText + suffix;
-    editorView.dispatch({
-      changes: { from, to, insert: replacement },
-      selection: { anchor: from + prefix.length, head: to + prefix.length }
-    });
-    editorView.focus();
+    editor?.wrapSelection(prefix, suffix);
   }
 
-  /**
-   * prefixSelection prefixes the current line with markdown token (# , ## ).
-   */
+  /** prefixSelection prefixes the current line with markdown token (# , ## ). */
   export function prefixSelection(prefix: string) {
-    if (!editorView) return;
-    const { from } = editorView.state.selection.main;
-    const line = editorView.state.doc.lineAt(from);
-    editorView.dispatch({
-      changes: { from: line.from, to: line.from, insert: prefix },
-      selection: { anchor: from + prefix.length, head: from + prefix.length }
-    });
-    editorView.focus();
+    editor?.prefixSelection(prefix);
   }
 
   /** Column widths of the table at the cursor (toolbar menu). */
   export function fitTableAtCursor(mode: 'auto' | 'content') {
-    if (!editorView) return;
-    const line = tableAtCursor(editorView.state);
+    const v = view();
+    if (!v) return;
+    const line = tableAtCursor(v.state);
     if (!line) return;
     tableMenu = { x: 0, y: 0, line };
     void fitTable(mode);
@@ -261,27 +131,17 @@
 
   /** Replaces the range (1-based lines, columns in characters, end exclusive), e.g. a field from the field dialog. */
   export function replaceRange(line: number, col: number, endLine: number, endCol: number, text: string) {
-    if (!editorView) return;
-    const doc = editorView.state.doc;
-    const from = toPos(doc, line, col);
-    const to = toPos(doc, endLine, endCol);
-    editorView.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
-    editorView.focus();
+    editor?.replaceRange(line, col, endLine, endCol, text);
   }
 
   /** replaceOffsets replaces from..to (offsets in the document) with text. */
   export function replaceOffsets(from: number, to: number, text: string) {
-    if (!editorView) return;
-    editorView.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
-    editorView.focus();
+    editor?.replaceOffsets(from, to, text);
   }
 
   /** insertText puts text at the cursor (replacing a selection). */
   export function insertText(text: string) {
-    if (!editorView) return;
-    const { from, to } = editorView.state.selection.main;
-    editorView.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
-    editorView.focus();
+    editor?.insertText(text);
   }
 
   /**
@@ -289,114 +149,69 @@
    * box "> [!WARNING]" (GitHub/GitLab; mlcdoc sets it as a box too).
    */
   export function insertAlert(kind: 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION') {
-    if (!editorView) return;
-    const state = editorView.state;
+    const v = view();
+    if (!v) return;
+    const state = v.state;
     const { from, to } = state.selection.main;
     const first = state.doc.lineAt(from);
     const last = state.doc.lineAt(to);
     const lines: string[] = [];
     for (let n = first.number; n <= last.number; n++) {
-      const text = state.doc.line(n).text.replace(/^>\s?/, '');
-      lines.push('> ' + text);
+      lines.push('> ' + state.doc.line(n).text.replace(/^>\s?/, ''));
     }
     const insert = `> [!${kind}]\n` + lines.join('\n');
-    const cursor = first.from + insert.length;
-    editorView.dispatch({ changes: { from: first.from, to: last.to, insert }, selection: { anchor: cursor } });
-    editorView.focus();
+    v.dispatch({ changes: { from: first.from, to: last.to, insert }, selection: { anchor: first.from + insert.length } });
+    v.focus();
   }
 
-  /**
-   * Focus the CodeMirror editor.
-   */
+  /** Focus the CodeMirror editor. */
   export function focus() {
-    editorView?.focus();
+    editor?.focus();
   }
 
-  function handleScroll() {
-    if (scrollLock || !editorView) return;
-    onscroll?.(getTopLine());
-  }
-
-  onMount(() => {
-    if (!containerEl) return;
-
-    const isDark = theme === 'dark';
-    const startState = EditorState.create({
-      doc: value,
-      extensions: [
-        basicSetup,
-        markdown(),
-        languageCompartment.of(languageExtensions($locale)),
-        EditorView.lineWrapping,
-        EditorView.domEventHandlers({
-          paste(e) {
-            const data = e.clipboardData;
-            if (!onpasteimage || !data || data.getData('text/plain')) return false;
-            const file = Array.from(data.files).find((f) => f.type.startsWith('image/'));
-            if (!file) return false;
-            e.preventDefault();
-            const reader = new FileReader();
-            reader.onload = () => onpasteimage?.(String(reader.result));
-            reader.readAsDataURL(file);
-            return true;
-          },
-          contextmenu(e, view) {
-            const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
-            if (pos == null) return false;
-            const field = oneditfield ? fieldAt(view.state, pos) : null;
-            if (field) {
-              e.preventDefault();
-              fieldMenu = { x: e.clientX, y: e.clientY, line: field.line, col: field.col };
-              return true;
-            }
-            const image = oneditimage ? imageAt(view.state, pos) : null;
-            if (image) {
-              e.preventDefault();
-              imageMenu = { x: e.clientX, y: e.clientY, image };
-              return true;
-            }
-            if (!tableFit) return false;
-            const line = view.state.doc.lineAt(pos);
-            if (!line.text.includes('|')) return false;
-            e.preventDefault();
-            tableMenu = { x: e.clientX, y: e.clientY, line: line.number };
-            return true;
-          },
-        }),
-        ...(mlcSource ? [mlcExtension(mlcSource, { onAnalysis: (a) => onmlcanalysis?.(a), locale: () => $locale, extraDiagnostics: (md) => extraDiagnostics?.(md) ?? [] })] : []),
-        ...(mlcSource && oneditfield
-          ? [fieldHint({ label: '✎ ' + $tr('fieldHintLabel'), title: $tr('fieldHintTitle'), onEdit: (l, c) => oneditfield?.(l, c) })]
-          : []),
-        themeCompartment.of(isDark ? marksafeDarkTheme : marksafeLightTheme),
-        highlightCompartment.of(syntaxHighlighting(isDark ? marksafeDarkHighlighting : marksafeLightHighlighting)),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged && !isUpdatingFromProp) {
-            const newDoc = update.state.doc.toString();
-            value = newDoc;
-            onchange?.(newDoc);
-          }
-        })
-      ]
-    });
-
-    editorView = new EditorView({
-      state: startState,
-      parent: containerEl
-    });
-
-    const scrollDOM = editorView.scrollDOM;
-    scrollDOM.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      scrollDOM.removeEventListener('scroll', handleScroll);
-      editorView?.destroy();
-      editorView = null;
-    };
+  // Pasted pictures and the context menus (field, image, table).
+  const events = EditorView.domEventHandlers({
+    paste(e) {
+      const data = e.clipboardData;
+      if (!onpasteimage || !data || data.getData('text/plain')) return false;
+      const file = Array.from(data.files).find((f) => f.type.startsWith('image/'));
+      if (!file) return false;
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = () => onpasteimage?.(String(reader.result));
+      reader.readAsDataURL(file);
+      return true;
+    },
+    contextmenu(e, v) {
+      const pos = v.posAtCoords({ x: e.clientX, y: e.clientY });
+      if (pos == null) return false;
+      const field = oneditfield ? fieldAt(v.state, pos) : null;
+      if (field) {
+        e.preventDefault();
+        fieldMenu = { x: e.clientX, y: e.clientY, line: field.line, col: field.col };
+        return true;
+      }
+      const image = oneditimage ? imageAt(v.state, pos) : null;
+      if (image) {
+        e.preventDefault();
+        imageMenu = { x: e.clientX, y: e.clientY, image };
+        return true;
+      }
+      if (!tableFit) return false;
+      const line = v.state.doc.lineAt(pos);
+      if (!line.text.includes('|')) return false;
+      e.preventDefault();
+      tableMenu = { x: e.clientX, y: e.clientY, line: line.number };
+      return true;
+    },
   });
 
-  // CodeMirror's own texts and the data: URL boxes follow the interface language.
-  function languageExtensions(loc: string) {
+  // MarkSafe's own extensions; CodeMirror's texts and the boxes follow the
+  // interface language, so they are rebuilt when it changes.
+  const extensions = $derived.by(() => {
+    const loc = $locale;
     return [
+      events,
       ...(tableFit
         ? [tableHint({
             label: '⇔ ' + $tr('tableHintLabel'),
@@ -411,46 +226,27 @@
       editorPhrases(loc),
       dataUriFolding({ image: $tr('dataUriImage'), expandHint: $tr('dataUriExpand'), collapseHint: $tr('dataUriCollapse'), locale: loc }),
     ];
-  }
-  $effect(() => {
-    const loc = $locale;
-    if (editorView) {
-      untrack(() => editorView?.dispatch({ effects: languageCompartment.reconfigure(languageExtensions(loc)) }));
-    }
-  });
-
-  // Reconfigure theme dynamically on Dark/Light change
-  $effect(() => {
-    const isDark = theme === 'dark';
-    if (editorView) {
-      untrack(() => {
-        editorView?.dispatch({
-          effects: [
-            themeCompartment.reconfigure(isDark ? marksafeDarkTheme : marksafeLightTheme),
-            highlightCompartment.reconfigure(syntaxHighlighting(isDark ? marksafeDarkHighlighting : marksafeLightHighlighting))
-          ]
-        });
-      });
-    }
-  });
-
-  // Sync external document changes (tab switch, file open) into CodeMirror
-  $effect(() => {
-    if (editorView && value !== undefined) {
-      const currentDoc = editorView.state.doc.toString();
-      if (currentDoc !== value) {
-        isUpdatingFromProp = true;
-        editorView.dispatch({
-          changes: { from: 0, to: currentDoc.length, insert: value }
-        });
-        isUpdatingFromProp = false;
-      }
-    }
   });
 </script>
 
-<div bind:this={containerEl} class="cm-editor-wrapper h-full w-full overflow-hidden select-text"></div>
-
+<div class="h-full w-full overflow-hidden select-text">
+  <MlcEditor
+    bind:this={editor}
+    bind:value
+    theme={theme === 'dark' ? 'dark' : 'light'}
+    locale={$locale}
+    {placeholder}
+    source={mlcSource}
+    {extraDiagnostics}
+    onAnalysis={(a) => onmlcanalysis?.(a)}
+    onEditField={mlcSource && oneditfield ? (l, c) => oneditfield?.(l, c) : undefined}
+    fieldHintLabel={'✎ ' + $tr('fieldHintLabel')}
+    fieldHintTitle={$tr('fieldHintTitle')}
+    {extensions}
+    {onchange}
+    onScrollLine={(line) => onscroll?.(line)}
+  />
+</div>
 
 {#if fieldMenu}
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -482,16 +278,4 @@
   .table-menu { background: var(--tm-bg, #1f2937); color: var(--tm-fg, #f3f4f6); border-color: rgba(127,127,127,.4); min-width: 16rem; }
   .table-menu button:hover { background: rgba(127,127,127,.2); }
   .table-menu.tm-light { --tm-bg: #ffffff; --tm-fg: #111827; }
-  .cm-editor-wrapper {
-    display: flex;
-    flex-direction: column;
-  }
-  :global(.cm-editor) {
-    height: 100% !important;
-    outline: none !important;
-  }
-  :global(.cm-scroller) {
-    overflow: auto !important;
-    font-family: inherit !important;
-  }
 </style>
