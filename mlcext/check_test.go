@@ -1,6 +1,7 @@
 package mlcext
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,6 +172,26 @@ func TestDetect(t *testing.T) {
 		if got := Detect(md); got != want {
 			t.Errorf("Detect(%q) = %v, want %v", md, got, want)
 		}
+	}
+}
+
+func TestAnalyzeSignatureRole(t *testing.T) {
+	md := "---\ndoc_id: SOP-QM-001\n---\n# SOP\n\nOrt: [@#ort ___]\n\n[@#sig_qmb Unterschrift: QMB]\n\n[@#sig_lab Signature: Laborleitung]\n"
+	a := Analyze(md)
+	if len(a.Fields) != 3 {
+		t.Fatalf("fields: %+v", a.Fields)
+	}
+	if f := a.Fields[0]; f.Role != "" {
+		t.Errorf("text field has role %q", f.Role)
+	}
+	for i, want := range map[int]string{1: "QMB", 2: "Laborleitung"} {
+		if f := a.Fields[i]; f.Kind != "signature" || f.Role != want {
+			t.Errorf("field %d: kind %q role %q, want signature %q", i, f.Kind, f.Role, want)
+		}
+	}
+	js, _ := json.Marshal(a.Fields[0])
+	if strings.Contains(string(js), "role") {
+		t.Errorf("role must be omitted for other kinds: %s", js)
 	}
 }
 

@@ -48,10 +48,13 @@ type FieldSpan struct {
 	EndCol  int    `json:"endCol"`
 	Name    string `json:"name"`
 	Named   bool   `json:"named"`
-	Kind    string `json:"kind"` // check | text | multiline
+	Kind    string `json:"kind"` // check | text | multiline | signature
 	Pattern string `json:"pattern"`
 	// Prefill: the Sensor Monitor fills this field from an event.
 	Prefill bool `json:"prefill"`
+	// Role of a signature field, who signs: "QMB" for
+	// "[@#sig_qmb Unterschrift: QMB]". Empty for every other kind.
+	Role string `json:"role,omitempty"`
 }
 
 // HintSpan locates a tooltip "<!--* … -->" or fill hint "<!--! … -->".
@@ -132,7 +135,7 @@ func AnalyzeWith(md string, opt Options) Analysis {
 		a.Fields = append(a.Fields, FieldSpan{
 			Line: f.Line, Col: f.Col, EndLine: el, EndCol: ec,
 			Name: f.Name, Named: f.Named, Kind: f.Kind.String(), Pattern: f.Pattern,
-			Prefill: f.Named && IsPrefillField(f.Name),
+			Prefill: f.Named && IsPrefillField(f.Name), Role: f.Role,
 		})
 	}
 	for _, h := range s.hints {

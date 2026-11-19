@@ -39,9 +39,11 @@ export interface MlcFieldSpan {
   endCol: number;
   name: string;
   named: boolean;
-  kind: 'check' | 'text' | 'multiline' | string;
+  kind: 'check' | 'text' | 'multiline' | 'signature' | string;
   pattern: string;
   prefill: boolean;
+  /** Role of a signature field, who signs ("QMB"); absent for other kinds. */
+  role?: string;
 }
 
 export interface MlcHintSpan {

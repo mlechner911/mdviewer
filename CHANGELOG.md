@@ -5,6 +5,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 ## [Unreleased]
 
 ### Added
+- mlcext v0.21.0: `Analyze` reports the role of a signature field (`role`, "QMB" for `[@#sig_qmb Unterschrift: QMB]`), so editors such as the template workshop of the Sensor Monitor no longer parse the field text themselves (I-MARKS-20261117-03).
 - Country flags (🇩🇪 🇪🇺) show in colour in the preview, also on Windows, which otherwise draws two letters; the same Twemoji flags as in the PDF.
 - UI test build for automated tests with Playwright (`task handtest:prepare`, never in a release): opens the WebView2 debugging port and marks every window title with "[UI-TEST]"; the folder check and commit dialogs carry stable `data-testid` attributes (docs/UI-TEST.md).
 
