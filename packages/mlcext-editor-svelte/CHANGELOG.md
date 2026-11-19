@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0] - 2026-11-19
+
+P-MARKS-20261117-01, phase 4.
+
+### Added
+
+- `<MlcFieldDialog>`: insert or edit a form field; the host writes it
+  through `format` (mlcext.FormatField).
+- `<MlcImageDialog>`: insert or edit an image, chosen (`choose`, default the
+  browser's file input), dropped (`chosen`) or pasted (`dataUri`), as a
+  reference or embedded; `toMarkdown` of the host or the built-in one.
+- Texts German and English built in, `labels` for others; colours as CSS
+  variables `--mlc-dialog-*`. Helpers `chooseImageFile`, `imageMarkdown`,
+  `dialogTexts`, `formatBytes`.
+
 ## [0.1.0] - 2026-11-19
 
 First version, included as source (P-MARKS-20261117-01, phase 2).

@@ -1,6 +1,7 @@
 # mlcext-editor-svelte
 
-Svelte 5 component `<MlcEditor>`: a CodeMirror 6 Markdown editor for the
+Svelte 5 components `<MlcEditor>`, `<MlcFieldDialog>` and `<MlcImageDialog>`.
+`<MlcEditor>` is a CodeMirror 6 Markdown editor for the
 **MLC Markdown Extension** (non-standard; form fields `[@…]`, fill tips,
 front matter of the MLC Sensor Monitor), built on
 [`mlcext-editor`](../mlcext-editor). It implements **no rules**: the
@@ -60,6 +61,72 @@ editor is built on it.
 
 Search (Ctrl+F), folding, bracket closing and the rest of CodeMirror's
 `basicSetup` are on.
+
+## Dialogs
+
+The insert dialogs of MarkSafe, without a desktop backend: everything that
+needs the checker or the file system is a callback of the host.
+
+```svelte
+<script>
+  import { MlcFieldDialog, MlcImageDialog } from 'mlcext-editor-svelte';
+  // Editing a field (onEditField of <MlcEditor>): the host's mlcext.FieldAt
+  // gives its spec and range, e.g. fieldDialog = { spec, range: [line, col, endLine, endCol] }.
+</script>
+
+{#if fieldDialog}
+  <MlcFieldDialog
+    initial={fieldDialog.spec}
+    format={(spec) => api.post('/mlcext/format-field', spec)}
+    usedNames={analysis.fields.filter((f) => f.named).map((f) => f.name)}
+    theme="dark"
+    locale="de"
+    onApply={(text) => (fieldDialog.range ? editor.replaceRange(...fieldDialog.range, text) : editor.insertText(text))}
+    onClose={() => (fieldDialog = null)}
+  />
+{/if}
+
+{#if imageDialog}
+  <MlcImageDialog locale="de" onApply={(text) => editor.insertText(text)} onClose={() => (imageDialog = false)} />
+{/if}
+```
+
+**`<MlcFieldDialog>`**: kind, name, width, lines, pattern, role, preset,
+tooltip; shows the written field and how it renders.
+
+| Prop | |
+| --- | --- |
+| `format(spec)` | **required**: `mlcext.FormatField` of the host → `{ text, error }`. The dialog knows no syntax; a late answer to an older input is dropped |
+| `initial` | the field being edited (`mlcext.FieldAt().spec`); unset inserts a new one |
+| `usedNames` | other field names in the document (duplicate warning) |
+| `prefill`, `properties` | `{ name, label }`: prefill names and schema properties, offered for the name |
+| `preview` | show the field as it renders (`mlc-markdown`, default on) |
+| `onApply(text)`, `onClose()` | |
+
+**`<MlcImageDialog>`**: a chosen, dropped or pasted image, as a reference
+or embedded, with description and size (`Logo|200`, `|50%`); `existing`
+edits an image of the document and keeps its file.
+
+| Prop | |
+| --- | --- |
+| `choose()` | the host's file choice → `MlcImageChoice` or null. Default `chooseImageFile()`: the browser's file input, read as data: URL (embedded only) |
+| `chosen` | a file the user already gave (dropped), or a promise of it |
+| `dataUri` | a picture from the clipboard |
+| `existing` | `{ text, alt, target, altFrom, altTo }` of an image in the document |
+| `preferEmbed` | start with "embedded" even when a reference works |
+| `toMarkdown(request)` | the Markdown for `{ choice, dataUri, alt, embed }`. Default: `![alt](data: URL)` or `![alt](reference)` |
+| `onApply(text)`, `onClose()` | |
+
+`MlcImageChoice` is `{ name, size, embeddable, reference?, dataUri?, path? }`:
+`reference` when a relative path works (the PDF reads nothing outside the
+document's folder), `path` is the host's own handle.
+
+Both take `theme`, `locale` and `labels`. German and English are built in
+(`DIALOG_LABELS`); `labels` replaces any of them, e.g. for other languages
+(`%s` stands for the inserted value). Colours are CSS variables
+`--mlc-dialog-*`: `bg`, `fg`, `border`, `button`, `button-hover`,
+`input-bg`, `input-border`, `primary`, `primary-hover`, `overlay`, `warn`,
+`error`, `font`; the fallbacks are MarkSafe's.
 
 ## Colours
 

@@ -1,7 +1,7 @@
 {
   "name": "mlcext-editor-svelte",
-  "version": "0.1.0",
-  "description": "Svelte 5 component <MlcEditor> — a CodeMirror 6 Markdown editor with the MLC Markdown Extension (non-standard), built on mlcext-editor.",
+  "version": "0.2.0",
+  "description": "Svelte 5 components <MlcEditor>, <MlcFieldDialog> and <MlcImageDialog> — a CodeMirror 6 Markdown editor with the MLC Markdown Extension (non-standard), built on mlcext-editor.",
   "keywords": [
     "svelte",
     "svelte5",
@@ -42,6 +42,7 @@
     "@codemirror/view": "^6.36.0",
     "@lezer/highlight": "^1.2.0",
     "codemirror": "^6.0.0",
+    "mlc-markdown": "^0.1.0",
     "mlcext-editor": "^0.2.0",
     "svelte": "^5.0.0"
   },

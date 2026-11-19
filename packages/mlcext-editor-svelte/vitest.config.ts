@@ -12,6 +12,7 @@ export default defineConfig({
     conditions: ['browser'],
     alias: [
       { find: /^mlcext-editor$/, replacement: fileURLToPath(new URL('../mlcext-editor/src/index.ts', import.meta.url)) },
+      { find: /^mlc-markdown$/, replacement: fileURLToPath(new URL('../mlc-markdown/src/index.ts', import.meta.url)) },
       { find: /^@codemirror\/(.*)$/, replacement: frontend('@codemirror/$1') },
       { find: /^@lezer\/(.*)$/, replacement: frontend('@lezer/$1') },
       { find: /^codemirror$/, replacement: frontend('codemirror') },
