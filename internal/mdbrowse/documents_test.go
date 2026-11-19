@@ -60,3 +60,21 @@ func TestExtractTitleIgnoresFrontMatterComments(t *testing.T) {
 		t.Errorf("ExtractTitle = %q", got)
 	}
 }
+
+// "# {{title}}" lists as the front matter's title, like the rendered page.
+func TestExtractTitleExpandsVariables(t *testing.T) {
+	dir := t.TempDir()
+	for name, tc := range map[string]struct{ md, want string }{
+		"title.md":   {"---\ndoc_id: SOP-QM-001\ntitle: Reinigung Kühlraum\n---\n# {{title}}\n", "Reinigung Kühlraum"},
+		"mixed.md":   {"---\ndoc_id: SOP-QM-001\nversion: \"2.0\"\n---\n# {{ doc_id }} v{{version}}\n", "SOP-QM-001 v2.0"},
+		"empty.md":   {"---\ndoc_id: X\n---\n# {{title}}\n", "{{title}}"},
+		"unknown.md": {"---\ntitle: T\n---\n# {{autor}}\n", "{{autor}}"},
+		"plain.md":   {"# Ohne {Klammern}\n", "Ohne {Klammern}"},
+	} {
+		p := filepath.Join(dir, name)
+		_ = os.WriteFile(p, []byte(tc.md), 0o600)
+		if got, _ := ExtractTitle(p); got != tc.want {
+			t.Errorf("%s: ExtractTitle = %q, want %q", name, got, tc.want)
+		}
+	}
+}

@@ -860,6 +860,13 @@
   const appEvents: Record<string, (data: any) => void> = {
     'menu-open-file': handleOpen,
     'menu-open-recent': handleOpenRecent,
+    // From the browse window: open the document with the editor shown.
+    'browse-open-in-editor': async (path: string) => {
+      if (browseParams) return; // the browse window gets the event too
+      await handleOpenRecent(path);
+      startInPreview = false;
+      isEditorHidden.set(false);
+    },
     'menu-save-file': () => saveOnce('save'),
     'menu-embed-images': () => void offerEmbed(activeTabIndex, true),
     'menu-save-file-as': () => saveOnce('saveAs'),

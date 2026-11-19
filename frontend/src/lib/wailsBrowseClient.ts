@@ -2,7 +2,7 @@
 // hit the Go service from Phase 1 directly. Rendered HTML rewrites
 // /raw?path= targets to the /local-resource asset handler (absolute
 // paths, whitelist-checked like the main preview).
-import { BrowseTree, BrowseRender, BrowseSource, BrowseLinks, BrowseSearch, BrowseDocuments, GetVersion, GetStyleCSS } from '../../bindings/marksafe/app';
+import { BrowseTree, BrowseRender, BrowseSource, BrowseLinks, BrowseSearch, BrowseDocuments, GetVersion, GetStyleCSS, OpenBrowseInEditor } from '../../bindings/marksafe/app';
 import type {
   BrowseClient,
   BrowseDoc,
@@ -46,6 +46,11 @@ async function ensureReady(): Promise<void> {
 
 export function createWailsClient(rootDir: string): BrowseClient {
   return {
+    // The way back: the document opens in a tab of the main window.
+    async openInEditor(path: string): Promise<void> {
+      await OpenBrowseInEditor(rootDir, path);
+    },
+
     async getTree(): Promise<TocEntry[]> {
       await ensureReady();
       try {

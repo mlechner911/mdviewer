@@ -159,6 +159,33 @@ func (a *App) OpenBrowseWindow(rootDir, relPath string) {
 	w.Focus()
 }
 
+// OpenBrowseInEditor is the way back from the browse window: relPath under
+// rootDir opens as a tab of the main window, with the editor shown, and the
+// main window comes to the front. Only Markdown files inside the root.
+func (a *App) OpenBrowseInEditor(rootDir, relPath string) error {
+	logger().Debug("Request: OpenBrowseInEditor", "root", rootDir, "path", relPath)
+	root, err := mdbrowse.NewRoot(rootDir)
+	if err != nil {
+		return err
+	}
+	abs, err := root.Resolve(relPath)
+	if err != nil {
+		return err
+	}
+	if info, err := os.Stat(abs); err != nil || info.IsDir() || !mlcext.IsMarkdownFile(abs) {
+		return fmt.Errorf("not a Markdown file: %s", relPath)
+	}
+	emit("browse-open-in-editor", abs)
+	if w := a.window; w != nil {
+		if w.IsMinimised() {
+			w.UnMinimise()
+		}
+		w.Show()
+		w.Focus()
+	}
+	return nil
+}
+
 // CheckExternalURL probes whether an external link target exists, so the
 // UI can report dead links instead of opening them. HEAD first, ranged
 // GET fallback for servers rejecting HEAD. Only http(s) is checked.

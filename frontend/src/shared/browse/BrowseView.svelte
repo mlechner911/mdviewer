@@ -55,6 +55,17 @@
   onMount(() => {
     client.documents().then((d) => (mlcDocs = d));
   });
+  // The way back to the editor: only a host with one (the desktop app) and
+  // only for a document, not for a directory listing.
+  const canEdit = $derived(!!client.openInEditor && docSource !== null && !!docPath);
+  async function openInEditor() {
+    if (!canEdit) return;
+    try {
+      await client.openInEditor!(docPath);
+    } catch (err) {
+      console.error('openInEditor failed:', err);
+    }
+  }
   let externalUrl = $state<string | null>(null);
   let infoOpen = $state(false);
   let docSize = $state(0);
@@ -246,6 +257,12 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       searchOpen = true;
+      return;
+    }
+    // Ctrl+E as in the main window, where it shows the editor.
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'e' && canEdit) {
+      e.preventDefault();
+      void openInEditor();
       return;
     }
     if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -492,6 +509,16 @@
         </button>
       </div>
       <div class="toolbar-right">
+        {#if canEdit}
+          <button class="nav-btn" onclick={openInEditor} title="Im Editor öffnen (Strg+E)" aria-label="Im Editor öffnen" data-testid="browse-open-in-editor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            <span class="nav-label">Bearbeiten</span>
+          </button>
+        {/if}
         {#if mlcDocs.length > 0}
           <button class="nav-btn" onclick={openDocs} title="Dokumente der MLC-Erweiterung (Kennung, Art, Prüfung)" aria-label="Dokumente">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

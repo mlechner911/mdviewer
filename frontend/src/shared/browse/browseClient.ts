@@ -79,4 +79,10 @@ export interface BrowseClient {
   documents(): Promise<MlcDocument[]>;
   /** Syntax-highlighting CSS for the active theme (code colors). */
   chromaCss(theme: BrowseTheme): Promise<string>;
+  /**
+   * Opens a root-relative document in the host's editor (the desktop app);
+   * hosts without one (the browse server) leave it out, and the browser
+   * shows no edit button.
+   */
+  openInEditor?(path: string): Promise<void>;
 }

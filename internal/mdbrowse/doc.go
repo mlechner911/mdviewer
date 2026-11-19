@@ -6,8 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
+
+	"github.com/mlechner911/mdviewer/mlcext"
 )
 
 // TOCEntry represents a single entry in the table of contents.
@@ -75,7 +78,7 @@ func ExtractTitle(path string) (string, error) {
 		// First H1 after frontmatter
 		matches := titleRegex.FindStringSubmatch(line)
 		if len(matches) == 2 {
-			return truncateTitle(matches[1]), nil
+			return truncateTitle(expandTitleVariables(matches[1], path)), nil
 		}
 
 		// Stop after first 30 lines if no H1 found and we have a frontmatter title
@@ -95,6 +98,35 @@ func ExtractTitle(path string) (string, error) {
 	// Fallback: use filename
 	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	return truncateTitle(strings.ReplaceAll(name, "-", " ")), nil
+}
+
+// titleVar is a variable of the MLC Markdown Extension in a heading,
+// "{{title}}" (docs/MLC-EXTENSIONS.md).
+var titleVar = regexp.MustCompile(`\{\{\s*([a-z_]+)\s*\}\}`)
+
+// expandTitleVariables fills {{title}}, {{doc_id}} and {{version}} in a
+// heading from the document's front matter, as the rendered page does
+// (mlcext.ExpandVariables), so "# {{title}}" is not listed literally.
+// Unknown names and variables without a value stay as written.
+func expandTitleVariables(heading, path string) string {
+	if !strings.Contains(heading, "{{") {
+		return heading
+	}
+	md, err := os.ReadFile(path)
+	if err != nil {
+		return heading
+	}
+	meta := mlcext.DocumentMeta(string(md))
+	return titleVar.ReplaceAllStringFunc(heading, func(ref string) string {
+		name := titleVar.FindStringSubmatch(ref)[1]
+		if !slices.Contains(mlcext.Variables, name) {
+			return ref
+		}
+		if v := meta.Value(name); v != "" {
+			return v
+		}
+		return ref
+	})
 }
 
 // maxTitleRunes caps sidebar titles: a source line that glues whole
