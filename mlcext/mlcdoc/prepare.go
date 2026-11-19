@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Keys are the front matter keys mlcdoc accepts (as of 0.29.0; the newest
+// Keys are the front matter keys mlcdoc accepts (as of 0.30.0; the newest
 // since MinVersion: signature-note 0.26.0, image-align and attachments
 // 0.27.0); it rejects any other key. Taken from mlcdoc itself (the
 // "expected one of" list of its error); TestKeysMatchBinary compares it

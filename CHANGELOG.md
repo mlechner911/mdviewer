@@ -9,6 +9,7 @@ All notable changes to MarkSafe. Format follows [Keep a Changelog](https://keepa
 - UI test build for automated tests with Playwright (`task handtest:prepare`, never in a release): opens the WebView2 debugging port and marks every window title with "[UI-TEST]"; the folder check and commit dialogs carry stable `data-testid` attributes (docs/UI-TEST.md).
 
 ### Changed
+- Bundled mlcdoc 0.30.0 (mlcmd2pdf 3.40.0): country flags (🇩🇪 🇪🇺) print in colour in the PDF, as in the preview; all other emoji stay monochrome. Its license texts now include Twemoji (CC-BY 4.0).
 - When the folder check cannot check a folder (exit code 2), its message stands under the heading "Folder check not possible", wraps and can be selected and copied.
 
 ### Fixed
