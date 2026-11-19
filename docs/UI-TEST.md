@@ -84,6 +84,8 @@ Stable `data-testid` attributes, independent of the interface language.
 | `foldercheck-permission` | Permission dialog of the folder check |
 | `foldercheck-permission-confirm` / `-cancel` | Allow / Deny |
 | `toggle-editor` | Shows or hides the editor; `data-hidden="true"` while it is hidden (a document opened by argument starts in the preview). The editor itself is `.cm-content` |
+| `open-browse` | Opens the browse window (a second page over CDP, URL with `?browse=`) |
+| `browse-open-in-editor` | In the browse window: open the document in the main window's editor |
 | `status-foldercheck` | Folder check entry in the status bar (opens the panel) |
 | `status-commit` | "Saved, not committed" in the status bar |
 | `foldercheck-panel` | Panel with the result |
