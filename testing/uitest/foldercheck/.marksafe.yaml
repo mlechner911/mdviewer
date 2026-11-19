@@ -1,0 +1,4 @@
+version: 1
+check:
+  command: ["bin/check", "-json"]   # build: cd check && GOOS=windows go build -o ../bin/check.exe .
+  timeout: 30s

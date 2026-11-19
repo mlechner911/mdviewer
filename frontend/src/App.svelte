@@ -1444,6 +1444,8 @@
             <!-- With the editor hidden it is labelled "Edit": the way back has to be easy to find -->
             <button
                 onclick={toggleEditor}
+                data-testid="toggle-editor"
+                data-hidden={$isEditorHidden}
                 class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center gap-1 {$isEditorHidden ? focusButtonClass : ''}"
                 title={($isEditorHidden ? $t('showEditor') : $t('hideEditor')) + ' (' + (/mac/i.test(navigator.platform) ? '⌘' : 'Ctrl+') + 'E)'}
             >
