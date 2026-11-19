@@ -72,6 +72,8 @@ Die Dokumente liegen in `handtest/` in der dropzone.
 | B4 | **H ▾** in der Werkzeugleiste | H1 bis H3 setzen die Überschrift |
 | B4a | **H ▾** öffnen, dann **I** klicken; **H ▾** öffnen, dann **⊞ ▾**; **H ▾** öffnen, Esc; **H ▾** öffnen, in den Text klicken | Das Menü klappt jedes Mal zu (bei ⊞ ▾ öffnet nur dieses); **I** wirkt trotzdem |
 | B5 | Statusleiste | Wörter, Zeichen, Lesezeit, Pfad; bei MLC-Dokumenten die Prüfung |
+| B6 | Browser-Modus (`Strg+Umschalt+B`) für einen Ordner mit einem Dokument `# {{title}}` und `title:` im Front Matter | Im Inhaltsverzeichnis, im Fenstertitel und in der Suche steht der Titel aus dem Front Matter, nicht `{{title}}` |
+| B7 | Im Browser ein anderes Dokument wählen, **Bearbeiten** (oder `Strg+E`) | Das Hauptfenster kommt nach vorn, das Dokument ist als Tab offen, mit sichtbarem Editor; ein schon offenes Dokument wird nur aktiviert |
 
 ### Formularfelder und Schema (`schema/`)
 
